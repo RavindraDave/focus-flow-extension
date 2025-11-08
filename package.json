@@ -1,0 +1,38 @@
+{
+  "name": "focus-flow-extension",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RavindraDave/focus-flow-extension.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RavindraDave/focus-flow-extension/issues"
+  },
+  "homepage": "https://github.com/RavindraDave/focus-flow-extension#readme",
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@types/chrome": "^0.1.27",
+    "@types/react": "^18.3.26",
+    "@types/react-dom": "^18.3.7",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@vitest/ui": "^3.2.4",
+    "eslint": "^9.39.1",
+    "playwright": "^1.56.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "3.4",
+    "typescript": "5.3",
+    "vite": "^5.4.21",
+    "vitest": "^3.2.4",
+    "zod": "^4.1.12",
+    "zustand": "^5.0.8"
+  }
+}
