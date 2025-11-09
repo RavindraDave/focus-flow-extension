@@ -137,7 +137,7 @@ export const DateSchema = z
   .transform((str) => new Date(str));
 
 /**
- * Sanitized text input
+ * Sanitized text input helper function
  * ASVS V5.2.8 - Input sanitization
  *
  * Prevents:
@@ -145,19 +145,26 @@ export const DateSchema = z
  * - Script injection
  * - Excessive length
  */
-export const SanitizedTextSchema = z
-  .string()
-  .max(1000, 'Text too long (max 1000 characters)')
-  .refine(
-    (text) => {
-      // No HTML tags allowed
-      const hasHtml = /<[^>]*>/g.test(text);
-      return !hasHtml;
-    },
-    {
-      message: 'HTML tags not allowed in text input',
-    }
-  );
+export function createSanitizedTextSchema(maxLength: number = 1000) {
+  return z
+    .string()
+    .max(maxLength, `Text too long (max ${maxLength} characters)`)
+    .refine(
+      (text) => {
+        // No HTML tags allowed
+        const hasHtml = /<[^>]*>/g.test(text);
+        return !hasHtml;
+      },
+      {
+        message: 'HTML tags not allowed in text input',
+      }
+    );
+}
+
+/**
+ * Default sanitized text schema (max 1000 chars)
+ */
+export const SanitizedTextSchema = createSanitizedTextSchema(1000);
 
 /**
  * Days of week enum
@@ -198,7 +205,7 @@ export const AchievementCategorySchema = z.enum([
  */
 export const BlockRuleSchema = z.object({
   id: UUIDSchema,
-  name: SanitizedTextSchema.max(100, 'Name too long (max 100 characters)'),
+  name: createSanitizedTextSchema(100),
   pattern: UrlPatternSchema,
   type: z.enum(['domain', 'keyword', 'url']),
   enabled: z.boolean(),
@@ -213,7 +220,7 @@ export const BlockRuleSchema = z.object({
  */
 export const ScheduleSchema = z.object({
   id: UUIDSchema,
-  name: SanitizedTextSchema.max(100, 'Name too long (max 100 characters)'),
+  name: createSanitizedTextSchema(100),
   enabled: z.boolean(),
   daysOfWeek: z.array(DayOfWeekSchema).min(1, 'At least one day must be selected'),
   startTime: TimeFormatSchema,
@@ -257,8 +264,8 @@ export const PomodoroSessionSchema = z.object({
   duration: z.number().int().min(60).max(3600), // 1 minute to 1 hour
   startTime: DateSchema,
   endTime: DateSchema.optional(),
-  taskName: SanitizedTextSchema.max(200, 'Task name too long (max 200 characters)').optional(),
-  category: SanitizedTextSchema.max(50, 'Category too long (max 50 characters)').optional(),
+  taskName: createSanitizedTextSchema(200).optional(),
+  category: createSanitizedTextSchema(50).optional(),
   status: SessionStatusSchema,
   actualDuration: z.number().int().min(0).max(3600).optional(),
 });
@@ -345,8 +352,8 @@ export const StreakDataSchema = z.object({
  */
 export const AchievementSchema = z.object({
   id: UUIDSchema,
-  name: SanitizedTextSchema.max(100),
-  description: SanitizedTextSchema.max(500),
+  name: createSanitizedTextSchema(100),
+  description: createSanitizedTextSchema(500),
   category: AchievementCategorySchema,
   unlockedAt: DateSchema,
   icon: z.string().max(50), // Emoji or icon identifier
