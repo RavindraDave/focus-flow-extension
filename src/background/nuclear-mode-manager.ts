@@ -78,7 +78,8 @@ export class NuclearModeManager {
       endTime,
       deviceSecret: settings.nuclearMode.deviceSecret,
       signature,
-      duration: durationHours,
+      challengeAttempts: settings.nuclearMode.challengeAttempts || 0,
+      challengeAttemptsStartTime: settings.nuclearMode.challengeAttemptsStartTime,
     };
 
     await this.settingsRepository.updateSettings({
@@ -287,7 +288,8 @@ export class NuclearModeManager {
       active: false,
       endTime: undefined,
       signature: undefined,
-      duration: undefined,
+      challengeAttempts: 0,
+      challengeAttemptsStartTime: undefined,
     };
 
     await this.settingsRepository.updateSettings({
@@ -332,7 +334,6 @@ export class NuclearModeManager {
     endTime: Date | undefined;
     remainingMs: number;
     remainingFormatted: string;
-    duration: number | undefined;
     integrityValid: boolean;
     timeManipulationDetected: boolean;
   }> {
@@ -349,7 +350,6 @@ export class NuclearModeManager {
       endTime: nuclearMode.endTime,
       remainingMs,
       remainingFormatted,
-      duration: nuclearMode.duration,
       integrityValid: isActive ? integrityValid : true,
       timeManipulationDetected,
     };
