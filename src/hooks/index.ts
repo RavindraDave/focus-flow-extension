@@ -1,7 +1,9 @@
 /**
- * Custom React Hooks
- *
- * Reusable hooks for common functionality across the extension.
+ * Hooks barrel export
  */
 
-export { useTheme, type ThemeMode } from './useTheme';
+export { useTheme } from './useTheme';
+export { useTimer } from './useTimer';
+export { useAnalytics } from './useAnalytics';
+export type { UseTimerReturn } from './useTimer';
+export type { UseAnalyticsReturn, TodayStats, StreakData } from './useAnalytics';

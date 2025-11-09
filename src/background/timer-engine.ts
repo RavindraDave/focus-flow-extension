@@ -65,7 +65,8 @@ export class TimerEngine {
   private remainingSeconds: number = 0;
 
   private static readonly ALARM_NAME = 'pomodoro-timer';
-  private static readonly BADGE_UPDATE_INTERVAL = 1000; // 1 second
+  // Badge update interval constant (currently unused, reserved for future use)
+  // private static readonly BADGE_UPDATE_INTERVAL = 1000; // 1 second
 
   constructor(
     sessionRepository?: SessionRepository,

@@ -155,11 +155,8 @@ export class StreakTracker {
       return; // Only premium users get freezes
     }
 
-    const streak = await this.analyticsRepository.getStreak();
-
     await this.analyticsRepository.updateStreak({
       freezesAvailable: StreakTracker.MAX_FREEZES_PER_MONTH,
-      freezesUsed: 0, // Reset used count
     });
   }
 
@@ -205,7 +202,6 @@ export class StreakTracker {
         // Streak maintained
         lastSessionDate: now,
         freezesAvailable: streak.freezesAvailable - 1,
-        freezesUsed: streak.freezesUsed + 1,
       };
     } else {
       // Break streak
@@ -241,7 +237,6 @@ export class StreakTracker {
       return {
         lastSessionDate: now,
         freezesAvailable: streak.freezesAvailable - daysToRecover,
-        freezesUsed: streak.freezesUsed + daysToRecover,
       };
     } else {
       // Cannot recover - break streak

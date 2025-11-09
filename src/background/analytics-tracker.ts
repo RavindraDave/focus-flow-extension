@@ -8,7 +8,7 @@
 
 import { AnalyticsRepository } from '../services/analytics-repository';
 import { SessionRepository } from '../services/session-repository';
-import { PomodoroSession, DailyStats, Achievement } from '../types/index';
+import { PomodoroSession, Achievement } from '../types/index';
 
 /**
  * Error class for analytics tracking violations
