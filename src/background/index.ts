@@ -11,10 +11,12 @@ import { BlockerEngine } from './blocker-engine';
 import { AnalyticsTracker } from './analytics-tracker';
 import { StreakTracker } from './streak-tracker';
 import { NuclearModeManager } from './nuclear-mode-manager';
+import { ScheduleManager } from './schedule-manager';
 import { SessionRepository } from '../services/session-repository';
 import { AnalyticsRepository } from '../services/analytics-repository';
 import { SettingsRepository } from '../services/settings-repository';
 import { BlockRuleRepository } from '../services/block-rule-repository';
+import { ScheduleRepository } from '../services/schedule-repository';
 
 /**
  * Error class for background service worker errors
@@ -37,6 +39,7 @@ class BackgroundServiceWorker {
   private analyticsRepository: AnalyticsRepository;
   private settingsRepository: SettingsRepository;
   private blockRuleRepository: BlockRuleRepository;
+  private scheduleRepository: ScheduleRepository;
 
   // Engines
   private timerEngine: TimerEngine;
@@ -44,6 +47,7 @@ class BackgroundServiceWorker {
   private analyticsTracker: AnalyticsTracker;
   private streakTracker: StreakTracker;
   private nuclearModeManager: NuclearModeManager;
+  private scheduleManager: ScheduleManager;
 
   // Constants
   private static readonly ALARM_TIMER_TICK = 'pomodoro-timer';
@@ -56,6 +60,7 @@ class BackgroundServiceWorker {
     this.analyticsRepository = new AnalyticsRepository();
     this.settingsRepository = new SettingsRepository();
     this.blockRuleRepository = new BlockRuleRepository();
+    this.scheduleRepository = new ScheduleRepository();
 
     // Initialize engines
     this.blockerEngine = new BlockerEngine(this.blockRuleRepository);
@@ -68,6 +73,10 @@ class BackgroundServiceWorker {
       this.sessionRepository
     );
     this.nuclearModeManager = new NuclearModeManager(this.settingsRepository);
+    this.scheduleManager = new ScheduleManager(
+      this.scheduleRepository,
+      this.blockRuleRepository
+    );
     this.timerEngine = new TimerEngine(
       this.sessionRepository,
       this.analyticsTracker,
@@ -92,6 +101,9 @@ class BackgroundServiceWorker {
 
     // Schedule midnight check alarm (runs daily at midnight)
     await this.scheduleMidnightCheck();
+
+    // Initialize schedule manager (sets up schedule checks)
+    await this.scheduleManager.initialize();
 
     // Restore timer state if browser was restarted
     await this.restoreTimerState();
@@ -251,6 +263,47 @@ class BackgroundServiceWorker {
       case 'SETTINGS_UPDATE':
         return await this.settingsRepository.updateSettings(message.updates);
 
+      // Schedules
+      case 'SCHEDULE_GET_ALL':
+        return await this.scheduleRepository.getAllSchedules();
+
+      case 'SCHEDULE_ADD': {
+        const now = new Date().toISOString();
+        const newSchedule = {
+          ...message.schedule,
+          id: crypto.randomUUID(),
+          createdAt: now,
+          updatedAt: now,
+        };
+        await this.scheduleRepository.addSchedule(newSchedule);
+        // Trigger immediate schedule check
+        await this.scheduleManager.checkSchedules();
+        return newSchedule;
+      }
+
+      case 'SCHEDULE_UPDATE': {
+        const updates = {
+          ...message.updates,
+          updatedAt: new Date().toISOString(),
+        };
+        await this.scheduleRepository.updateSchedule(message.id, updates);
+        // Trigger immediate schedule check
+        await this.scheduleManager.checkSchedules();
+        return true;
+      }
+
+      case 'SCHEDULE_DELETE': {
+        const deleted = await this.scheduleRepository.deleteSchedule(message.id);
+        if (deleted) {
+          // Trigger immediate schedule check
+          await this.scheduleManager.checkSchedules();
+        }
+        return deleted;
+      }
+
+      case 'SCHEDULE_GET_NEXT':
+        return await this.scheduleManager.getNextSchedule();
+
       default:
         throw new BackgroundError(`Unknown message type: ${type}`);
     }
@@ -292,7 +345,8 @@ class BackgroundServiceWorker {
             break;
 
           default:
-            console.warn(`Unknown alarm: ${alarm.name}`);
+            // Delegate to schedule manager for schedule-related alarms
+            await this.scheduleManager.handleAlarm(alarm);
         }
       } catch (error) {
         console.error(`Alarm handler error (${alarm.name}):`, error);
