@@ -41,5 +41,13 @@
       "resources": ["blocked.html"],
       "matches": ["<all_urls>"]
     }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content-youtube.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
   ]
 }

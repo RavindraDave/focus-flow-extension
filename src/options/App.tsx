@@ -6,10 +6,11 @@
 
 import React, { useState } from 'react';
 import { SettingsForm, AnalyticsDashboard, BlockRuleList } from './components';
+import { YouTubeSettings } from './components/YouTubeSettings';
 import { useSettings } from '../hooks';
 import { Spinner } from '../components/atoms/Spinner';
 
-type Tab = 'settings' | 'analytics' | 'blocking';
+type Tab = 'settings' | 'analytics' | 'blocking' | 'youtube';
 
 /**
  * Main Options App component
@@ -82,6 +83,7 @@ const App: React.FC = () => {
           <TabButton tab="settings" label="Settings" icon="⚙️" />
           <TabButton tab="analytics" label="Analytics" icon="📊" />
           <TabButton tab="blocking" label="Block List" icon="🚫" />
+          <TabButton tab="youtube" label="YouTube" icon="▶️" />
         </nav>
 
         {/* Tab Panels */}
@@ -134,6 +136,13 @@ const App: React.FC = () => {
                 Website Blocking
               </h2>
               <BlockRuleList />
+            </div>
+          )}
+
+          {/* YouTube Tab */}
+          {activeTab === 'youtube' && (
+            <div className="bg-white border border-neutral-200 rounded-lg p-6">
+              <YouTubeSettings isPremium={settings?.premiumLicenseKey !== undefined} />
             </div>
           )}
         </div>
