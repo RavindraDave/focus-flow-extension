@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { SettingsForm, AnalyticsDashboard } from './components';
+import { SettingsForm, AnalyticsDashboard, BlockRuleList } from './components';
 import { useSettings } from '../hooks';
 import { Spinner } from '../components/atoms/Spinner';
 
@@ -129,19 +129,11 @@ const App: React.FC = () => {
 
           {/* Block List Tab */}
           {activeTab === 'blocking' && (
-            <div className="bg-white border border-neutral-200 rounded-lg p-6">
-              <h2 className="text-2xl font-semibold text-neutral-900 mb-4">
+            <div>
+              <h2 className="text-2xl font-semibold text-neutral-900 mb-6">
                 Website Blocking
               </h2>
-              <div className="bg-info-50 border border-info-200 rounded-lg p-6 text-center">
-                <p className="text-info-700 font-medium mb-2">
-                  🚧 Block List Management Coming Soon
-                </p>
-                <p className="text-sm text-info-600">
-                  This feature will allow you to add, edit, and manage blocked websites with
-                  daily time allowances and scheduling options.
-                </p>
-              </div>
+              <BlockRuleList />
             </div>
           )}
         </div>
