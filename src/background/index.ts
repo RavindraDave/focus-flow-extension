@@ -202,6 +202,41 @@ class BackgroundServiceWorker {
       case 'BLOCKER_TRACK_ATTEMPT':
         return await this.blockerEngine.handleBlockedAttempt(message.domain);
 
+      // Block List CRUD
+      case 'BLOCKLIST_GET_ALL':
+        return await this.blockRuleRepository.getAllRules();
+
+      case 'BLOCKLIST_ADD': {
+        const now = new Date().toISOString();
+        const newRule = {
+          ...message.rule,
+          id: crypto.randomUUID(),
+          createdAt: now,
+          updatedAt: now,
+        };
+        await this.blockRuleRepository.addRule(newRule);
+        await this.blockerEngine.syncRules(); // Sync rules to declarativeNetRequest
+        return newRule;
+      }
+
+      case 'BLOCKLIST_UPDATE': {
+        const updates = {
+          ...message.updates,
+          updatedAt: new Date().toISOString(),
+        };
+        await this.blockRuleRepository.updateRule(message.id, updates);
+        await this.blockerEngine.syncRules(); // Sync rules to declarativeNetRequest
+        return true;
+      }
+
+      case 'BLOCKLIST_DELETE': {
+        const deleted = await this.blockRuleRepository.deleteRule(message.id);
+        if (deleted) {
+          await this.blockerEngine.syncRules(); // Sync rules to declarativeNetRequest
+        }
+        return deleted;
+      }
+
       // Session history
       case 'SESSION_GET_HISTORY':
         return await this.sessionRepository.getSessionHistory(message.limit);
