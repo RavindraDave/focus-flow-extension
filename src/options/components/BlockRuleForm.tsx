@@ -9,7 +9,7 @@ import { Input } from '../../components/atoms/Input';
 import type { BlockRule } from '../../types';
 
 export interface BlockRuleFormProps {
-  rule?: BlockRule; // If provided, editing existing rule
+  rule?: BlockRule | undefined; // If provided, editing existing rule
   onSave: (rule: Omit<BlockRule, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   onCancel: () => void;
   isOpen: boolean;

@@ -5,11 +5,12 @@
 
 import React, { useState } from 'react';
 import { Button } from '../../components/atoms/Button';
+import type { SessionType } from '../../types';
 
 export interface TimerControlsProps {
   isActive: boolean;
   isPaused: boolean;
-  onStart: (sessionType: 'work' | 'short_break' | 'long_break', taskName?: string) => void;
+  onStart: (sessionType: SessionType, taskName?: string) => void;
   onPause: () => void;
   onResume: () => void;
   onStop: () => void;
@@ -36,7 +37,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
    * Handle start button click
    * Complexity: 2 (validation + callback)
    */
-  const handleStart = (sessionType: 'work' | 'short_break' | 'long_break'): void => {
+  const handleStart = (sessionType: SessionType): void => {
     const trimmedTask = taskName.trim();
     onStart(sessionType, trimmedTask || undefined);
     setTaskName('');
@@ -114,7 +115,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => handleStart('short_break')}
+            onClick={() => handleStart('short-break')}
             disabled={disabled}
             className="flex-1"
             aria-label="Start 5-minute short break"
@@ -124,7 +125,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => handleStart('long_break')}
+            onClick={() => handleStart('long-break')}
             disabled={disabled}
             className="flex-1"
             aria-label="Start 15-minute long break"

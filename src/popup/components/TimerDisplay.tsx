@@ -4,11 +4,12 @@
  */
 
 import React from 'react';
+import type { SessionType } from '../../types';
 
 export interface TimerDisplayProps {
   remainingSeconds: number;
   totalSeconds: number;
-  sessionType: 'work' | 'short_break' | 'long_break' | null;
+  sessionType: SessionType | null;
   isActive: boolean;
   isPaused: boolean;
 }
@@ -27,12 +28,12 @@ function formatTime(seconds: number): string {
  * Get color based on session type
  * Complexity: 2 (switch statement)
  */
-function getSessionColor(sessionType: 'work' | 'short_break' | 'long_break' | null): string {
+function getSessionColor(sessionType: SessionType | null): string {
   switch (sessionType) {
     case 'work':
       return 'text-primary-500'; // Focus red
-    case 'short_break':
-    case 'long_break':
+    case 'short-break':
+    case 'long-break':
       return 'text-success-500'; // Break green
     default:
       return 'text-neutral-500'; // Neutral gray
@@ -43,13 +44,13 @@ function getSessionColor(sessionType: 'work' | 'short_break' | 'long_break' | nu
  * Get session type label
  * Complexity: 2 (switch statement)
  */
-function getSessionLabel(sessionType: 'work' | 'short_break' | 'long_break' | null): string {
+function getSessionLabel(sessionType: SessionType | null): string {
   switch (sessionType) {
     case 'work':
       return 'Focus Session';
-    case 'short_break':
+    case 'short-break':
       return 'Short Break';
-    case 'long_break':
+    case 'long-break':
       return 'Long Break';
     default:
       return 'Ready to Focus';

@@ -5,18 +5,19 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { TimerStatus } from '../types/messages';
+import type { SessionType } from '../types';
 
 export interface UseTimerReturn {
   // State
   isActive: boolean;
   isPaused: boolean;
-  sessionType: 'work' | 'short_break' | 'long_break' | null;
+  sessionType: SessionType | null;
   remainingSeconds: number;
   totalSeconds: number;
   taskName: string | undefined;
 
   // Actions
-  start: (sessionType: 'work' | 'short_break' | 'long_break', taskName?: string) => Promise<void>;
+  start: (sessionType: SessionType, taskName?: string) => Promise<void>;
   pause: () => Promise<void>;
   resume: () => Promise<void>;
   stop: () => Promise<void>;
@@ -83,12 +84,12 @@ export function useTimer(): UseTimerReturn {
    * Complexity: 3 (validation + try-catch)
    */
   const start = useCallback(
-    async (sessionType: 'work' | 'short_break' | 'long_break', taskName?: string): Promise<void> => {
+    async (sessionType: SessionType, taskName?: string): Promise<void> => {
       try {
         setIsLoading(true);
         setError(null);
 
-        const duration = sessionType === 'work' ? 25 : sessionType === 'short_break' ? 5 : 15;
+        const duration = sessionType === 'work' ? 25 : sessionType === 'short-break' ? 5 : 15;
 
         const response = await chrome.runtime.sendMessage({
           type: 'TIMER_START',
@@ -184,12 +185,12 @@ export function useTimer(): UseTimerReturn {
 
   return {
     // State
-    isActive: status?.status === 'active',
-    isPaused: status?.status === 'paused',
-    sessionType: status?.sessionType || null,
+    isActive: status?.state !== 'idle' && !status?.isPaused,
+    isPaused: status?.isPaused || false,
+    sessionType: status?.currentSession?.type || null,
     remainingSeconds: status?.remainingSeconds || 0,
     totalSeconds: status?.totalSeconds || 0,
-    taskName: status?.taskName,
+    taskName: status?.currentSession?.taskName,
 
     // Actions
     start,
