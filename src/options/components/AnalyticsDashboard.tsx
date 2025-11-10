@@ -13,6 +13,10 @@ import {
   SessionDistributionChart,
   ProductivityByHourChart,
 } from '../../components/molecules';
+import {
+  exportSessionsAsCSV,
+  exportAnalyticsAsJSON,
+} from '../../utils/data-export';
 import type { PomodoroSession, DailyStats } from '../../types';
 
 /**
@@ -39,6 +43,8 @@ export const AnalyticsDashboard: React.FC = () => {
   const [weeklyData, setWeeklyData] = useState<any>(null);
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [sessions, setSessions] = useState<PomodoroSession[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   /**
    * Fetch analytics data and sessions for charts
@@ -58,6 +64,9 @@ export const AnalyticsDashboard: React.FC = () => {
         }
 
         if (analyticsResponse.success && analyticsResponse.data) {
+          // Store full analytics data for export
+          setAnalyticsData(analyticsResponse.data);
+
           // Convert date strings back to Date objects
           const statsWithDates = (analyticsResponse.data.dailyStats || []).map((stat: any) => ({
             ...stat,
@@ -151,6 +160,42 @@ export const AnalyticsDashboard: React.FC = () => {
   const focusTimeData = getLast7DaysFocusTime();
   const sessionDistribution = getSessionDistribution();
   const productivityByHour = getProductivityByHour();
+
+  /**
+   * Handle CSV export
+   * Complexity: 4 (async + error handling + state updates)
+   */
+  const handleExportCSV = async (): Promise<void> => {
+    if (isExporting || sessions.length === 0) return;
+
+    try {
+      setIsExporting(true);
+      exportSessionsAsCSV(sessions);
+    } catch (err) {
+      console.error('Failed to export CSV:', err);
+      alert('Failed to export data. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  /**
+   * Handle JSON export
+   * Complexity: 4 (async + error handling + state updates)
+   */
+  const handleExportJSON = async (): Promise<void> => {
+    if (isExporting || !analyticsData) return;
+
+    try {
+      setIsExporting(true);
+      exportAnalyticsAsJSON(analyticsData, sessions);
+    } catch (err) {
+      console.error('Failed to export JSON:', err);
+      alert('Failed to export data. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -329,23 +374,21 @@ export const AnalyticsDashboard: React.FC = () => {
         <div className="flex space-x-3">
           <button
             type="button"
-            className="px-4 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            onClick={() => {
-              console.log('Export as JSON');
-              // TODO: Implement JSON export
-            }}
+            className="px-4 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            onClick={handleExportJSON}
+            disabled={isExporting || !analyticsData}
+            aria-label="Export analytics data as JSON"
           >
-            Export as JSON
+            {isExporting ? 'Exporting...' : 'Export as JSON'}
           </button>
           <button
             type="button"
-            className="px-4 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            onClick={() => {
-              console.log('Export as CSV');
-              // TODO: Implement CSV export
-            }}
+            className="px-4 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            onClick={handleExportCSV}
+            disabled={isExporting || sessions.length === 0}
+            aria-label="Export session data as CSV"
           >
-            Export as CSV
+            {isExporting ? 'Exporting...' : 'Export as CSV'}
           </button>
         </div>
       </div>
