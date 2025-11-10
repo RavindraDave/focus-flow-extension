@@ -147,7 +147,7 @@ class BackgroundServiceWorker {
    */
   private async handleMessage(
     message: any,
-    sender: chrome.runtime.MessageSender
+    _sender: chrome.runtime.MessageSender
   ): Promise<any> {
     const { type } = message;
 

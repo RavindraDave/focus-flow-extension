@@ -113,11 +113,11 @@ describe('TimerEngine', () => {
     });
 
     it('should start a break session', async () => {
-      await engine.start('short_break', 5);
+      await engine.start('short-break', 5);
 
       const status = await engine.getStatus();
 
-      expect(status.state).toBe('short_break');
+      expect(status.state).toBe('short-break');
       expect(status.totalSeconds).toBe(5 * 60);
       expect(mockBlockerEngine.disableBlocking).toHaveBeenCalled();
     });
@@ -295,7 +295,7 @@ describe('TimerEngine', () => {
     });
 
     it('should use green color for breaks', async () => {
-      await engine.start('short_break', 5);
+      await engine.start('short-break', 5);
 
       expect(mockChrome.action.setBadgeBackgroundColor).toHaveBeenCalledWith({
         color: '#10b981', // Green for break

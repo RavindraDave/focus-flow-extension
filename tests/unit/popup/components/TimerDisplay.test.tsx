@@ -68,12 +68,12 @@ describe('TimerDisplay', () => {
       expect(screen.getByText('Focus Session')).toBeInTheDocument();
     });
 
-    it('should show "Short Break" for short_break type', () => {
+    it('should show "Short Break" for short-break type', () => {
       render(
         <TimerDisplay
           remainingSeconds={300}
           totalSeconds={300}
-          sessionType="short_break"
+          sessionType="short-break"
           isActive={true}
           isPaused={false}
         />
@@ -82,12 +82,12 @@ describe('TimerDisplay', () => {
       expect(screen.getByText('Short Break')).toBeInTheDocument();
     });
 
-    it('should show "Long Break" for long_break type', () => {
+    it('should show "Long Break" for long-break type', () => {
       render(
         <TimerDisplay
           remainingSeconds={900}
           totalSeconds={900}
-          sessionType="long_break"
+          sessionType="long-break"
           isActive={true}
           isPaused={false}
         />
@@ -287,7 +287,7 @@ describe('TimerDisplay', () => {
         <TimerDisplay
           remainingSeconds={300}
           totalSeconds={300}
-          sessionType="short_break"
+          sessionType="short-break"
           isActive={true}
           isPaused={false}
         />

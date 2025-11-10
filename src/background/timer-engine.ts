@@ -26,7 +26,7 @@ export class TimerError extends Error {
 /**
  * Timer states
  */
-export type TimerState = 'idle' | 'work' | 'short_break' | 'long_break' | 'paused';
+export type TimerState = 'idle' | 'work' | 'short-break' | 'long-break' | 'paused';
 
 /**
  * Timer status information
@@ -60,7 +60,6 @@ export class TimerEngine {
   private state: TimerState = 'idle';
   private sessionCount: number = 0;
   private startTime: Date | null = null;
-  private pausedTime: Date | null = null;
   private totalSeconds: number = 0;
   private remainingSeconds: number = 0;
 
@@ -85,10 +84,10 @@ export class TimerEngine {
   /**
    * Start a timer session
    *
-   * @param type - Session type (work/short_break/long_break)
+   * @param type - Session type (work/short-break/long-break)
    * @param minutes - Duration in minutes
    */
-  async start(type: 'work' | 'short_break' | 'long_break', minutes: number): Promise<void> {
+  async start(type: 'work' | 'short-break' | 'long-break', minutes: number): Promise<void> {
     if (this.state !== 'idle' && this.state !== 'paused') {
       throw new TimerError('Timer already running');
     }
@@ -97,7 +96,6 @@ export class TimerEngine {
     this.totalSeconds = minutes * 60;
     this.remainingSeconds = this.totalSeconds;
     this.startTime = new Date();
-    this.pausedTime = null;
 
     // Create session record
     const session: PomodoroSession = {
@@ -132,11 +130,10 @@ export class TimerEngine {
    * Pause the current timer
    */
   async pause(): Promise<void> {
-    if (this.state !== 'work' && this.state !== 'short_break' && this.state !== 'long_break') {
+    if (this.state !== 'work' && this.state !== 'short-break' && this.state !== 'long-break') {
       throw new TimerError('No active timer to pause');
     }
 
-    this.pausedTime = new Date();
     this.state = 'paused';
 
     // Clear alarm
@@ -163,7 +160,7 @@ export class TimerEngine {
       throw new TimerError('Timer not paused');
     }
 
-    // Restore state (work/short_break/long_break was saved before pause)
+    // Restore state (work/short-break/long-break was saved before pause)
     const session = await this.sessionRepository.getCurrentSession();
     if (session) {
       this.state = session.type;
@@ -172,8 +169,6 @@ export class TimerEngine {
         status: 'active',
       });
     }
-
-    this.pausedTime = null;
 
     // Restart alarm
     await this.createAlarm();
@@ -301,9 +296,9 @@ export class TimerEngine {
     if (this.state === 'work') {
       // After work: short break or long break
       if (this.sessionCount % settings.sessionsUntilLongBreak === 0) {
-        await this.start('long_break', settings.longBreakDuration);
+        await this.start('long-break', settings.longBreakDuration);
       } else {
-        await this.start('short_break', settings.shortBreakDuration);
+        await this.start('short-break', settings.shortBreakDuration);
       }
     } else {
       // After break: work
@@ -321,7 +316,6 @@ export class TimerEngine {
     this.remainingSeconds = 0;
     this.totalSeconds = 0;
     this.startTime = null;
-    this.pausedTime = null;
 
     await this.clearAlarm();
     await this.blockerEngine.disableBlocking();

@@ -46,7 +46,9 @@ function formatDays(days: string[]): string {
  * Complexity: 3 (parsing + formatting)
  */
 function formatTime(time24: string): string {
-  const [hour, minute] = time24.split(':').map(Number);
+  const parts = time24.split(':').map(Number);
+  const hour = parts[0] ?? 0;
+  const minute = parts[1] ?? 0;
   const period = hour >= 12 ? 'PM' : 'AM';
   const hour12 = hour % 12 || 12;
   return `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
