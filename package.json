@@ -39,12 +39,12 @@
   },
   "homepage": "https://github.com/RavindraDave/focus-flow-extension#readme",
   "dependencies": {
-    "chart.js": "^4.4.1",
+    "chart.js": "^4.5.1",
     "date-fns": "^3.0.6",
     "dompurify": "^3.0.8",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
-    "react-chartjs-2": "^5.2.0",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.2.0",
     "zod": "^3.22.4",
     "zustand": "^4.4.7"

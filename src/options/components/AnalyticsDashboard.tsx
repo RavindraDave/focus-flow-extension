@@ -8,6 +8,12 @@ import React, { useState, useEffect } from 'react';
 import { useAnalytics } from '../../hooks';
 import { Badge } from '../../components/atoms/Badge';
 import { Spinner } from '../../components/atoms/Spinner';
+import {
+  FocusTimeChart,
+  SessionDistributionChart,
+  ProductivityByHourChart,
+} from '../../components/molecules';
+import type { PomodoroSession, DailyStats } from '../../types';
 
 /**
  * Format minutes into hours and minutes
@@ -26,33 +32,125 @@ function formatDuration(minutes: number): string {
 
 /**
  * AnalyticsDashboard component
- * Complexity: 5 (multiple data fetches + conditional rendering)
+ * Complexity: 7 (multiple data fetches + conditional rendering + data transformation)
  */
 export const AnalyticsDashboard: React.FC = () => {
   const { todayStats, streak, isLoading, error } = useAnalytics();
   const [weeklyData, setWeeklyData] = useState<any>(null);
+  const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
+  const [sessions, setSessions] = useState<PomodoroSession[]>([]);
 
   /**
-   * Fetch weekly summary from background
-   * Complexity: 3 (async + error handling)
+   * Fetch analytics data and sessions for charts
+   * Complexity: 5 (async + parallel fetches + error handling)
    */
   useEffect(() => {
-    const fetchWeeklySummary = async () => {
+    const fetchChartData = async () => {
       try {
-        const response = await chrome.runtime.sendMessage({
-          type: 'ANALYTICS_GET_WEEKLY',
-        });
+        const [weeklyResponse, analyticsResponse, sessionsResponse] = await Promise.all([
+          chrome.runtime.sendMessage({ type: 'ANALYTICS_GET_WEEKLY_SUMMARY' }),
+          chrome.runtime.sendMessage({ type: 'ANALYTICS_GET' }),
+          chrome.runtime.sendMessage({ type: 'SESSION_GET_HISTORY', limit: 100 }),
+        ]);
 
-        if (response.success && response.data) {
-          setWeeklyData(response.data);
+        if (weeklyResponse.success && weeklyResponse.data) {
+          setWeeklyData(weeklyResponse.data);
+        }
+
+        if (analyticsResponse.success && analyticsResponse.data) {
+          // Convert date strings back to Date objects
+          const statsWithDates = (analyticsResponse.data.dailyStats || []).map((stat: any) => ({
+            ...stat,
+            date: new Date(stat.date),
+          }));
+          setDailyStats(statsWithDates);
+        }
+
+        if (sessionsResponse.success && sessionsResponse.data) {
+          // Convert date strings back to Date objects
+          const sessionsWithDates = sessionsResponse.data.map((session: any) => ({
+            ...session,
+            startTime: new Date(session.startTime),
+            endTime: session.endTime ? new Date(session.endTime) : undefined,
+          }));
+          setSessions(sessionsWithDates);
         }
       } catch (err) {
-        console.error('Failed to fetch weekly summary:', err);
+        console.error('Failed to fetch chart data:', err);
       }
     };
 
-    fetchWeeklySummary();
+    fetchChartData();
   }, []);
+
+  /**
+   * Get last 7 days of focus time data
+   * Complexity: 5 (date manipulation + array operations)
+   */
+  const getLast7DaysFocusTime = (): { labels: string[]; data: number[] } => {
+    const labels: string[] = [];
+    const data: number[] = [];
+    const today = new Date();
+
+    // Get last 7 days in reverse order (oldest to newest)
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+
+      // Format label (e.g., "Mon", "Tue")
+      const dayLabel = date.toLocaleDateString('en-US', { weekday: 'short' });
+      labels.push(dayLabel);
+
+      // Find matching stat
+      const stat = dailyStats.find(s => {
+        const statDate = new Date(s.date);
+        statDate.setHours(0, 0, 0, 0);
+        return statDate.getTime() === date.getTime();
+      });
+
+      data.push(stat?.focusTimeMinutes || 0);
+    }
+
+    return { labels, data };
+  };
+
+  /**
+   * Get session distribution data
+   * Complexity: 4 (filtering + counting)
+   */
+  const getSessionDistribution = (): {
+    work: number;
+    shortBreaks: number;
+    longBreaks: number;
+  } => {
+    const completedSessions = sessions.filter(s => s.status === 'completed');
+    return {
+      work: completedSessions.filter(s => s.type === 'work').length,
+      shortBreaks: completedSessions.filter(s => s.type === 'short-break').length,
+      longBreaks: completedSessions.filter(s => s.type === 'long-break').length,
+    };
+  };
+
+  /**
+   * Get productivity by hour data
+   * Complexity: 5 (array operations + grouping)
+   */
+  const getProductivityByHour = (): number[] => {
+    const hourCounts = Array(24).fill(0);
+    const completedSessions = sessions.filter(s => s.status === 'completed' && s.type === 'work');
+
+    completedSessions.forEach(session => {
+      const hour = session.startTime.getHours();
+      hourCounts[hour]++;
+    });
+
+    return hourCounts;
+  };
+
+  const focusTimeData = getLast7DaysFocusTime();
+  const sessionDistribution = getSessionDistribution();
+  const productivityByHour = getProductivityByHour();
 
   if (isLoading) {
     return (
@@ -181,18 +279,42 @@ export const AnalyticsDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Chart Placeholder */}
-      <div className="bg-white border border-neutral-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">
-          7-Day Focus Time Trend
-        </h3>
-        <div className="bg-neutral-50 rounded-lg p-8 text-center">
-          <p className="text-neutral-500">
-            📈 Chart visualization will be added with Chart.js integration
-          </p>
-          <p className="text-xs text-neutral-400 mt-2">
-            Coming soon: Interactive charts showing daily focus time, session distribution, and productivity trends
-          </p>
+      {/* Charts Section */}
+      <div className="space-y-6">
+        {/* Focus Time Trend */}
+        <div className="bg-white border border-neutral-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+            7-Day Focus Time Trend
+          </h3>
+          <FocusTimeChart
+            dailyFocusTime={focusTimeData.data}
+            labels={focusTimeData.labels}
+            height={250}
+          />
+        </div>
+
+        {/* Session Distribution and Productivity by Hour */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Session Distribution */}
+          <div className="bg-white border border-neutral-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+              Session Distribution
+            </h3>
+            <SessionDistributionChart
+              workSessions={sessionDistribution.work}
+              shortBreaks={sessionDistribution.shortBreaks}
+              longBreaks={sessionDistribution.longBreaks}
+              height={250}
+            />
+          </div>
+
+          {/* Productivity by Hour */}
+          <div className="bg-white border border-neutral-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+              Productivity by Hour
+            </h3>
+            <ProductivityByHourChart sessionsPerHour={productivityByHour} height={250} />
+          </div>
         </div>
       </div>
 
