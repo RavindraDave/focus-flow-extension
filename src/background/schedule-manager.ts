@@ -256,7 +256,9 @@ export class ScheduleManager {
    * @returns Minutes until next occurrence
    */
   private getMinutesUntilNextOccurrence(schedule: Schedule, fromTime: Date = new Date()): number {
-    const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
+    const timeParts = schedule.startTime.split(':').map(Number);
+    const startHour = timeParts[0] || 0;
+    const startMinute = timeParts[1] || 0;
 
     // Check each of the next 7 days
     for (let daysAhead = 0; daysAhead < 7; daysAhead++) {
