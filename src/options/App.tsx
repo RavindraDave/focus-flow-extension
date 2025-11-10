@@ -5,12 +5,12 @@
  */
 
 import React, { useState } from 'react';
-import { SettingsForm, AnalyticsDashboard, BlockRuleList } from './components';
+import { SettingsForm, AnalyticsDashboard, BlockRuleList, ScheduleList } from './components';
 import { YouTubeSettings } from './components/YouTubeSettings';
 import { useSettings } from '../hooks';
 import { Spinner } from '../components/atoms/Spinner';
 
-type Tab = 'settings' | 'analytics' | 'blocking' | 'youtube';
+type Tab = 'settings' | 'analytics' | 'blocking' | 'schedules' | 'youtube';
 
 /**
  * Main Options App component
@@ -83,6 +83,7 @@ const App: React.FC = () => {
           <TabButton tab="settings" label="Settings" icon="⚙️" />
           <TabButton tab="analytics" label="Analytics" icon="📊" />
           <TabButton tab="blocking" label="Block List" icon="🚫" />
+          <TabButton tab="schedules" label="Schedules" icon="📅" />
           <TabButton tab="youtube" label="YouTube" icon="▶️" />
         </nav>
 
@@ -136,6 +137,16 @@ const App: React.FC = () => {
                 Website Blocking
               </h2>
               <BlockRuleList />
+            </div>
+          )}
+
+          {/* Schedules Tab */}
+          {activeTab === 'schedules' && (
+            <div>
+              <h2 className="text-2xl font-semibold text-neutral-900 mb-6">
+                Scheduled Blocking
+              </h2>
+              <ScheduleList />
             </div>
           )}
 
