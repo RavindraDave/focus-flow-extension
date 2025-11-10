@@ -4,16 +4,20 @@
  * WCAG 2.1 AA compliant
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PopupLayout } from '../components/templates/PopupLayout';
-import { TimerDisplay, TimerControls, QuickStats } from './components';
-import { useTimer, useAnalytics } from '../hooks';
+import { TimerDisplay, TimerControls, QuickStats, NuclearModeModal, NuclearModeStatus } from './components';
+import { useTimer, useAnalytics, useNuclearMode } from '../hooks';
+import { Button } from '../components/atoms/Button';
 
 /**
  * Main Popup App component
- * Complexity: 5 (multiple hooks + conditional rendering)
+ * Complexity: 7 (multiple hooks + conditional rendering + nuclear mode)
  */
 const App: React.FC = () => {
+  // Modal state
+  const [isNuclearModalOpen, setIsNuclearModalOpen] = useState(false);
+
   // Timer state and controls
   const {
     isActive,
@@ -38,6 +42,14 @@ const App: React.FC = () => {
     error: analyticsError,
   } = useAnalytics();
 
+  // Nuclear Mode state and controls
+  const {
+    isActive: isNuclearActive,
+    remainingSeconds: nuclearRemainingSeconds,
+    activate: activateNuclear,
+    error: nuclearError,
+  } = useNuclearMode();
+
   return (
     <PopupLayout>
       {/* Header */}
@@ -52,6 +64,19 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="space-y-8">
+        {/* Nuclear Mode Status */}
+        <NuclearModeStatus isActive={isNuclearActive} remainingSeconds={nuclearRemainingSeconds} />
+
+        {/* Nuclear Mode Error */}
+        {nuclearError && (
+          <div
+            role="alert"
+            className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-md text-sm"
+          >
+            {nuclearError}
+          </div>
+        )}
+
         {/* Timer Display */}
         <section aria-labelledby="timer-heading">
           <h2 id="timer-heading" className="sr-only">
@@ -114,15 +139,36 @@ const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="mt-8 text-center">
-        <button
-          type="button"
-          onClick={() => chrome.runtime.openOptionsPage()}
-          className="text-xs text-neutral-500 hover:text-neutral-700 underline focus:outline-none focus:ring-2 focus:ring-primary-500 rounded px-2 py-1"
-        >
-          Settings & Analytics
-        </button>
+      <footer className="mt-8 space-y-3">
+        {/* Nuclear Mode Activation Button */}
+        {!isNuclearActive && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setIsNuclearModalOpen(true)}
+            className="w-full"
+          >
+            🚀 Activate Nuclear Mode
+          </Button>
+        )}
+
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => chrome.runtime.openOptionsPage()}
+            className="text-xs text-neutral-500 hover:text-neutral-700 underline focus:outline-none focus:ring-2 focus:ring-primary-500 rounded px-2 py-1"
+          >
+            Settings & Analytics
+          </button>
+        </div>
       </footer>
+
+      {/* Nuclear Mode Modal */}
+      <NuclearModeModal
+        isOpen={isNuclearModalOpen}
+        onClose={() => setIsNuclearModalOpen(false)}
+        onActivate={activateNuclear}
+      />
     </PopupLayout>
   );
 };
