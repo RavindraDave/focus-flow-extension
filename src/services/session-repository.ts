@@ -40,10 +40,11 @@ export class SessionRepository {
    * @returns Active session or null if none
    */
   async getCurrentSession(): Promise<PomodoroSession | null> {
-    return await this.storageService.get(
+    const session = await this.storageService.get(
       STORAGE_KEYS.CURRENT_SESSION,
-      PomodoroSessionSchema.optional()
+      PomodoroSessionSchema.optional() as unknown as z.ZodType<PomodoroSession | undefined>
     );
+    return session ?? null;
   }
 
   /**
@@ -56,7 +57,7 @@ export class SessionRepository {
     await this.storageService.set(
       STORAGE_KEYS.CURRENT_SESSION,
       session,
-      PomodoroSessionSchema,
+      PomodoroSessionSchema as unknown as z.ZodType<PomodoroSession>,
       { debounce: false } // Immediate write for active session
     );
   }
@@ -78,7 +79,7 @@ export class SessionRepository {
     const sessions =
       (await this.storageService.get(
         STORAGE_KEYS.SESSIONS,
-        z.array(PomodoroSessionSchema)
+        z.array(PomodoroSessionSchema) as unknown as z.ZodType<PomodoroSession[]>
       )) || [];
 
     // Return newest first
@@ -113,7 +114,7 @@ export class SessionRepository {
       await this.storageService.set(
         STORAGE_KEYS.SESSIONS,
         sessions,
-        z.array(PomodoroSessionSchema)
+        z.array(PomodoroSessionSchema) as unknown as z.ZodType<PomodoroSession[]>
       );
     }
   }
@@ -145,7 +146,7 @@ export class SessionRepository {
     await this.storageService.set(
       STORAGE_KEYS.SESSIONS,
       sessions,
-      z.array(PomodoroSessionSchema)
+      z.array(PomodoroSessionSchema) as unknown as z.ZodType<PomodoroSession[]>
     );
   }
 
@@ -237,7 +238,7 @@ export class SessionRepository {
     await this.storageService.set(
       STORAGE_KEYS.SESSIONS,
       filtered,
-      z.array(PomodoroSessionSchema)
+      z.array(PomodoroSessionSchema) as unknown as z.ZodType<PomodoroSession[]>
     );
 
     return true;
@@ -252,7 +253,7 @@ export class SessionRepository {
     await this.storageService.set(
       STORAGE_KEYS.SESSIONS,
       [],
-      z.array(PomodoroSessionSchema),
+      z.array(PomodoroSessionSchema) as unknown as z.ZodType<PomodoroSession[]>,
       { debounce: false }
     );
     await this.clearCurrentSession();
@@ -264,9 +265,8 @@ export class SessionRepository {
    * Keeps the MAX_SESSIONS_HISTORY most recent sessions.
    *
    * @param sessions - Optional sessions array (if already loaded)
-   * @private
    */
-  private async cleanupOldSessions(
+  async cleanupOldSessions(
     sessions?: PomodoroSession[]
   ): Promise<void> {
     const allSessions = sessions || (await this.getSessionHistory());
@@ -281,7 +281,7 @@ export class SessionRepository {
     await this.storageService.set(
       STORAGE_KEYS.SESSIONS,
       toKeep,
-      z.array(PomodoroSessionSchema),
+      z.array(PomodoroSessionSchema) as unknown as z.ZodType<PomodoroSession[]>,
       { debounce: false }
     );
   }

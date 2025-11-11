@@ -281,7 +281,7 @@ export const ScheduleList: React.FC = () => {
       {/* Schedule Form Modal */}
       {isFormOpen && (
         <ScheduleForm
-          schedule={editingSchedule || undefined}
+          {...(editingSchedule ? { schedule: editingSchedule } : {})}
           onClose={handleFormClose}
           isOpen={isFormOpen}
         />

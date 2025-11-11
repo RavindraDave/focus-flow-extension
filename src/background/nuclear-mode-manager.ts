@@ -262,7 +262,6 @@ export class NuclearModeManager {
       active: false,
       endTime: undefined,
       signature: undefined,
-      duration: undefined,
     };
 
     await this.settingsRepository.updateSettings({

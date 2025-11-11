@@ -38,7 +38,7 @@ export class ScheduleRepository {
     const schedules =
       (await this.storageService.get(
         STORAGE_KEYS.SCHEDULES,
-        z.array(ScheduleSchema)
+        z.array(ScheduleSchema) as unknown as z.ZodType<Schedule[]>
       )) || [];
 
     return schedules;
@@ -68,7 +68,7 @@ export class ScheduleRepository {
     await this.storageService.set(
       STORAGE_KEYS.SCHEDULES,
       schedules,
-      z.array(ScheduleSchema)
+      z.array(ScheduleSchema) as unknown as z.ZodType<Schedule[]>
     );
   }
 
@@ -97,7 +97,7 @@ export class ScheduleRepository {
     await this.storageService.set(
       STORAGE_KEYS.SCHEDULES,
       schedules,
-      z.array(ScheduleSchema)
+      z.array(ScheduleSchema) as unknown as z.ZodType<Schedule[]>
     );
   }
 
@@ -120,7 +120,7 @@ export class ScheduleRepository {
     await this.storageService.set(
       STORAGE_KEYS.SCHEDULES,
       filtered,
-      z.array(ScheduleSchema)
+      z.array(ScheduleSchema) as unknown as z.ZodType<Schedule[]>
     );
 
     return true;
@@ -191,7 +191,7 @@ export class ScheduleRepository {
     await this.storageService.set(
       STORAGE_KEYS.SCHEDULES,
       [],
-      z.array(ScheduleSchema),
+      z.array(ScheduleSchema) as unknown as z.ZodType<Schedule[]>,
       { debounce: false }
     );
   }

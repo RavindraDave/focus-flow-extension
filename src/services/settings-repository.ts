@@ -14,9 +14,9 @@ import {
 import {
   STORAGE_KEYS,
   DEFAULT_SETTINGS,
-  SECURITY,
 } from '../utils/constants';
 import type { UserSettings } from '../types';
+import type { z } from 'zod';
 import crypto from 'crypto';
 
 /**
@@ -33,7 +33,7 @@ export class SettingsRepository {
   async getSettings(): Promise<UserSettings> {
     let settings = await storageService.get(
       STORAGE_KEYS.SETTINGS,
-      UserSettingsSchema
+      UserSettingsSchema as unknown as z.ZodType<UserSettings>
     );
 
     // Initialize with defaults if not found
@@ -98,7 +98,7 @@ export class SettingsRepository {
     await storageService.set(
       STORAGE_KEYS.SETTINGS,
       updatedSettings,
-      UserSettingsSchema
+      UserSettingsSchema as unknown as z.ZodType<UserSettings>
     );
   }
 
@@ -136,7 +136,7 @@ export class SettingsRepository {
     await storageService.set(
       STORAGE_KEYS.SETTINGS,
       defaultSettings,
-      UserSettingsSchema
+      UserSettingsSchema as unknown as z.ZodType<UserSettings>
     );
   }
 
@@ -193,7 +193,7 @@ export class SettingsRepository {
     await storageService.set(
       STORAGE_KEYS.SETTINGS,
       defaultSettings,
-      UserSettingsSchema
+      UserSettingsSchema as unknown as z.ZodType<UserSettings>
     );
 
     return defaultSettings;
@@ -216,7 +216,7 @@ export class SettingsRepository {
     await storageService.set(
       STORAGE_KEYS.SETTINGS,
       updatedSettings,
-      UserSettingsSchema
+      UserSettingsSchema as unknown as z.ZodType<UserSettings>
     );
 
     return updatedSettings;
@@ -300,7 +300,7 @@ export class SettingsRepository {
     }
 
     // Validate with partial schema
-    const result = PartialUserSettingsSchema.safeParse(parsed);
+    const result = (PartialUserSettingsSchema as unknown as z.ZodType<Partial<UserSettings>>).safeParse(parsed);
 
     if (!result.success) {
       throw new StorageError(
