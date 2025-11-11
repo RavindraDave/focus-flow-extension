@@ -24,12 +24,19 @@ export default defineConfig({
         popup: resolve(__dirname, 'src/popup/index.html'),
         options: resolve(__dirname, 'src/options/index.html'),
         background: resolve(__dirname, 'src/background/index.ts'),
+        'content-youtube': resolve(__dirname, 'src/content/youtube.ts'),
       },
       output: {
         entryFileNames: (chunkInfo) => {
-          return chunkInfo.name === 'background'
-            ? 'background.js'
-            : '[name]/[name].js';
+          // Background and content scripts go to root
+          if (chunkInfo.name === 'background') {
+            return 'background.js';
+          }
+          if (chunkInfo.name === 'content-youtube') {
+            return 'content-youtube.js';
+          }
+          // UI pages go to their own folders
+          return '[name]/[name].js';
         },
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',

@@ -15,12 +15,9 @@ import {
 } from '../types/index';
 import {
   AnalyticsDataSchema,
-  DailyStatsSchema,
-  StreakDataSchema,
-  AchievementSchema,
 } from '../types/schemas';
 import { STORAGE_KEYS, STORAGE_LIMITS } from '../utils/constants';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 /**
  * Repository for managing analytics data
@@ -56,7 +53,7 @@ export class AnalyticsRepository {
   async getAnalytics(): Promise<AnalyticsData> {
     let analytics = await this.storageService.get(
       STORAGE_KEYS.ANALYTICS,
-      AnalyticsDataSchema
+      AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
     );
 
     if (!analytics) {
@@ -64,7 +61,7 @@ export class AnalyticsRepository {
       await this.storageService.set(
         STORAGE_KEYS.ANALYTICS,
         analytics,
-        AnalyticsDataSchema,
+        AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>,
         { debounce: false }
       );
     }
@@ -99,7 +96,7 @@ export class AnalyticsRepository {
       await this.storageService.set(
         STORAGE_KEYS.ANALYTICS,
         analytics,
-        AnalyticsDataSchema
+        AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
       );
     }
 
@@ -132,19 +129,19 @@ export class AnalyticsRepository {
       analytics.dailyStats.push(newStats);
     } else {
       // Update existing
-      analytics.dailyStats[index] = {
-        ...analytics.dailyStats[index],
-        ...updates,
-      };
+      const existingStats = analytics.dailyStats[index];
+      if (existingStats) {
+        analytics.dailyStats[index] = {
+          ...existingStats,
+          ...updates,
+        };
+      }
     }
-
-    // Update lastUpdated timestamp
-    analytics.lastUpdated = new Date();
 
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
       analytics,
-      AnalyticsDataSchema
+      AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
     );
   }
 
@@ -155,13 +152,12 @@ export class AnalyticsRepository {
    */
   async addFocusTime(minutes: number): Promise<void> {
     const analytics = await this.getAnalytics();
-    analytics.totalFocusTime += minutes;
-    analytics.lastUpdated = new Date();
+    analytics.totalFocusTimeMinutes += minutes;
 
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
       analytics,
-      AnalyticsDataSchema
+      AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
     );
   }
 
@@ -172,13 +168,12 @@ export class AnalyticsRepository {
    */
   async addPomodoro(count: number = 1): Promise<void> {
     const analytics = await this.getAnalytics();
-    analytics.totalPomodoros += count;
-    analytics.lastUpdated = new Date();
+    analytics.totalSessions += count;
 
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
       analytics,
-      AnalyticsDataSchema
+      AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
     );
   }
 
@@ -246,12 +241,11 @@ export class AnalyticsRepository {
       ...analytics.streak,
       ...updates,
     };
-    analytics.lastUpdated = new Date();
 
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
       analytics,
-      AnalyticsDataSchema
+      AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
     );
   }
 
@@ -280,12 +274,11 @@ export class AnalyticsRepository {
     }
 
     analytics.achievements.push(achievement);
-    analytics.lastUpdated = new Date();
 
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
       analytics,
-      AnalyticsDataSchema
+      AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
     );
   }
 
@@ -320,12 +313,11 @@ export class AnalyticsRepository {
     // Only update if we actually removed something
     if (filtered.length < analytics.dailyStats.length) {
       analytics.dailyStats = filtered;
-      analytics.lastUpdated = new Date();
 
       await this.storageService.set(
         STORAGE_KEYS.ANALYTICS,
         analytics,
-        AnalyticsDataSchema,
+        AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>,
         { debounce: false }
       );
     }
@@ -341,7 +333,7 @@ export class AnalyticsRepository {
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
       defaultAnalytics,
-      AnalyticsDataSchema,
+      AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>,
       { debounce: false }
     );
   }
@@ -375,19 +367,19 @@ export class AnalyticsRepository {
 
     const totalDaysTracked = analytics.dailyStats.length;
     const totalDailyPomodoros = analytics.dailyStats.reduce(
-      (sum, s) => sum + s.pomodorosCompleted,
+      (sum, s) => sum + s.completedSessions,
       0
     );
     const totalDailyFocusTime = analytics.dailyStats.reduce(
-      (sum, s) => sum + s.focusTime,
+      (sum, s) => sum + s.focusTimeMinutes,
       0
     );
 
     return {
-      totalFocusTime: analytics.totalFocusTime,
-      totalPomodoros: analytics.totalPomodoros,
-      currentStreak: analytics.streak.current,
-      longestStreak: analytics.streak.longest,
+      totalFocusTime: analytics.totalFocusTimeMinutes,
+      totalPomodoros: analytics.totalSessions,
+      currentStreak: analytics.streak.currentStreak,
+      longestStreak: analytics.streak.longestStreak,
       totalDaysTracked,
       totalAchievements: analytics.achievements.length,
       averageDailyPomodoros:
@@ -404,18 +396,18 @@ export class AnalyticsRepository {
    */
   private createDefaultAnalytics(): AnalyticsData {
     return {
-      totalFocusTime: 0,
-      totalPomodoros: 0,
+      totalFocusTimeMinutes: 0,
+      totalSessions: 0,
+      totalBreaks: 0,
       dailyStats: [],
       streak: {
-        current: 0,
-        longest: 0,
-        lastCheckIn: new Date(),
+        currentStreak: 0,
+        longestStreak: 0,
+        lastSessionDate: undefined,
         freezesAvailable: 0,
-        freezesUsed: 0,
+        todayCompleted: false,
       },
       achievements: [],
-      lastUpdated: new Date(),
     };
   }
 
@@ -431,11 +423,12 @@ export class AnalyticsRepository {
 
     return {
       date: cleanDate,
-      focusTime: 0,
-      pomodorosCompleted: 0,
-      pomodorosAbandoned: 0,
-      topTasks: [],
-      blockedAttempts: 0,
+      focusTimeMinutes: 0,
+      completedSessions: 0,
+      abandonedSessions: 0,
+      breaksTaken: 0,
+      sessionsByCategory: {},
+      mostProductiveHour: undefined,
     };
   }
 }

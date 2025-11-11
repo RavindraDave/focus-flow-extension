@@ -19,7 +19,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   /**
    * Error message to display
    */
-  error?: string;
+  error?: string | undefined;
 
   /**
    * Helper text to display below the input

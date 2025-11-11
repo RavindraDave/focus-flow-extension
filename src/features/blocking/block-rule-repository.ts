@@ -24,7 +24,7 @@ export class BlockRuleRepository {
   async findAll(): Promise<BlockRule[]> {
     const rules = await storageService.get(
       STORAGE_KEYS.BLOCK_RULES,
-      z.array(BlockRuleSchema)
+      z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
 
     return rules ?? [];
@@ -106,7 +106,7 @@ export class BlockRuleRepository {
     await storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
       rules,
-      z.array(BlockRuleSchema)
+      z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
   }
 
@@ -128,7 +128,7 @@ export class BlockRuleRepository {
     await storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
       filteredRules,
-      z.array(BlockRuleSchema)
+      z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
 
     return true;
@@ -141,7 +141,7 @@ export class BlockRuleRepository {
     await storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
       [],
-      z.array(BlockRuleSchema)
+      z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
   }
 
@@ -163,6 +163,13 @@ export class BlockRuleRepository {
     }
 
     const rule = rules[ruleIndex];
+    if (!rule) {
+      throw new StorageError(
+        `Block rule with ID ${id} not found`,
+        'NOT_FOUND' as any
+      );
+    }
+
     rule.timeUsedToday = Math.min(
       rule.timeUsedToday + minutes,
       rule.allowance ?? 1440
@@ -174,7 +181,7 @@ export class BlockRuleRepository {
     await storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
       rules,
-      z.array(BlockRuleSchema)
+      z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
   }
 
@@ -194,7 +201,7 @@ export class BlockRuleRepository {
     await storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
       updatedRules,
-      z.array(BlockRuleSchema)
+      z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
   }
 
@@ -216,6 +223,13 @@ export class BlockRuleRepository {
     }
 
     const rule = rules[ruleIndex];
+    if (!rule) {
+      throw new StorageError(
+        `Block rule with ID ${id} not found`,
+        'NOT_FOUND' as any
+      );
+    }
+
     rule.enabled = !rule.enabled;
     rule.updatedAt = new Date();
 
@@ -224,7 +238,7 @@ export class BlockRuleRepository {
     await storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
       rules,
-      z.array(BlockRuleSchema)
+      z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
 
     return rule.enabled;

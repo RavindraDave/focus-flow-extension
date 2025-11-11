@@ -36,7 +36,7 @@ export class BlockRuleRepository {
     const rules =
       (await this.storageService.get(
         STORAGE_KEYS.BLOCK_RULES,
-        z.array(BlockRuleSchema)
+        z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
       )) || [];
 
     return rules;
@@ -64,7 +64,7 @@ export class BlockRuleRepository {
     await this.storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
       rules,
-      z.array(BlockRuleSchema)
+      z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
   }
 
@@ -91,7 +91,7 @@ export class BlockRuleRepository {
     await this.storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
       rules,
-      z.array(BlockRuleSchema)
+      z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
   }
 
@@ -113,7 +113,7 @@ export class BlockRuleRepository {
     await this.storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
       filtered,
-      z.array(BlockRuleSchema)
+      z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
 
     return true;
@@ -137,7 +137,7 @@ export class BlockRuleRepository {
     await this.storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
       [],
-      z.array(BlockRuleSchema),
+      z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>,
       { debounce: false }
     );
   }

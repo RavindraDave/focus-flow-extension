@@ -71,6 +71,7 @@ export interface TimerStatus {
   totalSeconds: number;
   sessionCount: number;
   isPaused: boolean;
+  currentSession: import('./index').PomodoroSession | null;
 }
 
 export interface NuclearModeStatus {

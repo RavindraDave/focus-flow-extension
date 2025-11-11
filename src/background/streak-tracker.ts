@@ -62,7 +62,7 @@ export class StreakTracker {
   async checkDailyStreak(isPremium: boolean = false): Promise<StreakData> {
     const streak = await this.analyticsRepository.getStreak();
     const now = new Date();
-    const lastCheckIn = new Date(streak.lastCheckIn);
+    const lastCheckIn = streak.lastSessionDate ? new Date(streak.lastSessionDate) : new Date(0);
 
     // Calculate days since last check-in
     const daysSinceLastCheckIn = this.getDaysDifference(lastCheckIn, now);
@@ -83,9 +83,9 @@ export class StreakTracker {
       // Consecutive day
       if (hasActivity) {
         updatedStreak = {
-          current: streak.current + 1,
-          longest: Math.max(streak.longest, streak.current + 1),
-          lastCheckIn: now,
+          currentStreak: streak.currentStreak + 1,
+          longestStreak: Math.max(streak.longestStreak, streak.currentStreak + 1),
+          lastSessionDate: now,
         };
       } else {
         // Missed today - try to use freeze if available
@@ -155,11 +155,8 @@ export class StreakTracker {
       return; // Only premium users get freezes
     }
 
-    const streak = await this.analyticsRepository.getStreak();
-
     await this.analyticsRepository.updateStreak({
       freezesAvailable: StreakTracker.MAX_FREEZES_PER_MONTH,
-      freezesUsed: 0, // Reset used count
     });
   }
 
@@ -203,16 +200,15 @@ export class StreakTracker {
       console.info('Using streak freeze to maintain streak');
       return {
         // Streak maintained
-        lastCheckIn: now,
+        lastSessionDate: now,
         freezesAvailable: streak.freezesAvailable - 1,
-        freezesUsed: streak.freezesUsed + 1,
       };
     } else {
       // Break streak
       console.warn('Streak broken: no activity and no freezes available');
       return {
-        current: 0,
-        lastCheckIn: now,
+        currentStreak: 0,
+        lastSessionDate: now,
       };
     }
   }
@@ -239,9 +235,8 @@ export class StreakTracker {
       // Use freezes to recover streak
       console.info(`Using ${daysToRecover} freezes to maintain streak`);
       return {
-        lastCheckIn: now,
+        lastSessionDate: now,
         freezesAvailable: streak.freezesAvailable - daysToRecover,
-        freezesUsed: streak.freezesUsed + daysToRecover,
       };
     } else {
       // Cannot recover - break streak
@@ -249,8 +244,8 @@ export class StreakTracker {
         `Streak broken: missed ${daysMissed} days, insufficient freezes`
       );
       return {
-        current: 0,
-        lastCheckIn: now,
+        currentStreak: 0,
+        lastSessionDate: now,
       };
     }
   }
@@ -286,11 +281,11 @@ export class StreakTracker {
    */
   async resetStreak(): Promise<void> {
     await this.analyticsRepository.updateStreak({
-      current: 0,
-      longest: 0,
-      lastCheckIn: new Date(),
+      currentStreak: 0,
+      longestStreak: 0,
+      lastSessionDate: new Date(),
       freezesAvailable: 0,
-      freezesUsed: 0,
+      todayCompleted: false,
     });
   }
 }

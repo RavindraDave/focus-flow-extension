@@ -265,7 +265,7 @@ export class BlockerEngine {
 
     return {
       id: ruleId,
-      priority: rule.priority || 1,
+      priority: 1, // Fixed priority for all rules
       action: {
         type: 'redirect' as chrome.declarativeNetRequest.RuleActionType,
         redirect: {

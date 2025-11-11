@@ -233,8 +233,12 @@ export const ScheduleSchema = z.object({
 }).refine(
   (schedule) => {
     // Validate that endTime is after startTime
-    const [startHour, startMin] = schedule.startTime.split(':').map(Number);
-    const [endHour, endMin] = schedule.endTime.split(':').map(Number);
+    const startParts = schedule.startTime.split(':').map(Number);
+    const endParts = schedule.endTime.split(':').map(Number);
+    const startHour = startParts[0] ?? 0;
+    const startMin = startParts[1] ?? 0;
+    const endHour = endParts[0] ?? 0;
+    const endMin = endParts[1] ?? 0;
     const startMinutes = startHour * 60 + startMin;
     const endMinutes = endHour * 60 + endMin;
     return endMinutes > startMinutes;

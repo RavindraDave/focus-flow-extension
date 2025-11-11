@@ -5,46 +5,264 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Site Blocked - Focus Flow</title>
   <style>
-    body {
+    * {
       margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%);
       display: flex;
       align-items: center;
-      justify-center;
+      justify-content: center;
       min-height: 100vh;
       color: #7f1d1d;
-    }
-    .container {
-      text-align: center;
       padding: 2rem;
-      max-width: 500px;
     }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+      padding: 3rem;
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .icon {
+      font-size: 5rem;
+      margin-bottom: 1.5rem;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
     h1 {
       font-size: 2.5rem;
       margin-bottom: 1rem;
       color: #991b1b;
+      font-weight: 700;
     }
-    p {
-      font-size: 1.125rem;
+
+    .subtitle {
+      font-size: 1.25rem;
       margin-bottom: 2rem;
       color: #b91c1c;
+      font-weight: 500;
     }
+
+    .site-name {
+      background: #fef2f2;
+      border: 2px solid #fecaca;
+      border-radius: 8px;
+      padding: 0.75rem 1.5rem;
+      margin: 1.5rem 0;
+      color: #dc2626;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
     .timer {
-      font-size: 3rem;
-      font-weight: bold;
+      font-size: 4rem;
+      font-weight: 800;
       color: #dc2626;
       margin: 2rem 0;
       font-variant-numeric: tabular-nums;
+      letter-spacing: 0.05em;
+    }
+
+    .timer.break {
+      color: #059669;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+
+    .info-card {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .info-label {
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .info-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .info-value.streak {
+      color: #ea580c;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #fee2e2;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 1rem 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);
+      transition: width 1s linear;
+      border-radius: 4px;
+    }
+
+    .message {
+      font-size: 1.125rem;
+      color: #374151;
+      line-height: 1.6;
+      margin: 1.5rem 0;
+    }
+
+    .motivation {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-left: 4px solid #f59e0b;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+      color: #92400e;
+      font-weight: 500;
+      font-style: italic;
+    }
+
+    .allowance-info {
+      background: #eff6ff;
+      border: 2px solid #93c5fd;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      color: #1e40af;
+    }
+
+    .allowance-bar {
+      width: 100%;
+      height: 24px;
+      background: #dbeafe;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 0.75rem 0;
+      position: relative;
+    }
+
+    .allowance-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+      transition: width 0.3s ease;
+      border-radius: 12px;
+    }
+
+    .allowance-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: #1e293b;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+    }
+
+    .loading {
+      color: #6b7280;
+      font-size: 1rem;
+      padding: 2rem;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 2rem 1.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .timer {
+        font-size: 3rem;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🚫 Site Blocked</h1>
-    <p>This website is blocked during your focus session.</p>
-    <div class="timer" id="remaining-time">--:--</div>
-    <p>Stay focused! You can access this site when your break starts.</p>
+    <div class="loading" id="loading">Loading...</div>
+    <div id="content" style="display: none;">
+      <div class="icon">🚫</div>
+      <h1>Site Blocked</h1>
+      <p class="subtitle" id="subtitle">This website is blocked during your focus session</p>
+
+      <div class="site-name" id="site-name">Loading...</div>
+
+      <div class="timer" id="timer">--:--</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress"></div>
+      </div>
+
+      <div id="allowance-section" style="display: none;">
+        <div class="allowance-info">
+          <div class="info-label">Daily Time Allowance</div>
+          <div class="allowance-bar">
+            <div class="allowance-fill" id="allowance-fill"></div>
+            <div class="allowance-text" id="allowance-text">0 / 0 min</div>
+          </div>
+          <p style="font-size: 0.875rem; margin-top: 0.5rem;" id="allowance-message">
+            You've used your daily allowance for this site.
+          </p>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-label">Your Streak</div>
+          <div class="info-value streak" id="streak">--</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Today's Focus</div>
+          <div class="info-value" id="focus-time">--</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Pomodoros</div>
+          <div class="info-value" id="pomodoros">--</div>
+        </div>
+      </div>
+
+      <div class="message" id="message">
+        Stay focused! You can access this site when your break starts.
+      </div>
+
+      <div class="motivation" id="motivation">
+        💪 "Success is the sum of small efforts repeated day in and day out."
+      </div>
+    </div>
   </div>
+
+  <script src="blocked.js"></script>
 </body>
 </html>

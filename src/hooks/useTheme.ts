@@ -126,9 +126,7 @@ export function useTheme(): {
     }
     // Fallback for older browsers
     else {
-      // @ts-expect-error - Legacy API
       mediaQuery.addListener(handleChange);
-      // @ts-expect-error - Legacy API
       return () => mediaQuery.removeListener(handleChange);
     }
   }, [theme]);
