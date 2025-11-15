@@ -236,7 +236,7 @@ describe('Message Types', () => {
         data: { state: 'idle' },
       };
 
-      mockChrome.runtime.sendMessage.mockImplementation((message, callback) => {
+      mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
         callback(mockResponse);
       });
 
@@ -255,7 +255,7 @@ describe('Message Types', () => {
         error: 'Timer not running',
       };
 
-      mockChrome.runtime.sendMessage.mockImplementation((message, callback) => {
+      mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
         callback(mockResponse);
       });
 
@@ -271,7 +271,7 @@ describe('Message Types', () => {
     it('should reject on chrome.runtime.lastError', async () => {
       mockChrome.runtime.lastError = { message: 'Extension context invalidated' };
 
-      mockChrome.runtime.sendMessage.mockImplementation((message, callback) => {
+      mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
         callback(null);
       });
 
@@ -291,6 +291,7 @@ describe('Message Types', () => {
         totalSeconds: 1500,
         sessionCount: 2,
         isPaused: false,
+        currentSession: null,
       };
 
       expect(status.state).toBe('work');

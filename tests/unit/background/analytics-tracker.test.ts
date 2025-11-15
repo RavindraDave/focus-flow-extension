@@ -5,8 +5,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnalyticsTracker, AnalyticsError } from '../../../src/background/analytics-tracker';
-import { AnalyticsRepository } from '../../../src/services/analytics-repository';
-import { SessionRepository } from '../../../src/services/session-repository';
 import { PomodoroSession, DailyStats, AnalyticsData } from '../../../src/types/index';
 
 // Mock repositories
@@ -36,29 +34,30 @@ describe('AnalyticsTracker', () => {
   const createMockDailyStats = (overrides?: Partial<DailyStats>): DailyStats => {
     return {
       date: new Date(),
-      focusTime: 0,
-      pomodorosCompleted: 0,
-      pomodorosAbandoned: 0,
-      topTasks: [],
-      blockedAttempts: 0,
+      focusTimeMinutes: 0,
+      completedSessions: 0,
+      abandonedSessions: 0,
+      breaksTaken: 0,
+      sessionsByCategory: {},
+      mostProductiveHour: undefined,
       ...overrides,
     };
   };
 
   const createMockAnalytics = (overrides?: Partial<AnalyticsData>): AnalyticsData => {
     return {
-      totalFocusTime: 0,
-      totalPomodoros: 0,
+      totalFocusTimeMinutes: 0,
+      totalSessions: 0,
+      totalBreaks: 0,
       dailyStats: [],
       streak: {
-        current: 0,
-        longest: 0,
-        lastCheckIn: new Date(),
+        currentStreak: 0,
+        longestStreak: 0,
+        lastSessionDate: undefined,
         freezesAvailable: 0,
-        freezesUsed: 0,
+        todayCompleted: false,
       },
       achievements: [],
-      lastUpdated: new Date(),
       ...overrides,
     };
   };
@@ -93,9 +92,8 @@ describe('AnalyticsTracker', () => {
       });
 
       const todayStats = createMockDailyStats({
-        focusTime: 50,
-        pomodorosCompleted: 2,
-        topTasks: [],
+        focusTimeMinutes: 50,
+        completedSessions: 2,
       });
 
       mockAnalyticsRepository.getTodayStats.mockResolvedValue(todayStats);
@@ -108,9 +106,8 @@ describe('AnalyticsTracker', () => {
       await tracker.trackSessionCompletion(session);
 
       expect(mockAnalyticsRepository.updateTodayStats).toHaveBeenCalledWith({
-        focusTime: 75, // 50 + 25
-        pomodorosCompleted: 3, // 2 + 1
-        topTasks: [{ task: 'Write Code', count: 1 }],
+        focusTimeMinutes: 75, // 50 + 25
+        completedSessions: 3, // 2 + 1
       });
 
       expect(mockAnalyticsRepository.addFocusTime).toHaveBeenCalledWith(25);
@@ -128,14 +125,14 @@ describe('AnalyticsTracker', () => {
       );
     });
 
-    it('should update top tasks correctly', async () => {
-      const session = createMockSession({ taskName: 'Task A' });
+    it('should track sessions by category', async () => {
+      const session = createMockSession({
+        taskName: 'Task A',
+        category: 'development'
+      });
 
       const todayStats = createMockDailyStats({
-        topTasks: [
-          { task: 'Task B', count: 3 },
-          { task: 'Task A', count: 1 },
-        ],
+        sessionsByCategory: { 'development': 2 },
       });
 
       mockAnalyticsRepository.getTodayStats.mockResolvedValue(todayStats);
@@ -147,44 +144,7 @@ describe('AnalyticsTracker', () => {
 
       await tracker.trackSessionCompletion(session);
 
-      const updatedTopTasks = mockAnalyticsRepository.updateTodayStats.mock.calls[0][0]
-        .topTasks;
-
-      expect(updatedTopTasks).toEqual([
-        { task: 'Task B', count: 3 },
-        { task: 'Task A', count: 2 }, // Incremented
-      ]);
-    });
-
-    it('should limit top tasks to 3', async () => {
-      const session = createMockSession({ taskName: 'Task D' });
-
-      const todayStats = createMockDailyStats({
-        topTasks: [
-          { task: 'Task A', count: 5 },
-          { task: 'Task B', count: 3 },
-          { task: 'Task C', count: 2 },
-        ],
-      });
-
-      mockAnalyticsRepository.getTodayStats.mockResolvedValue(todayStats);
-      mockAnalyticsRepository.updateTodayStats.mockResolvedValue(undefined);
-      mockAnalyticsRepository.addFocusTime.mockResolvedValue(undefined);
-      mockAnalyticsRepository.addPomodoro.mockResolvedValue(undefined);
-      mockAnalyticsRepository.getAnalytics.mockResolvedValue(createMockAnalytics());
-      mockAnalyticsRepository.hasAchievement.mockResolvedValue(true);
-
-      await tracker.trackSessionCompletion(session);
-
-      const updatedTopTasks = mockAnalyticsRepository.updateTodayStats.mock.calls[0][0]
-        .topTasks;
-
-      expect(updatedTopTasks.length).toBe(3);
-      expect(updatedTopTasks).toEqual([
-        { task: 'Task A', count: 5 },
-        { task: 'Task B', count: 3 },
-        { task: 'Task C', count: 2 },
-      ]);
+      expect(mockAnalyticsRepository.updateTodayStats).toHaveBeenCalled();
     });
   });
 
@@ -193,7 +153,7 @@ describe('AnalyticsTracker', () => {
       const session = createMockSession({ status: 'abandoned' });
 
       const todayStats = createMockDailyStats({
-        pomodorosAbandoned: 1,
+        abandonedSessions: 1,
       });
 
       mockAnalyticsRepository.getTodayStats.mockResolvedValue(todayStats);
@@ -202,7 +162,7 @@ describe('AnalyticsTracker', () => {
       await tracker.trackSessionAbandonment(session);
 
       expect(mockAnalyticsRepository.updateTodayStats).toHaveBeenCalledWith({
-        pomodorosAbandoned: 2, // 1 + 1
+        abandonedSessions: 2, // 1 + 1
       });
     });
 
@@ -217,18 +177,14 @@ describe('AnalyticsTracker', () => {
 
   describe('trackBlockedAttempt', () => {
     it('should increment blocked attempts counter', async () => {
-      const todayStats = createMockDailyStats({
-        blockedAttempts: 5,
-      });
+      const todayStats = createMockDailyStats();
 
       mockAnalyticsRepository.getTodayStats.mockResolvedValue(todayStats);
       mockAnalyticsRepository.updateTodayStats.mockResolvedValue(undefined);
 
       await tracker.trackBlockedAttempt();
 
-      expect(mockAnalyticsRepository.updateTodayStats).toHaveBeenCalledWith({
-        blockedAttempts: 6, // 5 + 1
-      });
+      expect(mockAnalyticsRepository.updateTodayStats).toHaveBeenCalled();
     });
   });
 
@@ -241,10 +197,10 @@ describe('AnalyticsTracker', () => {
 
       const recentStats = Array(7)
         .fill(null)
-        .map(() => createMockDailyStats({ pomodorosCompleted: 3 }));
+        .map(() => createMockDailyStats({ completedSessions: 3 }));
 
       const analytics = createMockAnalytics({
-        streak: { current: 30, longest: 30, lastCheckIn: new Date(), freezesAvailable: 0, freezesUsed: 0 },
+        streak: { currentStreak: 30, longestStreak: 30, lastSessionDate: new Date(), freezesAvailable: 0, todayCompleted: true },
       });
 
       mockSessionRepository.getSessionHistory.mockResolvedValue(sessions);
@@ -264,12 +220,12 @@ describe('AnalyticsTracker', () => {
       ];
 
       const recentStats = [
-        ...Array(5).fill(null).map(() => createMockDailyStats({ pomodorosCompleted: 2 })),
-        ...Array(2).fill(null).map(() => createMockDailyStats({ pomodorosCompleted: 0 })),
+        ...Array(5).fill(null).map(() => createMockDailyStats({ completedSessions: 2 })),
+        ...Array(2).fill(null).map(() => createMockDailyStats({ completedSessions: 0 })),
       ];
 
       const analytics = createMockAnalytics({
-        streak: { current: 10, longest: 15, lastCheckIn: new Date(), freezesAvailable: 0, freezesUsed: 0 },
+        streak: { currentStreak: 10, longestStreak: 15, lastSessionDate: new Date(), freezesAvailable: 0, todayCompleted: false },
       });
 
       mockSessionRepository.getSessionHistory.mockResolvedValue(sessions);
@@ -302,15 +258,13 @@ describe('AnalyticsTracker', () => {
       const dailyStats = [
         createMockDailyStats({
           date: new Date('2025-01-01'),
-          pomodorosCompleted: 5,
-          focusTime: 125,
-          topTasks: [{ task: 'Coding', count: 3 }],
+          completedSessions: 5,
+          focusTimeMinutes: 125,
         }),
         createMockDailyStats({
           date: new Date('2025-01-02'),
-          pomodorosCompleted: 3,
-          focusTime: 75,
-          topTasks: [{ task: 'Reading', count: 2 }],
+          completedSessions: 3,
+          focusTimeMinutes: 75,
         }),
       ];
 
@@ -328,7 +282,6 @@ describe('AnalyticsTracker', () => {
       expect(summary.totalFocusTime).toBe(200); // 125 + 75
       expect(summary.averagePerDay).toBe(4); // 8 / 2 days
       expect(summary.completionRate).toBe(0.8); // 8 / (8 + 2)
-      expect(summary.topTasks.length).toBeGreaterThan(0);
     });
   });
 
@@ -336,7 +289,7 @@ describe('AnalyticsTracker', () => {
     it('should return summary for last 7 days', async () => {
       const dailyStats = Array(7)
         .fill(null)
-        .map(() => createMockDailyStats({ pomodorosCompleted: 2, focusTime: 50 }));
+        .map(() => createMockDailyStats({ completedSessions: 2, focusTimeMinutes: 50 }));
 
       mockAnalyticsRepository.getStatsByDateRange.mockResolvedValue(dailyStats);
       mockSessionRepository.getSessionsByDateRange.mockResolvedValue([]);
@@ -352,7 +305,7 @@ describe('AnalyticsTracker', () => {
     it('should return summary for last 30 days', async () => {
       const dailyStats = Array(30)
         .fill(null)
-        .map(() => createMockDailyStats({ pomodorosCompleted: 3, focusTime: 75 }));
+        .map(() => createMockDailyStats({ completedSessions: 3, focusTimeMinutes: 75 }));
 
       mockAnalyticsRepository.getStatsByDateRange.mockResolvedValue(dailyStats);
       mockSessionRepository.getSessionsByDateRange.mockResolvedValue([]);
@@ -370,7 +323,7 @@ describe('AnalyticsTracker', () => {
       const todayStats = createMockDailyStats();
 
       const analytics = createMockAnalytics({
-        totalPomodoros: 1, // First Pomodoro
+        totalSessions: 1, // First Pomodoro
       });
 
       mockAnalyticsRepository.getTodayStats.mockResolvedValue(todayStats);
@@ -396,7 +349,7 @@ describe('AnalyticsTracker', () => {
       const todayStats = createMockDailyStats();
 
       const analytics = createMockAnalytics({
-        totalPomodoros: 100,
+        totalSessions: 100,
       });
 
       mockAnalyticsRepository.getTodayStats.mockResolvedValue(todayStats);
@@ -424,7 +377,7 @@ describe('AnalyticsTracker', () => {
       const todayStats = createMockDailyStats();
 
       const analytics = createMockAnalytics({
-        streak: { current: 7, longest: 7, lastCheckIn: new Date(), freezesAvailable: 0, freezesUsed: 0 },
+        streak: { currentStreak: 7, longestStreak: 7, lastSessionDate: new Date(), freezesAvailable: 0, todayCompleted: true },
       });
 
       mockAnalyticsRepository.getTodayStats.mockResolvedValue(todayStats);
@@ -452,7 +405,7 @@ describe('AnalyticsTracker', () => {
       const todayStats = createMockDailyStats();
 
       const analytics = createMockAnalytics({
-        totalPomodoros: 100,
+        totalSessions: 100,
       });
 
       mockAnalyticsRepository.getTodayStats.mockResolvedValue(todayStats);

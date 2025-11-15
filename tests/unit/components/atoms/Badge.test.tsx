@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { axe, toHaveNoViolations } from 'jest-axe';
+import { axe } from 'jest-axe';
 import { Badge } from '../../../../src/components/atoms/Badge';
-
-// Extend Vitest matchers
-expect.extend(toHaveNoViolations);
 
 describe('Badge', () => {
   describe('Rendering', () => {
@@ -186,7 +183,6 @@ describe('Badge', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty string', () => {
-      // @ts-expect-error - Testing edge case
       render(<Badge>{''}</Badge>);
       const { container } = render(<Badge>{''}</Badge>);
       expect(container.firstChild).toBeInTheDocument();

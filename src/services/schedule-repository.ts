@@ -92,7 +92,7 @@ export class ScheduleRepository {
       ...schedules[index],
       ...updates,
       updatedAt: new Date(),
-    };
+    } as Schedule;
 
     await this.storageService.set(
       STORAGE_KEYS.SCHEDULES,

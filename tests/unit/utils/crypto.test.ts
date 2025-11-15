@@ -3,7 +3,7 @@
  * Target: ≥80% coverage
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   hexToBytes,
   bytesToHex,

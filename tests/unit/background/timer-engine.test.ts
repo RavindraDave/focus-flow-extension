@@ -4,12 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TimerEngine, TimerError, TimerState } from '../../../src/background/timer-engine';
-import { SessionRepository } from '../../../src/services/session-repository';
-import { AnalyticsTracker } from '../../../src/background/analytics-tracker';
-import { StreakTracker } from '../../../src/background/streak-tracker';
-import { SettingsRepository } from '../../../src/services/settings-repository';
-import { BlockerEngine } from '../../../src/background/blocker-engine';
+import { TimerEngine, TimerError } from '../../../src/background/timer-engine';
 import { PomodoroSession } from '../../../src/types/index';
 
 // Mock all dependencies

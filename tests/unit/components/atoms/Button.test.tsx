@@ -1,11 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { axe, toHaveNoViolations } from 'jest-axe';
+import { axe } from 'jest-axe';
 import { Button } from '../../../../src/components/atoms/Button';
-
-// Extend Vitest matchers
-expect.extend(toHaveNoViolations);
 
 describe('Button', () => {
   describe('Rendering', () => {
@@ -231,7 +228,6 @@ describe('Button', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty children gracefully', () => {
-      // @ts-expect-error - Testing edge case
       render(<Button>{''}</Button>);
       expect(screen.getByRole('button')).toBeInTheDocument();
     });

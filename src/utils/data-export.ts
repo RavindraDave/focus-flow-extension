@@ -6,7 +6,7 @@
  * Implements PRD Section 3.1 (FR-AN-004)
  */
 
-import type { PomodoroSession, DailyStats, AnalyticsData } from '../types';
+import type { PomodoroSession, AnalyticsData } from '../types';
 
 /**
  * Format date to ISO 8601 string

@@ -5,7 +5,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SessionRepository } from '../../../src/services/session-repository';
-import { StorageService } from '../../../src/services/storage-service';
 import { PomodoroSession } from '../../../src/types/index';
 
 // Mock StorageService
@@ -108,9 +107,9 @@ describe('SessionRepository', () => {
 
       const result = await repository.getSessionHistory();
 
-      expect(result[0].id).toBe('3'); // Newest first
-      expect(result[1].id).toBe('2');
-      expect(result[2].id).toBe('1');
+      expect(result[0]!.id).toBe('3'); // Newest first
+      expect(result[1]!.id).toBe('2');
+      expect(result[2]!.id).toBe('1');
     });
 
     it('should return limited sessions when limit specified', async () => {
@@ -276,7 +275,7 @@ describe('SessionRepository', () => {
       const result = await repository.getTodaySessions();
 
       expect(result.length).toBe(1);
-      expect(result[0].id).toBe('1');
+      expect(result[0]!.id).toBe('1');
     });
   });
 

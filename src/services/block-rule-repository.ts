@@ -86,7 +86,8 @@ export class BlockRuleRepository {
     rules[index] = {
       ...rules[index],
       ...updates,
-    };
+      updatedAt: new Date(),
+    } as BlockRule;
 
     await this.storageService.set(
       STORAGE_KEYS.BLOCK_RULES,

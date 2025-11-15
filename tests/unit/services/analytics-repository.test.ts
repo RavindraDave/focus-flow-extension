@@ -5,7 +5,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnalyticsRepository } from '../../../src/services/analytics-repository';
-import { StorageService } from '../../../src/services/storage-service';
 import { AnalyticsData, DailyStats, Achievement } from '../../../src/types/index';
 
 // Mock StorageService
@@ -17,18 +16,18 @@ describe('AnalyticsRepository', () => {
 
   const createMockAnalytics = (overrides?: Partial<AnalyticsData>): AnalyticsData => {
     return {
-      totalFocusTime: 0,
-      totalPomodoros: 0,
+      totalFocusTimeMinutes: 0,
+      totalSessions: 0,
+      totalBreaks: 0,
       dailyStats: [],
       streak: {
-        current: 0,
-        longest: 0,
-        lastCheckIn: new Date(),
+        currentStreak: 0,
+        longestStreak: 0,
+        lastSessionDate: undefined,
         freezesAvailable: 0,
-        freezesUsed: 0,
+        todayCompleted: false,
       },
       achievements: [],
-      lastUpdated: new Date(),
       ...overrides,
     };
   };
@@ -39,11 +38,12 @@ describe('AnalyticsRepository', () => {
 
     return {
       date: cleanDate,
-      focusTime: 0,
-      pomodorosCompleted: 0,
-      pomodorosAbandoned: 0,
-      topTasks: [],
-      blockedAttempts: 0,
+      focusTimeMinutes: 0,
+      completedSessions: 0,
+      abandonedSessions: 0,
+      breaksTaken: 0,
+      sessionsByCategory: {},
+      mostProductiveHour: undefined,
       ...overrides,
     };
   };
@@ -60,16 +60,16 @@ describe('AnalyticsRepository', () => {
   describe('getAnalytics', () => {
     it('should return existing analytics', async () => {
       const mockAnalytics = createMockAnalytics({
-        totalFocusTime: 100,
-        totalPomodoros: 5,
+        totalFocusTimeMinutes: 100,
+        totalSessions: 5,
       });
 
       mockStorageService.get.mockResolvedValue(mockAnalytics);
 
       const result = await repository.getAnalytics();
 
-      expect(result.totalFocusTime).toBe(100);
-      expect(result.totalPomodoros).toBe(5);
+      expect(result.totalFocusTimeMinutes).toBe(100);
+      expect(result.totalSessions).toBe(5);
     });
 
     it('should create default analytics if not found', async () => {
@@ -78,8 +78,8 @@ describe('AnalyticsRepository', () => {
 
       const result = await repository.getAnalytics();
 
-      expect(result.totalFocusTime).toBe(0);
-      expect(result.totalPomodoros).toBe(0);
+      expect(result.totalFocusTimeMinutes).toBe(0);
+      expect(result.totalSessions).toBe(0);
       expect(result.dailyStats).toEqual([]);
       expect(mockStorageService.set).toHaveBeenCalled();
     });
@@ -89,7 +89,7 @@ describe('AnalyticsRepository', () => {
     it('should return existing today\'s stats', async () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayStats = createMockDailyStats(today, { focusTime: 50 });
+      const todayStats = createMockDailyStats(today, { focusTimeMinutes: 50 });
 
       const analytics = createMockAnalytics({
         dailyStats: [todayStats],
@@ -99,7 +99,7 @@ describe('AnalyticsRepository', () => {
 
       const result = await repository.getTodayStats();
 
-      expect(result.focusTime).toBe(50);
+      expect(result.focusTimeMinutes).toBe(50);
     });
 
     it('should create new stats for today if not found', async () => {
@@ -116,7 +116,7 @@ describe('AnalyticsRepository', () => {
 
       const result = await repository.getTodayStats();
 
-      expect(result.focusTime).toBe(0);
+      expect(result.focusTimeMinutes).toBe(0);
       expect(mockStorageService.set).toHaveBeenCalled();
     });
   });
@@ -125,7 +125,7 @@ describe('AnalyticsRepository', () => {
     it('should update existing today\'s stats', async () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayStats = createMockDailyStats(today, { pomodorosCompleted: 2 });
+      const todayStats = createMockDailyStats(today, { completedSessions: 2 });
 
       const analytics = createMockAnalytics({
         dailyStats: [todayStats],
@@ -134,10 +134,10 @@ describe('AnalyticsRepository', () => {
       mockStorageService.get.mockResolvedValue(analytics);
       mockStorageService.set.mockResolvedValue(undefined);
 
-      await repository.updateTodayStats({ pomodorosCompleted: 3 });
+      await repository.updateTodayStats({ completedSessions: 3 });
 
       const savedAnalytics = mockStorageService.set.mock.calls[0][1];
-      expect(savedAnalytics.dailyStats[0].pomodorosCompleted).toBe(3);
+      expect(savedAnalytics.dailyStats[0].completedSessions).toBe(3);
     });
 
     it('should create new stats if today not found', async () => {
@@ -146,17 +146,17 @@ describe('AnalyticsRepository', () => {
       mockStorageService.get.mockResolvedValue(analytics);
       mockStorageService.set.mockResolvedValue(undefined);
 
-      await repository.updateTodayStats({ focusTime: 25 });
+      await repository.updateTodayStats({ focusTimeMinutes: 25 });
 
       const savedAnalytics = mockStorageService.set.mock.calls[0][1];
       expect(savedAnalytics.dailyStats.length).toBe(1);
-      expect(savedAnalytics.dailyStats[0].focusTime).toBe(25);
+      expect(savedAnalytics.dailyStats[0].focusTimeMinutes).toBe(25);
     });
   });
 
   describe('addFocusTime', () => {
     it('should increment total focus time', async () => {
-      const analytics = createMockAnalytics({ totalFocusTime: 50 });
+      const analytics = createMockAnalytics({ totalFocusTimeMinutes: 50 });
 
       mockStorageService.get.mockResolvedValue(analytics);
       mockStorageService.set.mockResolvedValue(undefined);
@@ -164,13 +164,13 @@ describe('AnalyticsRepository', () => {
       await repository.addFocusTime(25);
 
       const savedAnalytics = mockStorageService.set.mock.calls[0][1];
-      expect(savedAnalytics.totalFocusTime).toBe(75);
+      expect(savedAnalytics.totalFocusTimeMinutes).toBe(75);
     });
   });
 
   describe('addPomodoro', () => {
     it('should increment total Pomodoros by 1 (default)', async () => {
-      const analytics = createMockAnalytics({ totalPomodoros: 5 });
+      const analytics = createMockAnalytics({ totalSessions: 5 });
 
       mockStorageService.get.mockResolvedValue(analytics);
       mockStorageService.set.mockResolvedValue(undefined);
@@ -178,11 +178,11 @@ describe('AnalyticsRepository', () => {
       await repository.addPomodoro();
 
       const savedAnalytics = mockStorageService.set.mock.calls[0][1];
-      expect(savedAnalytics.totalPomodoros).toBe(6);
+      expect(savedAnalytics.totalSessions).toBe(6);
     });
 
     it('should increment total Pomodoros by specified count', async () => {
-      const analytics = createMockAnalytics({ totalPomodoros: 5 });
+      const analytics = createMockAnalytics({ totalSessions: 5 });
 
       mockStorageService.get.mockResolvedValue(analytics);
       mockStorageService.set.mockResolvedValue(undefined);
@@ -190,14 +190,14 @@ describe('AnalyticsRepository', () => {
       await repository.addPomodoro(3);
 
       const savedAnalytics = mockStorageService.set.mock.calls[0][1];
-      expect(savedAnalytics.totalPomodoros).toBe(8);
+      expect(savedAnalytics.totalSessions).toBe(8);
     });
   });
 
   describe('getStatsByDate', () => {
     it('should return stats for specific date', async () => {
       const date = new Date('2025-01-15');
-      const stats = createMockDailyStats(date, { focusTime: 100 });
+      const stats = createMockDailyStats(date, { focusTimeMinutes: 100 });
 
       const analytics = createMockAnalytics({ dailyStats: [stats] });
 
@@ -206,7 +206,7 @@ describe('AnalyticsRepository', () => {
       const result = await repository.getStatsByDate(new Date('2025-01-15'));
 
       expect(result).not.toBeNull();
-      expect(result!.focusTime).toBe(100);
+      expect(result!.focusTimeMinutes).toBe(100);
     });
 
     it('should return null if stats not found for date', async () => {
@@ -245,11 +245,11 @@ describe('AnalyticsRepository', () => {
     it('should return current streak data', async () => {
       const analytics = createMockAnalytics({
         streak: {
-          current: 5,
-          longest: 10,
-          lastCheckIn: new Date(),
+          currentStreak: 5,
+          longestStreak: 10,
+          lastSessionDate: new Date(),
           freezesAvailable: 1,
-          freezesUsed: 0,
+          todayCompleted: false,
         },
       });
 
@@ -257,8 +257,8 @@ describe('AnalyticsRepository', () => {
 
       const result = await repository.getStreak();
 
-      expect(result.current).toBe(5);
-      expect(result.longest).toBe(10);
+      expect(result.currentStreak).toBe(5);
+      expect(result.longestStreak).toBe(10);
     });
   });
 
@@ -266,22 +266,22 @@ describe('AnalyticsRepository', () => {
     it('should update streak data', async () => {
       const analytics = createMockAnalytics({
         streak: {
-          current: 5,
-          longest: 10,
-          lastCheckIn: new Date(),
+          currentStreak: 5,
+          longestStreak: 10,
+          lastSessionDate: new Date(),
           freezesAvailable: 0,
-          freezesUsed: 0,
+          todayCompleted: false,
         },
       });
 
       mockStorageService.get.mockResolvedValue(analytics);
       mockStorageService.set.mockResolvedValue(undefined);
 
-      await repository.updateStreak({ current: 6, longest: 11 });
+      await repository.updateStreak({ currentStreak: 6, longestStreak: 11 });
 
       const savedAnalytics = mockStorageService.set.mock.calls[0][1];
-      expect(savedAnalytics.streak.current).toBe(6);
-      expect(savedAnalytics.streak.longest).toBe(11);
+      expect(savedAnalytics.streak.currentStreak).toBe(6);
+      expect(savedAnalytics.streak.longestStreak).toBe(11);
     });
   });
 
@@ -292,7 +292,7 @@ describe('AnalyticsRepository', () => {
           id: 'first-pomodoro',
           name: 'First Steps',
           description: 'Completed first Pomodoro',
-          category: 'volume',
+          category: 'sessions',
           icon: '🎯',
           unlockedAt: new Date(),
         },
@@ -305,7 +305,7 @@ describe('AnalyticsRepository', () => {
       const result = await repository.getAchievements();
 
       expect(result.length).toBe(1);
-      expect(result[0].id).toBe('first-pomodoro');
+      expect(result[0]!.id).toBe('first-pomodoro');
     });
   });
 
@@ -317,7 +317,7 @@ describe('AnalyticsRepository', () => {
         id: 'century',
         name: 'Century Club',
         description: 'Completed 100 Pomodoros',
-        category: 'volume',
+        category: 'sessions',
         icon: '💯',
         unlockedAt: new Date(),
       };
@@ -337,7 +337,7 @@ describe('AnalyticsRepository', () => {
         id: 'century',
         name: 'Century Club',
         description: 'Completed 100 Pomodoros',
-        category: 'volume',
+        category: 'sessions',
         icon: '💯',
         unlockedAt: new Date(),
       };
@@ -359,7 +359,7 @@ describe('AnalyticsRepository', () => {
         id: 'test',
         name: 'Test',
         description: 'Test achievement',
-        category: 'volume',
+        category: 'sessions',
         icon: '🏆',
         unlockedAt: new Date(),
       };
@@ -428,8 +428,8 @@ describe('AnalyticsRepository', () => {
       await repository.resetAnalytics();
 
       const savedAnalytics = mockStorageService.set.mock.calls[0][1];
-      expect(savedAnalytics.totalFocusTime).toBe(0);
-      expect(savedAnalytics.totalPomodoros).toBe(0);
+      expect(savedAnalytics.totalFocusTimeMinutes).toBe(0);
+      expect(savedAnalytics.totalSessions).toBe(0);
       expect(savedAnalytics.dailyStats).toEqual([]);
     });
   });
@@ -437,16 +437,16 @@ describe('AnalyticsRepository', () => {
   describe('exportAnalytics', () => {
     it('should export analytics as JSON', async () => {
       const analytics = createMockAnalytics({
-        totalFocusTime: 100,
-        totalPomodoros: 5,
+        totalFocusTimeMinutes: 100,
+        totalSessions: 5,
       });
 
       mockStorageService.get.mockResolvedValue(analytics);
 
       const result = await repository.exportAnalytics();
 
-      expect(result).toContain('"totalFocusTime": 100');
-      expect(result).toContain('"totalPomodoros": 5');
+      expect(result).toContain('"totalFocusTimeMinutes": 100');
+      expect(result).toContain('"totalSessions": 5');
       expect(() => JSON.parse(result)).not.toThrow();
     });
   });
@@ -455,26 +455,26 @@ describe('AnalyticsRepository', () => {
     it('should return analytics summary', async () => {
       const stats = [
         createMockDailyStats(new Date('2025-01-01'), {
-          pomodorosCompleted: 4,
-          focusTime: 100,
+          completedSessions: 4,
+          focusTimeMinutes: 100,
         }),
         createMockDailyStats(new Date('2025-01-02'), {
-          pomodorosCompleted: 6,
-          focusTime: 150,
+          completedSessions: 6,
+          focusTimeMinutes: 150,
         }),
       ];
 
       const analytics = createMockAnalytics({
-        totalFocusTime: 250,
-        totalPomodoros: 10,
+        totalFocusTimeMinutes: 250,
+        totalSessions: 10,
         dailyStats: stats,
-        streak: { current: 5, longest: 10, lastCheckIn: new Date(), freezesAvailable: 0, freezesUsed: 0 },
+        streak: { currentStreak: 5, longestStreak: 10, lastSessionDate: new Date(), freezesAvailable: 0, todayCompleted: false },
         achievements: [
           {
             id: 'test',
             name: 'Test',
             description: 'Test',
-            category: 'volume',
+            category: 'sessions',
             icon: '🏆',
             unlockedAt: new Date(),
           },
