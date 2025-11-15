@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { PomodoroSession, AnalyticsData, StreakData, DailyStats, Settings } from './index';
+import type { Settings } from './index';
 
 /**
  * Background Message Types

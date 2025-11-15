@@ -5,8 +5,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BlockerEngine, BlockerError } from '../../../src/background/blocker-engine';
-import { BlockRuleRepository } from '../../../src/services/block-rule-repository';
-import { AnalyticsTracker } from '../../../src/background/analytics-tracker';
 import { BlockRule } from '../../../src/types/index';
 
 // Mock repositories
@@ -44,10 +42,10 @@ describe('BlockerEngine', () => {
       pattern: 'example.com',
       type: 'domain',
       enabled: true,
-      priority: 1,
-      allowance: undefined,
-      schedule: undefined,
+      allowance: null,
+      timeUsedToday: 0,
       createdAt: new Date(),
+      updatedAt: new Date(),
       ...overrides,
     };
   };
@@ -316,7 +314,7 @@ describe('BlockerEngine', () => {
 
     it('should only reset domains with allowances', async () => {
       const rules = [
-        createMockRule({ pattern: 'facebook.com', allowance: undefined }),
+        createMockRule({ pattern: 'facebook.com', allowance: null }),
         createMockRule({ pattern: 'youtube.com', allowance: 30 }),
       ];
 
@@ -406,17 +404,5 @@ describe('BlockerEngine', () => {
       expect(redirectUrl).toContain('name=YouTube%20Block');
     });
 
-    it('should set correct priority', async () => {
-      const rules = [
-        createMockRule({ priority: 5 }),
-      ];
-
-      mockBlockRuleRepository.getActiveRules.mockResolvedValue(rules);
-
-      await engine.syncRules();
-
-      const call = mockChrome.declarativeNetRequest.updateDynamicRules.mock.calls[0][0];
-      expect(call.addRules[0].priority).toBe(5);
-    });
   });
 });

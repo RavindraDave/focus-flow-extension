@@ -5,7 +5,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NuclearModeManager, NuclearModeError } from '../../../src/background/nuclear-mode-manager';
-import { SettingsRepository } from '../../../src/services/settings-repository';
 import { UserSettings, NuclearConfig } from '../../../src/types/index';
 
 // Mock SettingsRepository
@@ -58,17 +57,16 @@ describe('NuclearModeManager', () => {
         enabled: false,
         hideShorts: false,
         hideRecommendations: false,
-        hideHomeFeed: false,
+        hideFeed: false,
         hideComments: false,
-        hideEndScreenCards: false,
-        allowedChannels: [],
       },
       nuclearMode: {
         active: false,
         endTime: undefined,
         deviceSecret,
         signature: undefined,
-        duration: undefined,
+        challengeAttempts: 0,
+        challengeAttemptsStartTime: undefined,
         ...nuclearModeOverrides,
       },
       premiumLicenseKey: undefined,
@@ -98,7 +96,6 @@ describe('NuclearModeManager', () => {
         expect.objectContaining({
           nuclearMode: expect.objectContaining({
             active: true,
-            duration: 4,
             signature: expect.any(String),
             endTime: expect.any(Date),
           }),
@@ -127,7 +124,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 4,
       });
 
       mockSettingsRepository.getSettings.mockResolvedValue(settings);
@@ -163,7 +159,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 4,
         signature: calculateExpectedSignature(endTime, deviceSecret),
       });
 
@@ -189,7 +184,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 1,
         signature: calculateExpectedSignature(endTime, deviceSecret),
       });
 
@@ -213,7 +207,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 4,
         signature: 'invalid-signature', // Invalid signature
       });
 
@@ -236,7 +229,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 2,
         signature: calculateExpectedSignature(endTime, deviceSecret),
       });
 
@@ -264,7 +256,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 1,
         signature: calculateExpectedSignature(endTime, deviceSecret),
       });
 
@@ -285,7 +276,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 3,
         signature: calculateExpectedSignature(endTime, deviceSecret),
       });
 
@@ -303,7 +293,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 1,
         signature: calculateExpectedSignature(endTime, deviceSecret),
       });
 
@@ -332,7 +321,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 4,
         signature: calculateExpectedSignature(endTime, deviceSecret),
       });
 
@@ -348,7 +336,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 4,
         signature: 'tampered-signature',
       });
 
@@ -373,7 +360,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 4,
         signature: undefined,
       });
 
@@ -440,7 +426,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 4,
         signature: calculateExpectedSignature(endTime, deviceSecret),
       });
 
@@ -468,7 +453,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 1,
         signature: calculateExpectedSignature(endTime, deviceSecret),
       });
 
@@ -483,7 +467,6 @@ describe('NuclearModeManager', () => {
             active: false,
             endTime: undefined,
             signature: undefined,
-            duration: undefined,
           }),
         })
       );
@@ -495,7 +478,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 4,
         signature: calculateExpectedSignature(endTime, deviceSecret),
       });
 
@@ -522,7 +504,6 @@ describe('NuclearModeManager', () => {
       const settings = createMockSettings({
         active: true,
         endTime,
-        duration: 2,
         signature: calculateExpectedSignature(endTime, deviceSecret),
       });
 
@@ -532,7 +513,6 @@ describe('NuclearModeManager', () => {
 
       expect(status.active).toBe(true);
       expect(status.endTime).toEqual(endTime);
-      expect(status.duration).toBe(2);
       expect(status.integrityValid).toBe(true);
       expect(status.remainingMs).toBeGreaterThan(0);
       expect(status.remainingFormatted).toMatch(/\d+h \d+m/);

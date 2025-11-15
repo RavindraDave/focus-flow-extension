@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { axe, toHaveNoViolations } from 'jest-axe';
+import { axe } from 'jest-axe';
 import { Spinner } from '../../../../src/components/atoms/Spinner';
-
-// Extend Vitest matchers
-expect.extend(toHaveNoViolations);
 
 describe('Spinner', () => {
   describe('Rendering', () => {

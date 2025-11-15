@@ -10,7 +10,7 @@
 
 import { storageService, StorageError } from './storage-service';
 import { STORAGE_KEYS, CURRENT_SCHEMA_VERSION, DEFAULT_SETTINGS, DEFAULT_ANALYTICS } from '../utils/constants';
-import type { ExtensionStorage, UserSettings, AnalyticsData } from '../types';
+import type { UserSettings, AnalyticsData } from '../types';
 import { z } from 'zod';
 
 /**
@@ -63,7 +63,7 @@ export class MigrationService {
 
     try {
       // Backup current data before migration
-      const backup = await this.createBackup();
+      await this.createBackup();
 
       // Get all data from storage
       let data = await this.getAllData();
@@ -197,6 +197,7 @@ export class MigrationService {
    *
    * Add new fields, transform existing data, etc.
    */
+  // @ts-expect-error - Reserved for future migration
   private async migrateToV2(
     data: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
@@ -265,7 +266,7 @@ export class MigrationService {
    * @returns 32-byte hex string
    */
   private generateDeviceSecret(): string {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
       const bytes = new Uint8Array(32);
       crypto.getRandomValues(bytes);
       return Array.from(bytes)

@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { axe, toHaveNoViolations } from 'jest-axe';
+import { axe } from 'jest-axe';
 import { PopupLayout } from '../../../../src/components/templates/PopupLayout';
-
-// Extend Vitest matchers
-expect.extend(toHaveNoViolations);
 
 describe('PopupLayout', () => {
   describe('Rendering', () => {
@@ -315,7 +312,6 @@ describe('PopupLayout', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty children', () => {
-      // @ts-expect-error - Testing edge case
       render(<PopupLayout>{null}</PopupLayout>);
       expect(screen.getByRole('main')).toBeInTheDocument();
     });

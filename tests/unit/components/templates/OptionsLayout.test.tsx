@@ -1,11 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { axe, toHaveNoViolations } from 'jest-axe';
+import { axe } from 'jest-axe';
 import { OptionsLayout, NavigationItem } from '../../../../src/components/templates/OptionsLayout';
-
-// Extend Vitest matchers
-expect.extend(toHaveNoViolations);
 
 describe('OptionsLayout', () => {
   const mockNavigation: NavigationItem[] = [

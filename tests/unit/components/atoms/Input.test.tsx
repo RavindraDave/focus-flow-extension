@@ -2,11 +2,8 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { axe, toHaveNoViolations } from 'jest-axe';
+import { axe } from 'jest-axe';
 import { Input } from '../../../../src/components/atoms/Input';
-
-// Extend Vitest matchers
-expect.extend(toHaveNoViolations);
 
 describe('Input', () => {
   describe('Rendering', () => {

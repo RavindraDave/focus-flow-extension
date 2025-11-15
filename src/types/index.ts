@@ -603,3 +603,8 @@ export interface StorageQuota {
    */
   percentageUsed: number;
 }
+
+/**
+ * Type alias for backward compatibility
+ */
+export type Settings = UserSettings;

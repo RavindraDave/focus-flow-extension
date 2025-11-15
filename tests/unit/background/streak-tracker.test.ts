@@ -5,8 +5,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { StreakTracker, StreakError } from '../../../src/background/streak-tracker';
-import { AnalyticsRepository } from '../../../src/services/analytics-repository';
-import { SessionRepository } from '../../../src/services/session-repository';
 import { StreakData, PomodoroSession } from '../../../src/types/index';
 
 // Mock repositories
@@ -20,11 +18,11 @@ describe('StreakTracker', () => {
 
   const createMockStreak = (overrides?: Partial<StreakData>): StreakData => {
     return {
-      current: 0,
-      longest: 0,
-      lastCheckIn: new Date(),
+      currentStreak: 0,
+      longestStreak: 0,
+      lastSessionDate: undefined,
       freezesAvailable: 0,
-      freezesUsed: 0,
+      todayCompleted: false,
       ...overrides,
     };
   };
@@ -65,9 +63,9 @@ describe('StreakTracker', () => {
       yesterday.setHours(0, 0, 0, 0);
 
       const streak = createMockStreak({
-        current: 5,
-        longest: 10,
-        lastCheckIn: yesterday,
+        currentStreak: 5,
+        longestStreak: 10,
+        lastSessionDate: yesterday,
       });
 
       mockAnalyticsRepository.getStreak.mockResolvedValue(streak);
@@ -78,11 +76,11 @@ describe('StreakTracker', () => {
 
       const result = await tracker.checkDailyStreak(false);
 
-      expect(result.current).toBe(6); // Incremented
+      expect(result.currentStreak).toBe(6); // Incremented
       expect(mockAnalyticsRepository.updateStreak).toHaveBeenCalledWith(
         expect.objectContaining({
-          current: 6,
-          longest: 10, // Not updated (current 6 < longest 10)
+          currentStreak: 6,
+          longestStreak: 10, // Not updated (current 6 < longest 10)
         })
       );
     });
@@ -93,9 +91,9 @@ describe('StreakTracker', () => {
       yesterday.setHours(0, 0, 0, 0);
 
       const streak = createMockStreak({
-        current: 10,
-        longest: 10,
-        lastCheckIn: yesterday,
+        currentStreak: 10,
+        longestStreak: 10,
+        lastSessionDate: yesterday,
       });
 
       mockAnalyticsRepository.getStreak.mockResolvedValue(streak);
@@ -106,8 +104,8 @@ describe('StreakTracker', () => {
 
       const result = await tracker.checkDailyStreak(false);
 
-      expect(result.current).toBe(11);
-      expect(result.longest).toBe(11); // Updated
+      expect(result.currentStreak).toBe(11);
+      expect(result.longestStreak).toBe(11); // Updated
     });
 
     it('should break streak when no activity and no freezes', async () => {
@@ -116,9 +114,9 @@ describe('StreakTracker', () => {
       yesterday.setHours(0, 0, 0, 0);
 
       const streak = createMockStreak({
-        current: 5,
-        longest: 10,
-        lastCheckIn: yesterday,
+        currentStreak: 5,
+        longestStreak: 10,
+        lastSessionDate: yesterday,
         freezesAvailable: 0,
       });
 
@@ -128,7 +126,7 @@ describe('StreakTracker', () => {
 
       const result = await tracker.checkDailyStreak(false);
 
-      expect(result.current).toBe(0); // Streak broken
+      expect(result.currentStreak).toBe(0); // Streak broken
     });
 
     it('should use freeze when no activity but premium with freezes', async () => {
@@ -137,11 +135,10 @@ describe('StreakTracker', () => {
       yesterday.setHours(0, 0, 0, 0);
 
       const streak = createMockStreak({
-        current: 5,
-        longest: 10,
-        lastCheckIn: yesterday,
+        currentStreak: 5,
+        longestStreak: 10,
+        lastSessionDate: yesterday,
         freezesAvailable: 2,
-        freezesUsed: 0,
       });
 
       mockAnalyticsRepository.getStreak.mockResolvedValue(streak);
@@ -150,9 +147,8 @@ describe('StreakTracker', () => {
 
       const result = await tracker.checkDailyStreak(true); // Premium
 
-      expect(result.current).toBe(5); // Streak maintained
+      expect(result.currentStreak).toBe(5); // Streak maintained
       expect(result.freezesAvailable).toBe(1); // 1 freeze consumed
-      expect(result.freezesUsed).toBe(1);
     });
 
     it('should do nothing if already checked in today', async () => {
@@ -160,15 +156,15 @@ describe('StreakTracker', () => {
       today.setHours(0, 0, 0, 0);
 
       const streak = createMockStreak({
-        current: 5,
-        lastCheckIn: today,
+        currentStreak: 5,
+        lastSessionDate: today,
       });
 
       mockAnalyticsRepository.getStreak.mockResolvedValue(streak);
 
       const result = await tracker.checkDailyStreak(false);
 
-      expect(result.current).toBe(5); // Unchanged
+      expect(result.currentStreak).toBe(5); // Unchanged
       expect(mockAnalyticsRepository.updateStreak).not.toHaveBeenCalled();
     });
 
@@ -178,9 +174,9 @@ describe('StreakTracker', () => {
       threeDaysAgo.setHours(0, 0, 0, 0);
 
       const streak = createMockStreak({
-        current: 10,
-        longest: 15,
-        lastCheckIn: threeDaysAgo,
+        currentStreak: 10,
+        longestStreak: 15,
+        lastSessionDate: threeDaysAgo,
         freezesAvailable: 1, // Not enough (need 2 freezes for 3 days)
       });
 
@@ -190,7 +186,7 @@ describe('StreakTracker', () => {
 
       const result = await tracker.checkDailyStreak(true);
 
-      expect(result.current).toBe(0); // Streak broken
+      expect(result.currentStreak).toBe(0); // Streak broken
     });
 
     it('should recover streak when multiple days missed with enough freezes', async () => {
@@ -199,11 +195,10 @@ describe('StreakTracker', () => {
       threeDaysAgo.setHours(0, 0, 0, 0);
 
       const streak = createMockStreak({
-        current: 10,
-        longest: 15,
-        lastCheckIn: threeDaysAgo,
+        currentStreak: 10,
+        longestStreak: 15,
+        lastSessionDate: threeDaysAgo,
         freezesAvailable: 2, // Enough for 2 missed days (3 total - 1 for today)
-        freezesUsed: 0,
       });
 
       mockAnalyticsRepository.getStreak.mockResolvedValue(streak);
@@ -212,9 +207,8 @@ describe('StreakTracker', () => {
 
       const result = await tracker.checkDailyStreak(true);
 
-      expect(result.current).toBe(10); // Streak maintained
+      expect(result.currentStreak).toBe(10); // Streak maintained
       expect(result.freezesAvailable).toBe(0); // 2 freezes consumed
-      expect(result.freezesUsed).toBe(2);
     });
 
     it('should throw error for future check-in time', async () => {
@@ -222,7 +216,7 @@ describe('StreakTracker', () => {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const streak = createMockStreak({
-        lastCheckIn: tomorrow, // Future date
+        lastSessionDate: tomorrow, // Future date
       });
 
       mockAnalyticsRepository.getStreak.mockResolvedValue(streak);
@@ -236,16 +230,16 @@ describe('StreakTracker', () => {
   describe('getCurrentStreak', () => {
     it('should return current streak data', async () => {
       const streak = createMockStreak({
-        current: 7,
-        longest: 15,
+        currentStreak: 7,
+        longestStreak: 15,
       });
 
       mockAnalyticsRepository.getStreak.mockResolvedValue(streak);
 
       const result = await tracker.getCurrentStreak();
 
-      expect(result.current).toBe(7);
-      expect(result.longest).toBe(15);
+      expect(result.currentStreak).toBe(7);
+      expect(result.longestStreak).toBe(15);
     });
   });
 
@@ -296,7 +290,6 @@ describe('StreakTracker', () => {
     it('should reset freezes for premium users', async () => {
       const streak = createMockStreak({
         freezesAvailable: 0,
-        freezesUsed: 2,
       });
 
       mockAnalyticsRepository.getStreak.mockResolvedValue(streak);
@@ -306,7 +299,6 @@ describe('StreakTracker', () => {
 
       expect(mockAnalyticsRepository.updateStreak).toHaveBeenCalledWith({
         freezesAvailable: 2,
-        freezesUsed: 0,
       });
     });
 
@@ -370,10 +362,9 @@ describe('StreakTracker', () => {
 
       expect(mockAnalyticsRepository.updateStreak).toHaveBeenCalledWith(
         expect.objectContaining({
-          current: 0,
-          longest: 0,
+          currentStreak: 0,
+          longestStreak: 0,
           freezesAvailable: 0,
-          freezesUsed: 0,
         })
       );
     });
@@ -389,8 +380,8 @@ describe('StreakTracker', () => {
       yesterday.setDate(yesterday.getDate() - 1);
 
       const streak = createMockStreak({
-        current: 3,
-        lastCheckIn: yesterday,
+        currentStreak: 3,
+        lastSessionDate: yesterday,
       });
 
       mockAnalyticsRepository.getStreak.mockResolvedValue(streak);
@@ -401,7 +392,7 @@ describe('StreakTracker', () => {
 
       const result = await tracker.checkDailyStreak(false);
 
-      expect(result.current).toBe(4);
+      expect(result.currentStreak).toBe(4);
     });
 
     it('should handle consecutive days across month boundary', async () => {
@@ -411,8 +402,8 @@ describe('StreakTracker', () => {
       yesterday.setHours(0, 0, 0, 0);
 
       const streak = createMockStreak({
-        current: 5,
-        lastCheckIn: yesterday,
+        currentStreak: 5,
+        lastSessionDate: yesterday,
       });
 
       mockAnalyticsRepository.getStreak.mockResolvedValue(streak);
@@ -423,7 +414,7 @@ describe('StreakTracker', () => {
 
       const result = await tracker.checkDailyStreak(false);
 
-      expect(result.current).toBe(6);
+      expect(result.currentStreak).toBe(6);
     });
 
     it('should handle same-day check-in at different times', async () => {
@@ -432,8 +423,8 @@ describe('StreakTracker', () => {
       today.setHours(1, 0, 0, 0); // 1 AM today
 
       const streak = createMockStreak({
-        current: 5,
-        lastCheckIn: today,
+        currentStreak: 5,
+        lastSessionDate: today,
       });
 
       mockAnalyticsRepository.getStreak.mockResolvedValue(streak);
@@ -444,7 +435,7 @@ describe('StreakTracker', () => {
       const result = await tracker.checkDailyStreak(false);
 
       // Should not increment (same day, already checked in)
-      expect(result.current).toBe(5);
+      expect(result.currentStreak).toBe(5);
       expect(mockAnalyticsRepository.updateStreak).not.toHaveBeenCalled();
     });
   });

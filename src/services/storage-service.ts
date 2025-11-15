@@ -14,7 +14,7 @@
  * - Sanitized error messages (no sensitive data leakage)
  */
 
-import { z, ZodSchema } from 'zod';
+import type { ZodSchema } from 'zod';
 import {
   STORAGE_LIMITS,
   RATE_LIMITS,

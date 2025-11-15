@@ -232,7 +232,7 @@ export class SettingsRepository {
    */
   private generateDeviceSecret(): string {
     // Use Web Crypto API (browser environment) or crypto module (Node.js/tests)
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
       // Browser: Generate secure random bytes
       const bytes = new Uint8Array(32);
       crypto.getRandomValues(bytes);

@@ -141,7 +141,7 @@ export class SessionRepository {
     sessions[index] = {
       ...sessions[index],
       ...updates,
-    };
+    } as PomodoroSession;
 
     await this.storageService.set(
       STORAGE_KEYS.SESSIONS,
