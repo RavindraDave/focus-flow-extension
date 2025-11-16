@@ -28,6 +28,27 @@ export class BlockRuleRepository {
   }
 
   /**
+   * Serialize a block rule for storage
+   *
+   * Converts Date objects back to ISO strings for schema validation.
+   *
+   * @param rule - Rule with possible Date objects
+   * @returns Rule with date fields as ISO strings
+   * @private
+   */
+  private serializeRule(rule: BlockRule): BlockRule {
+    return {
+      ...rule,
+      createdAt: (rule.createdAt instanceof Date
+        ? rule.createdAt.toISOString()
+        : rule.createdAt) as unknown as Date,
+      updatedAt: (rule.updatedAt instanceof Date
+        ? rule.updatedAt.toISOString()
+        : rule.updatedAt) as unknown as Date,
+    };
+  }
+
+  /**
    * Get all block rules
    *
    * @returns Array of all block rules
@@ -59,11 +80,15 @@ export class BlockRuleRepository {
    */
   async addRule(rule: BlockRule): Promise<void> {
     const rules = await this.getAllRules();
-    rules.push(rule);
+    const serialized = this.serializeRule(rule);
+    rules.push(serialized);
+
+    // Serialize all rules before saving
+    const serializedRules = rules.map(r => this.serializeRule(r));
 
     await this.storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
-      rules,
+      serializedRules,
       z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
   }
@@ -86,12 +111,15 @@ export class BlockRuleRepository {
     rules[index] = {
       ...rules[index],
       ...updates,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString() as unknown as Date,
     } as BlockRule;
+
+    // Serialize all rules before saving
+    const serializedRules = rules.map(r => this.serializeRule(r));
 
     await this.storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
-      rules,
+      serializedRules,
       z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
   }
@@ -111,9 +139,12 @@ export class BlockRuleRepository {
       return false;
     }
 
+    // Serialize all rules before saving
+    const serializedRules = filtered.map(r => this.serializeRule(r));
+
     await this.storageService.set(
       STORAGE_KEYS.BLOCK_RULES,
-      filtered,
+      serializedRules,
       z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
     );
 
