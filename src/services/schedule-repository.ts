@@ -173,6 +173,18 @@ export class ScheduleRepository {
   }
 
   /**
+   * Convert JavaScript day number (0-6) to lowercase day name
+   *
+   * @param dayNumber - 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+   * @returns Lowercase day name matching DayOfWeekSchema
+   * @private
+   */
+  private getDayName(dayNumber: number): string {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[dayNumber] || 'monday';
+  }
+
+  /**
    * Get schedules that should be active at a given time
    * Complexity: 8 (async + date logic + filter + exception checking)
    *
@@ -193,8 +205,8 @@ export class ScheduleRepository {
         return false;
       }
 
-      // Check day of week
-      const dayOfWeek = dateTime.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      // Check day of week (locale-independent using getDay())
+      const dayOfWeek = this.getDayName(dateTime.getDay());
       if (!schedule.daysOfWeek.includes(dayOfWeek as any)) {
         return false;
       }

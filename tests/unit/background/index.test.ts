@@ -238,16 +238,12 @@ describe('BackgroundServiceWorker', () => {
       const worker = new BackgroundServiceWorker();
       await worker.initialize();
 
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
+      // Unknown alarms are delegated to schedule manager
+      // which will handle schedule-specific alarms
       const alarm = { name: 'unknown-alarm' };
-      await alarmListener(alarm);
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Unknown alarm')
-      );
-
-      consoleWarnSpy.mockRestore();
+      // Should not throw
+      await expect(alarmListener(alarm)).resolves.not.toThrow();
     });
 
     it('should catch and log alarm handler errors', async () => {
