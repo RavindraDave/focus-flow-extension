@@ -20,13 +20,13 @@ describe('AnalyticsTracker', () => {
     return {
       id: crypto.randomUUID(),
       type: 'work',
-      duration: 25,
+      duration: 1500, // 25 minutes in seconds (per schema: 60-3600 seconds)
       startTime: new Date(),
       endTime: new Date(),
       taskName: 'Test Task',
       category: 'development',
       status: 'completed',
-      actualDuration: 25,
+      actualDuration: 1500, // 25 minutes in seconds
       ...overrides,
     };
   };
