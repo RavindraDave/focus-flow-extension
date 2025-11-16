@@ -478,7 +478,7 @@ class BackgroundServiceWorker {
           // Show welcome notification
           await chrome.notifications.create({
             type: 'basic',
-            iconUrl: chrome.runtime.getURL('/icon-128.png'),
+            iconUrl: chrome.runtime.getURL('/icons/icon128.png'),
             title: 'Focus Flow Installed!',
             message: 'Click the extension icon to start your first Pomodoro session.',
           });
