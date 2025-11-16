@@ -164,6 +164,8 @@ export class StorageService {
     this.validateKey(key);
 
     // Validate value with schema (ASVS V5.1.1 - input validation)
+    // IMPORTANT: Use safeParse to validate, but store original value (not transformed)
+    // This prevents DateSchema transforms from converting strings to Date objects
     const parseResult = schema.safeParse(value);
 
     if (!parseResult.success) {
@@ -173,15 +175,17 @@ export class StorageService {
       );
     }
 
-    const validatedValue = parseResult.data;
+    // Store the ORIGINAL value, not the transformed one
+    // DateSchema transforms strings to Date objects, but storage needs strings
+    const valueToStore = value;
 
     // Debounce writes to prevent rate limiting
     if (options.debounce) {
-      return this.debouncedWrite(key, validatedValue, schema);
+      return this.debouncedWrite(key, valueToStore, schema);
     }
 
     // Immediate write
-    return this.writeToStorage(key, validatedValue);
+    return this.writeToStorage(key, valueToStore);
   }
 
   /**
