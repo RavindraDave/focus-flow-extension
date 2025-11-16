@@ -212,7 +212,7 @@ export class ScheduleManager {
 
       await chrome.notifications.create({
         type: 'basic',
-        iconUrl: '/icons/icon-128.png',
+        iconUrl: chrome.runtime.getURL('/icons/icon128.png'),
         title,
         message,
         priority: 1,

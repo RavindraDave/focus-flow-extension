@@ -424,7 +424,7 @@ export class TimerEngine {
 
       await chrome.notifications.create({
         type: 'basic',
-        iconUrl: '/icon-128.png',
+        iconUrl: chrome.runtime.getURL('/icons/icon128.png'),
         title,
         message,
       });

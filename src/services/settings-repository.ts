@@ -246,7 +246,7 @@ export class SettingsRepository {
         return nodeCrypto.randomBytes(32).toString('hex');
       } catch {
         // Fallback: This should never happen in production
-        console.error('crypto.randomUUID not available, falling back');
+        console.error('crypto.getRandomValues not available, using fallback');
         return Array.from({ length: 64 }, () =>
           Math.floor(Math.random() * 16).toString(16)
         ).join('');
