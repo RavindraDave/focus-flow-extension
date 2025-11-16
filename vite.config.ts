@@ -1,10 +1,48 @@
-import { defineConfig } from 'vite';
+import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import { rename, unlink, rm } from 'fs/promises';
+
+// Plugin to move HTML files to root after build
+function moveHtmlToRoot(): Plugin {
+  return {
+    name: 'move-html-to-root',
+    closeBundle: async () => {
+      const distDir = resolve(__dirname, 'dist');
+
+      // Move popup HTML to root
+      try {
+        await rename(
+          resolve(distDir, 'src/popup/index.html'),
+          resolve(distDir, 'popup.html')
+        );
+      } catch (e) {
+        console.warn('Could not move popup HTML:', e);
+      }
+
+      // Move options HTML to root
+      try {
+        await rename(
+          resolve(distDir, 'src/options/index.html'),
+          resolve(distDir, 'options.html')
+        );
+      } catch (e) {
+        console.warn('Could not move options HTML:', e);
+      }
+
+      // Clean up empty src directory
+      try {
+        await rm(resolve(distDir, 'src'), { recursive: true, force: true });
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+    }
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), moveHtmlToRoot()],
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
