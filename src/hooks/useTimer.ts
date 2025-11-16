@@ -107,14 +107,10 @@ export function useTimer(): UseTimerReturn {
         setIsLoading(true);
         setError(null);
 
-        // Let background worker determine duration from user settings
-        // Fallback durations are only used if settings aren't loaded yet
-        const fallbackDuration = sessionType === 'work' ? 25 : sessionType === 'short-break' ? 5 : 15;
-
+        // Background worker uses user settings for duration
         const response = await chrome.runtime.sendMessage({
           type: 'TIMER_START',
           sessionType,
-          duration: fallbackDuration, // Background worker may override with user settings
           taskName,
         });
 
