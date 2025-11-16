@@ -53,7 +53,7 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-neutral-50">
       {/* Header */}
       <header className="bg-white border-b border-neutral-200 shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-neutral-900">Focus Flow</h1>
@@ -73,10 +73,10 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Tabs */}
         <nav
-          className="flex space-x-2 mb-8"
+          className="flex flex-wrap gap-2 mb-8"
           role="tablist"
           aria-label="Settings navigation"
         >
@@ -161,7 +161,7 @@ const App: React.FC = () => {
 
       {/* Footer */}
       <footer className="bg-white border-t border-neutral-200 mt-12">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <p className="text-xs text-neutral-500 text-center">
             Focus Flow Extension v1.0.0 • Built with React & TypeScript
           </p>
