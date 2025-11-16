@@ -35,6 +35,30 @@ export class SessionRepository {
   }
 
   /**
+   * Serialize a session for storage
+   *
+   * Converts Date objects back to ISO strings for schema validation.
+   * The schema expects ISO strings and transforms them to Date objects on read.
+   *
+   * @param session - Session with possible Date objects
+   * @returns Session with date fields as ISO strings
+   * @private
+   */
+  private serializeSession(session: PomodoroSession): PomodoroSession {
+    return {
+      ...session,
+      startTime: (session.startTime instanceof Date
+        ? session.startTime.toISOString()
+        : session.startTime) as unknown as Date,
+      endTime: session.endTime
+        ? (session.endTime instanceof Date
+          ? session.endTime.toISOString()
+          : session.endTime) as unknown as Date
+        : undefined,
+    };
+  }
+
+  /**
    * Get the currently active session
    *
    * @returns Active session or null if none
@@ -54,9 +78,10 @@ export class SessionRepository {
    * @throws StorageError if validation fails
    */
   async saveCurrentSession(session: PomodoroSession): Promise<void> {
+    const serialized = this.serializeSession(session);
     await this.storageService.set(
       STORAGE_KEYS.CURRENT_SESSION,
-      session,
+      serialized,
       PomodoroSessionSchema as unknown as z.ZodType<PomodoroSession>,
       { debounce: false } // Immediate write for active session
     );
@@ -104,16 +129,22 @@ export class SessionRepository {
   async addToHistory(session: PomodoroSession): Promise<void> {
     const sessions = await this.getSessionHistory();
 
+    // Serialize session before adding (convert Date objects to ISO strings)
+    const serialized = this.serializeSession(session);
+
     // Add new session
-    sessions.unshift(session); // Add to beginning (newest first)
+    sessions.unshift(serialized); // Add to beginning (newest first)
+
+    // Serialize all sessions in case they have Date objects from previous retrieval
+    const serializedSessions = sessions.map(s => this.serializeSession(s));
 
     // Cleanup if exceeding limit
-    if (sessions.length > STORAGE_LIMITS.MAX_SESSIONS_HISTORY) {
-      await this.cleanupOldSessions(sessions);
+    if (serializedSessions.length > STORAGE_LIMITS.MAX_SESSIONS_HISTORY) {
+      await this.cleanupOldSessions(serializedSessions);
     } else {
       await this.storageService.set(
         STORAGE_KEYS.SESSIONS,
-        sessions,
+        serializedSessions,
         z.array(PomodoroSessionSchema) as unknown as z.ZodType<PomodoroSession[]>
       );
     }
@@ -143,9 +174,12 @@ export class SessionRepository {
       ...updates,
     } as PomodoroSession;
 
+    // Serialize all sessions before saving
+    const serializedSessions = sessions.map(s => this.serializeSession(s));
+
     await this.storageService.set(
       STORAGE_KEYS.SESSIONS,
-      sessions,
+      serializedSessions,
       z.array(PomodoroSessionSchema) as unknown as z.ZodType<PomodoroSession[]>
     );
   }
@@ -278,9 +312,12 @@ export class SessionRepository {
 
     const toKeep = sorted.slice(0, STORAGE_LIMITS.MAX_SESSIONS_HISTORY);
 
+    // Serialize all sessions before saving
+    const serializedSessions = toKeep.map(s => this.serializeSession(s));
+
     await this.storageService.set(
       STORAGE_KEYS.SESSIONS,
-      toKeep,
+      serializedSessions,
       z.array(PomodoroSessionSchema) as unknown as z.ZodType<PomodoroSession[]>,
       { debounce: false }
     );
