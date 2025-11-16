@@ -101,8 +101,8 @@ export class TimerEngine {
     const session: PomodoroSession = {
       id: crypto.randomUUID(),
       type,
-      duration: minutes,
-      startTime: this.startTime,
+      duration: minutes * 60, // Convert minutes to seconds for schema validation
+      startTime: this.startTime.toISOString() as unknown as Date, // Schema expects ISO string, transforms to Date
       endTime: undefined,
       taskName: 'Focus Session', // TODO: Get from current task
       category: 'general',
@@ -191,14 +191,15 @@ export class TimerEngine {
     if (session) {
       const endTime = new Date();
       const elapsed = Math.floor(
-        (endTime.getTime() - session.startTime.getTime()) / 1000 / 60
+        (endTime.getTime() - session.startTime.getTime()) / 1000
       );
 
       const completedSession: PomodoroSession = {
         ...session,
+        startTime: (session.startTime instanceof Date ? session.startTime.toISOString() : session.startTime) as unknown as Date,
         status: 'abandoned',
-        endTime,
-        actualDuration: elapsed,
+        endTime: endTime.toISOString() as unknown as Date,
+        actualDuration: elapsed, // in seconds
       };
 
       await this.sessionRepository.addToHistory(completedSession);
@@ -246,14 +247,15 @@ export class TimerEngine {
 
     const endTime = new Date();
     const actualDuration = Math.floor(
-      (endTime.getTime() - session.startTime.getTime()) / 1000 / 60
+      (endTime.getTime() - session.startTime.getTime()) / 1000
     );
 
     const completedSession: PomodoroSession = {
       ...session,
+      startTime: (session.startTime instanceof Date ? session.startTime.toISOString() : session.startTime) as unknown as Date,
       status: 'completed',
-      endTime,
-      actualDuration,
+      endTime: endTime.toISOString() as unknown as Date,
+      actualDuration, // in seconds
     };
 
     // Save to history
