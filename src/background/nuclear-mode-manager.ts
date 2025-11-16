@@ -72,10 +72,10 @@ export class NuclearModeManager {
     // Generate signature for integrity verification
     const signature = await this.generateSignature(endTime, settings.nuclearMode.deviceSecret);
 
-    // Update settings
+    // Update settings - serialize Date to ISO string for schema validation
     const updatedNuclearMode: NuclearConfig = {
       active: true,
-      endTime,
+      endTime: endTime.toISOString() as unknown as Date,
       deviceSecret: settings.nuclearMode.deviceSecret,
       signature,
       challengeAttempts: settings.nuclearMode.challengeAttempts || 0,

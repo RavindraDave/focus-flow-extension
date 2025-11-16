@@ -86,8 +86,13 @@ export class TimerEngine {
    *
    * @param type - Session type (work/short-break/long-break)
    * @param minutes - Duration in minutes
+   * @param taskName - Optional task name for the session
    */
-  async start(type: 'work' | 'short-break' | 'long-break', minutes: number): Promise<void> {
+  async start(
+    type: 'work' | 'short-break' | 'long-break',
+    minutes: number,
+    taskName?: string
+  ): Promise<void> {
     if (this.state !== 'idle' && this.state !== 'paused') {
       throw new TimerError('Timer already running');
     }
@@ -104,7 +109,7 @@ export class TimerEngine {
       duration: minutes * 60, // Convert minutes to seconds for schema validation
       startTime: this.startTime.toISOString() as unknown as Date, // Schema expects ISO string, transforms to Date
       endTime: undefined,
-      taskName: 'Focus Session', // TODO: Get from current task
+      taskName: taskName || 'Focus Session',
       category: 'general',
       status: 'active',
       actualDuration: undefined,

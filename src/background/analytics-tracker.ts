@@ -72,8 +72,9 @@ export class AnalyticsTracker {
     // Get today's stats
     const todayStats = await this.analyticsRepository.getTodayStats();
 
-    // Calculate actual duration (in minutes)
-    const durationMinutes = session.actualDuration || session.duration;
+    // Calculate actual duration in minutes (session.duration and actualDuration are in SECONDS per schema)
+    const durationSeconds = session.actualDuration || session.duration;
+    const durationMinutes = Math.floor(durationSeconds / 60);
 
     // Update today's stats
     await this.analyticsRepository.updateTodayStats({
@@ -297,7 +298,7 @@ export class AnalyticsTracker {
         description: 'Complete your first Pomodoro session',
         category: 'sessions',
         icon: '🍅',
-        unlockedAt: new Date(),
+        unlockedAt: new Date().toISOString() as unknown as Date,
       });
     }
 
@@ -312,7 +313,7 @@ export class AnalyticsTracker {
         description: 'Complete 100 Pomodoro sessions',
         category: 'sessions',
         icon: '💯',
-        unlockedAt: new Date(),
+        unlockedAt: new Date().toISOString() as unknown as Date,
       });
     }
 
@@ -327,7 +328,7 @@ export class AnalyticsTracker {
         description: 'Maintain a 7-day streak',
         category: 'streak',
         icon: '🔥',
-        unlockedAt: new Date(),
+        unlockedAt: new Date().toISOString() as unknown as Date,
       });
     }
 
@@ -342,7 +343,7 @@ export class AnalyticsTracker {
         description: 'Maintain a 30-day streak',
         category: 'streak',
         icon: '🏃',
-        unlockedAt: new Date(),
+        unlockedAt: new Date().toISOString() as unknown as Date,
       });
     }
 
@@ -357,7 +358,7 @@ export class AnalyticsTracker {
         description: 'Accumulate 1000 minutes of focus time',
         category: 'focus-time',
         icon: '🦁',
-        unlockedAt: new Date(),
+        unlockedAt: new Date().toISOString() as unknown as Date,
       });
     }
   }

@@ -44,6 +44,41 @@ export class AnalyticsRepository {
   }
 
   /**
+   * Serialize analytics data for storage
+   *
+   * Converts Date objects back to ISO strings for schema validation.
+   *
+   * @param analytics - Analytics with possible Date objects
+   * @returns Analytics with date fields as ISO strings
+   * @private
+   */
+  private serializeAnalytics(analytics: AnalyticsData): AnalyticsData {
+    return {
+      ...analytics,
+      dailyStats: analytics.dailyStats.map(stat => ({
+        ...stat,
+        date: (stat.date instanceof Date
+          ? stat.date.toISOString()
+          : stat.date) as unknown as Date,
+      })),
+      streak: {
+        ...analytics.streak,
+        lastSessionDate: analytics.streak.lastSessionDate
+          ? (analytics.streak.lastSessionDate instanceof Date
+            ? analytics.streak.lastSessionDate.toISOString()
+            : analytics.streak.lastSessionDate) as unknown as Date
+          : undefined,
+      },
+      achievements: analytics.achievements.map(achievement => ({
+        ...achievement,
+        unlockedAt: (achievement.unlockedAt instanceof Date
+          ? achievement.unlockedAt.toISOString()
+          : achievement.unlockedAt) as unknown as Date,
+      })),
+    };
+  }
+
+  /**
    * Get all analytics data
    *
    * Initializes with default values if not found.
@@ -58,9 +93,10 @@ export class AnalyticsRepository {
 
     if (!analytics) {
       analytics = this.createDefaultAnalytics();
+      const serialized = this.serializeAnalytics(analytics);
       await this.storageService.set(
         STORAGE_KEYS.ANALYTICS,
-        analytics,
+        serialized,
         AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>,
         { debounce: false }
       );
@@ -93,9 +129,10 @@ export class AnalyticsRepository {
       todayStats = this.createDailyStats(today);
       analytics.dailyStats.push(todayStats);
 
+      const serialized = this.serializeAnalytics(analytics);
       await this.storageService.set(
         STORAGE_KEYS.ANALYTICS,
-        analytics,
+        serialized,
         AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
       );
     }
@@ -138,9 +175,10 @@ export class AnalyticsRepository {
       }
     }
 
+    const serialized = this.serializeAnalytics(analytics);
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
-      analytics,
+      serialized,
       AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
     );
   }
@@ -154,9 +192,10 @@ export class AnalyticsRepository {
     const analytics = await this.getAnalytics();
     analytics.totalFocusTimeMinutes += minutes;
 
+    const serialized = this.serializeAnalytics(analytics);
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
-      analytics,
+      serialized,
       AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
     );
   }
@@ -170,9 +209,10 @@ export class AnalyticsRepository {
     const analytics = await this.getAnalytics();
     analytics.totalSessions += count;
 
+    const serialized = this.serializeAnalytics(analytics);
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
-      analytics,
+      serialized,
       AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
     );
   }
@@ -242,9 +282,10 @@ export class AnalyticsRepository {
       ...updates,
     };
 
+    const serialized = this.serializeAnalytics(analytics);
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
-      analytics,
+      serialized,
       AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
     );
   }
@@ -275,9 +316,10 @@ export class AnalyticsRepository {
 
     analytics.achievements.push(achievement);
 
+    const serialized = this.serializeAnalytics(analytics);
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
-      analytics,
+      serialized,
       AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>
     );
   }
@@ -314,9 +356,10 @@ export class AnalyticsRepository {
     if (filtered.length < analytics.dailyStats.length) {
       analytics.dailyStats = filtered;
 
+      const serialized = this.serializeAnalytics(analytics);
       await this.storageService.set(
         STORAGE_KEYS.ANALYTICS,
-        analytics,
+        serialized,
         AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>,
         { debounce: false }
       );
@@ -330,9 +373,10 @@ export class AnalyticsRepository {
    */
   async resetAnalytics(): Promise<void> {
     const defaultAnalytics = this.createDefaultAnalytics();
+    const serialized = this.serializeAnalytics(defaultAnalytics);
     await this.storageService.set(
       STORAGE_KEYS.ANALYTICS,
-      defaultAnalytics,
+      serialized,
       AnalyticsDataSchema as unknown as z.ZodType<AnalyticsData>,
       { debounce: false }
     );
@@ -422,7 +466,7 @@ export class AnalyticsRepository {
     cleanDate.setHours(0, 0, 0, 0);
 
     return {
-      date: cleanDate,
+      date: cleanDate.toISOString() as unknown as Date,
       focusTimeMinutes: 0,
       completedSessions: 0,
       abandonedSessions: 0,

@@ -293,7 +293,11 @@ export const NuclearConfigSchema = z.object({
   active: z.boolean(),
   endTime: DateSchema.optional(),
   signature: z.string().length(64).optional(), // HMAC-SHA256 = 64 hex chars
-  deviceSecret: z.string().min(32), // Cryptographically secure random
+  // Device secret: empty string for initial state, or 32+ chars when generated
+  deviceSecret: z.string().refine(
+    (s) => s === '' || s.length >= 32,
+    { message: 'Device secret must be empty or at least 32 characters' }
+  ),
   challengeAttempts: z.number().int().min(0).max(10).default(0),
   challengeAttemptsStartTime: DateSchema.optional(),
 }).refine(

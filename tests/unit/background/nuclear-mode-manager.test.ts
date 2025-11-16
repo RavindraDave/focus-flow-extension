@@ -97,7 +97,7 @@ describe('NuclearModeManager', () => {
           nuclearMode: expect.objectContaining({
             active: true,
             signature: expect.any(String),
-            endTime: expect.any(Date),
+            endTime: expect.any(String), // ISO string, not Date object
           }),
         })
       );
@@ -141,7 +141,8 @@ describe('NuclearModeManager', () => {
       const afterActivation = Date.now();
 
       const savedNuclearMode = mockSettingsRepository.updateSettings.mock.calls[0][0].nuclearMode;
-      const endTime = savedNuclearMode.endTime.getTime();
+      // endTime is now an ISO string, not a Date object
+      const endTime = new Date(savedNuclearMode.endTime).getTime();
 
       // End time should be approximately 2 hours from now
       const expectedMin = beforeActivation + 2 * 60 * 60 * 1000;

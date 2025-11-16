@@ -283,7 +283,7 @@ export class StreakTracker {
     await this.analyticsRepository.updateStreak({
       currentStreak: 0,
       longestStreak: 0,
-      lastSessionDate: new Date(),
+      lastSessionDate: new Date().toISOString() as unknown as Date,
       freezesAvailable: 0,
       todayCompleted: false,
     });

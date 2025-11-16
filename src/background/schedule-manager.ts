@@ -49,6 +49,18 @@ export class ScheduleManager {
   }
 
   /**
+   * Convert JavaScript day number (0-6) to lowercase day name
+   *
+   * @param dayNumber - 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+   * @returns Lowercase day name matching DayOfWeekSchema
+   * @private
+   */
+  private getDayName(dayNumber: number): string {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[dayNumber] || 'monday';
+  }
+
+  /**
    * Initialize the schedule manager
    * Sets up chrome.alarms and performs initial check
    * Complexity: 4 (async + setup + error handling)
@@ -266,8 +278,8 @@ export class ScheduleManager {
       checkDate.setDate(checkDate.getDate() + daysAhead);
       checkDate.setHours(startHour, startMinute, 0, 0);
 
-      // Check if this day is included in the schedule
-      const dayOfWeek = checkDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      // Check if this day is included in the schedule (locale-independent)
+      const dayOfWeek = this.getDayName(checkDate.getDay());
       if (!schedule.daysOfWeek.includes(dayOfWeek as any)) {
         continue;
       }

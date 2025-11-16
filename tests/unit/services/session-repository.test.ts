@@ -71,10 +71,21 @@ describe('SessionRepository', () => {
 
       expect(mockStorageService.set).toHaveBeenCalledWith(
         'currentSession',
-        session,
+        expect.objectContaining({
+          id: session.id,
+          type: session.type,
+          duration: session.duration,
+          // Date should be serialized to ISO string
+          startTime: expect.any(String),
+          status: session.status,
+        }),
         expect.anything(),
         { debounce: false }
       );
+      // Verify the startTime was serialized to ISO string
+      const savedSession = mockStorageService.set.mock.calls[0][1];
+      expect(typeof savedSession.startTime).toBe('string');
+      expect(savedSession.startTime).toBe(session.startTime.toISOString());
     });
   });
 
@@ -146,11 +157,14 @@ describe('SessionRepository', () => {
 
       await repository.addToHistory(newSession);
 
-      expect(mockStorageService.set).toHaveBeenCalledWith(
-        'sessions',
-        expect.arrayContaining([newSession, ...existingSessions]),
-        expect.anything()
-      );
+      // Verify the sessions are saved with serialized dates
+      const savedSessions = mockStorageService.set.mock.calls[0][1];
+      expect(savedSessions.length).toBe(2);
+      expect(savedSessions[0].id).toBe('2'); // New session first
+      expect(savedSessions[1].id).toBe('1');
+      // Verify startTime was serialized to ISO string
+      expect(typeof savedSessions[0].startTime).toBe('string');
+      expect(typeof savedSessions[1].startTime).toBe('string');
     });
 
     it('should trigger cleanup when exceeding limit', async () => {

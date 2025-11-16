@@ -7,6 +7,13 @@ import { useState, useEffect, useCallback } from 'react';
 import type { TimerStatus } from '../types/messages';
 import type { SessionType } from '../types';
 
+/**
+ * Check if Chrome extension APIs are available
+ */
+const isChromeApiAvailable = (): boolean => {
+  return typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.sendMessage;
+};
+
 export interface UseTimerReturn {
   // State
   isActive: boolean;
@@ -41,6 +48,12 @@ export function useTimer(): UseTimerReturn {
    * Complexity: 3 (try-catch + message sending)
    */
   const fetchStatus = useCallback(async (): Promise<void> => {
+    if (!isChromeApiAvailable()) {
+      setError('Chrome extension APIs not available');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await chrome.runtime.sendMessage<
         { type: 'TIMER_GET_STATUS' },
@@ -85,16 +98,19 @@ export function useTimer(): UseTimerReturn {
    */
   const start = useCallback(
     async (sessionType: SessionType, taskName?: string): Promise<void> => {
+      if (!isChromeApiAvailable()) {
+        setError('Chrome extension APIs not available');
+        return;
+      }
+
       try {
         setIsLoading(true);
         setError(null);
 
-        const duration = sessionType === 'work' ? 25 : sessionType === 'short-break' ? 5 : 15;
-
+        // Background worker uses user settings for duration
         const response = await chrome.runtime.sendMessage({
           type: 'TIMER_START',
           sessionType,
-          duration,
           taskName,
         });
 
@@ -119,6 +135,11 @@ export function useTimer(): UseTimerReturn {
    * Complexity: 2 (try-catch)
    */
   const pause = useCallback(async (): Promise<void> => {
+    if (!isChromeApiAvailable()) {
+      setError('Chrome extension APIs not available');
+      return;
+    }
+
     try {
       setIsLoading(true);
       const response = await chrome.runtime.sendMessage({ type: 'TIMER_PAUSE' });
@@ -142,6 +163,11 @@ export function useTimer(): UseTimerReturn {
    * Complexity: 2 (try-catch)
    */
   const resume = useCallback(async (): Promise<void> => {
+    if (!isChromeApiAvailable()) {
+      setError('Chrome extension APIs not available');
+      return;
+    }
+
     try {
       setIsLoading(true);
       const response = await chrome.runtime.sendMessage({ type: 'TIMER_RESUME' });
@@ -165,6 +191,11 @@ export function useTimer(): UseTimerReturn {
    * Complexity: 2 (try-catch)
    */
   const stop = useCallback(async (): Promise<void> => {
+    if (!isChromeApiAvailable()) {
+      setError('Chrome extension APIs not available');
+      return;
+    }
+
     try {
       setIsLoading(true);
       const response = await chrome.runtime.sendMessage({ type: 'TIMER_STOP' });

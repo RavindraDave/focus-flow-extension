@@ -29,6 +29,30 @@ export class ScheduleRepository {
   }
 
   /**
+   * Serialize a schedule for storage
+   *
+   * Converts Date objects back to ISO strings for schema validation.
+   *
+   * @param schedule - Schedule with possible Date objects
+   * @returns Schedule with date fields as ISO strings
+   * @private
+   */
+  private serializeSchedule(schedule: Schedule): Schedule {
+    return {
+      ...schedule,
+      createdAt: (schedule.createdAt instanceof Date
+        ? schedule.createdAt.toISOString()
+        : schedule.createdAt) as unknown as Date,
+      updatedAt: (schedule.updatedAt instanceof Date
+        ? schedule.updatedAt.toISOString()
+        : schedule.updatedAt) as unknown as Date,
+      exceptions: schedule.exceptions.map(exc =>
+        (exc instanceof Date ? exc.toISOString() : exc) as unknown as Date
+      ),
+    };
+  }
+
+  /**
    * Get all schedules
    * Complexity: 3 (async + validation + default)
    *
@@ -63,11 +87,15 @@ export class ScheduleRepository {
    */
   async addSchedule(schedule: Schedule): Promise<void> {
     const schedules = await this.getAllSchedules();
-    schedules.push(schedule);
+    const serialized = this.serializeSchedule(schedule);
+    schedules.push(serialized);
+
+    // Serialize all schedules before saving
+    const serializedSchedules = schedules.map(s => this.serializeSchedule(s));
 
     await this.storageService.set(
       STORAGE_KEYS.SCHEDULES,
-      schedules,
+      serializedSchedules,
       z.array(ScheduleSchema) as unknown as z.ZodType<Schedule[]>
     );
   }
@@ -91,12 +119,15 @@ export class ScheduleRepository {
     schedules[index] = {
       ...schedules[index],
       ...updates,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString() as unknown as Date,
     } as Schedule;
+
+    // Serialize all schedules before saving
+    const serializedSchedules = schedules.map(s => this.serializeSchedule(s));
 
     await this.storageService.set(
       STORAGE_KEYS.SCHEDULES,
-      schedules,
+      serializedSchedules,
       z.array(ScheduleSchema) as unknown as z.ZodType<Schedule[]>
     );
   }
@@ -117,9 +148,12 @@ export class ScheduleRepository {
       return false;
     }
 
+    // Serialize all schedules before saving
+    const serializedSchedules = filtered.map(s => this.serializeSchedule(s));
+
     await this.storageService.set(
       STORAGE_KEYS.SCHEDULES,
-      filtered,
+      serializedSchedules,
       z.array(ScheduleSchema) as unknown as z.ZodType<Schedule[]>
     );
 
@@ -136,6 +170,18 @@ export class ScheduleRepository {
   async findById(id: string): Promise<Schedule | null> {
     const schedules = await this.getAllSchedules();
     return schedules.find(s => s.id === id) || null;
+  }
+
+  /**
+   * Convert JavaScript day number (0-6) to lowercase day name
+   *
+   * @param dayNumber - 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+   * @returns Lowercase day name matching DayOfWeekSchema
+   * @private
+   */
+  private getDayName(dayNumber: number): string {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[dayNumber] || 'monday';
   }
 
   /**
@@ -159,8 +205,8 @@ export class ScheduleRepository {
         return false;
       }
 
-      // Check day of week
-      const dayOfWeek = dateTime.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      // Check day of week (locale-independent using getDay())
+      const dayOfWeek = this.getDayName(dateTime.getDay());
       if (!schedule.daysOfWeek.includes(dayOfWeek as any)) {
         return false;
       }

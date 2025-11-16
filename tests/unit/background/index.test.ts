@@ -14,7 +14,24 @@ vi.mock('../../../src/background/streak-tracker');
 vi.mock('../../../src/background/nuclear-mode-manager');
 vi.mock('../../../src/services/session-repository');
 vi.mock('../../../src/services/analytics-repository');
-vi.mock('../../../src/services/settings-repository');
+vi.mock('../../../src/services/settings-repository', () => ({
+  SettingsRepository: vi.fn().mockImplementation(() => ({
+    getSettings: vi.fn().mockResolvedValue({
+      workDuration: 25,
+      shortBreakDuration: 5,
+      longBreakDuration: 15,
+      sessionsUntilLongBreak: 4,
+      autoStartNextSession: false,
+      enableNotifications: true,
+      nuclearMode: {
+        active: false,
+        deviceSecret: '',
+      },
+      premiumLicenseKey: undefined,
+    }),
+    updateSettings: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
 vi.mock('../../../src/services/block-rule-repository');
 
 // Mock Chrome APIs
@@ -238,16 +255,12 @@ describe('BackgroundServiceWorker', () => {
       const worker = new BackgroundServiceWorker();
       await worker.initialize();
 
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
+      // Unknown alarms are delegated to schedule manager
+      // which will handle schedule-specific alarms
       const alarm = { name: 'unknown-alarm' };
-      await alarmListener(alarm);
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Unknown alarm')
-      );
-
-      consoleWarnSpy.mockRestore();
+      // Should not throw
+      await expect(alarmListener(alarm)).resolves.not.toThrow();
     });
 
     it('should catch and log alarm handler errors', async () => {

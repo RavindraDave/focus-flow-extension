@@ -17,6 +17,68 @@ import { AnalyticsRepository } from '../services/analytics-repository';
 import { SettingsRepository } from '../services/settings-repository';
 import { BlockRuleRepository } from '../services/block-rule-repository';
 import { ScheduleRepository } from '../services/schedule-repository';
+import { z } from 'zod';
+
+/**
+ * Message validation schemas for type safety and security
+ */
+const MessageSchemas = {
+  TIMER_START: z.object({
+    type: z.literal('TIMER_START'),
+    sessionType: z.enum(['work', 'short-break', 'long-break']),
+    taskName: z.string().optional(),
+  }),
+
+  NUCLEAR_MODE_ACTIVATE: z.object({
+    type: z.literal('NUCLEAR_MODE_ACTIVATE'),
+    durationHours: z.number().int().min(1).max(8),
+  }),
+
+  SETTINGS_UPDATE: z.object({
+    type: z.literal('SETTINGS_UPDATE'),
+    settings: z.record(z.unknown()),
+  }),
+
+  BLOCK_RULE_ADD: z.object({
+    type: z.literal('BLOCK_RULE_ADD'),
+    rule: z.object({
+      id: z.string(),
+      pattern: z.string().min(1),
+      type: z.enum(['domain', 'url', 'keyword']),
+      enabled: z.boolean(),
+      category: z.string().optional(),
+      createdAt: z.union([z.string(), z.date()]),
+      updatedAt: z.union([z.string(), z.date()]),
+    }),
+  }),
+
+  BLOCK_RULE_UPDATE: z.object({
+    type: z.literal('BLOCK_RULE_UPDATE'),
+    id: z.string(),
+    updates: z.record(z.unknown()),
+  }),
+
+  BLOCK_RULE_DELETE: z.object({
+    type: z.literal('BLOCK_RULE_DELETE'),
+    id: z.string(),
+  }),
+};
+
+/**
+ * Validate message against schema
+ *
+ * @param message - Message to validate
+ * @param schema - Zod schema to validate against
+ * @returns Validated message or null if invalid
+ */
+function validateMessage<T>(message: unknown, schema: z.ZodType<T>): T | null {
+  const result = schema.safeParse(message);
+  if (result.success) {
+    return result.data;
+  }
+  console.warn('Message validation failed:', result.error.format());
+  return null;
+}
 
 /**
  * Error class for background service worker errors
@@ -153,8 +215,33 @@ class BackgroundServiceWorker {
 
     switch (type) {
       // Timer controls
-      case 'TIMER_START':
-        return await this.timerEngine.start(message.sessionType, message.duration);
+      case 'TIMER_START': {
+        // Validate message structure
+        const validatedMsg = validateMessage(message, MessageSchemas.TIMER_START);
+        if (!validatedMsg) {
+          throw new BackgroundError('Invalid TIMER_START message format');
+        }
+
+        // Use user settings for duration, ignore client-provided fallback
+        const settings = await this.settingsRepository.getSettings();
+        let duration: number;
+
+        switch (validatedMsg.sessionType) {
+          case 'work':
+            duration = settings.workDuration;
+            break;
+          case 'short-break':
+            duration = settings.shortBreakDuration;
+            break;
+          case 'long-break':
+            duration = settings.longBreakDuration;
+            break;
+          default:
+            duration = 25; // Fallback only if sessionType is somehow invalid
+        }
+
+        return await this.timerEngine.start(validatedMsg.sessionType, duration, validatedMsg.taskName);
+      }
 
       case 'TIMER_PAUSE':
         return await this.timerEngine.pause();
@@ -169,8 +256,14 @@ class BackgroundServiceWorker {
         return await this.timerEngine.getStatus();
 
       // Nuclear mode
-      case 'NUCLEAR_MODE_ACTIVATE':
-        return await this.nuclearModeManager.activate(message.durationHours);
+      case 'NUCLEAR_MODE_ACTIVATE': {
+        // Validate message structure
+        const validatedMsg = validateMessage(message, MessageSchemas.NUCLEAR_MODE_ACTIVATE);
+        if (!validatedMsg) {
+          throw new BackgroundError('Invalid NUCLEAR_MODE_ACTIVATE message format');
+        }
+        return await this.nuclearModeManager.activate(validatedMsg.durationHours);
+      }
 
       case 'NUCLEAR_MODE_DEACTIVATE':
         return await this.nuclearModeManager.deactivate();
