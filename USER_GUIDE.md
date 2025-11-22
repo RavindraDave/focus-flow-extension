@@ -144,21 +144,46 @@ Block distracting websites during work sessions to maintain focus. Blocked sites
 
 ### Adding Block Rules
 
+#### Quick Add (Recommended for Beginners)
+
+The easiest way to get started is using the **Quick Add** feature with pre-suggested sites:
+
 1. **Open Settings**:
    - Click Focus Flow icon
    - Click "Settings & Analytics"
-   - Navigate to "Blocking" tab
+   - Navigate to "Block List" tab
 
-2. **Add a Domain**:
+2. **Browse Suggested Sites**:
+   - See 100+ popular distracting websites organized by category
+   - Categories include:
+     - 👥 Social Media (Facebook, Instagram, Twitter, etc.)
+     - 🎬 Video & Entertainment (YouTube, Netflix, Twitch, etc.)
+     - 📰 News & Media
+     - 🛍️ Shopping
+     - 🎮 Gaming
+     - ⚽ Sports
+     - 💬 Forums & Communities
+     - 🔞 Adult Content
+
+3. **Add Sites**:
+   - **Individual sites**: Click "+ Add" next to any site
+   - **Entire category**: Click "+ Add All" to block all sites in a category
+   - Sites are instantly added to your block list
+
+#### Manual Add (Custom Sites)
+
+For sites not in the suggested list:
+
+1. **Add a Domain**:
    - Enter the domain (e.g., `youtube.com`, `reddit.com`)
    - Choose rule type:
      - **Domain**: Blocks entire domain and all subdomains
      - **URL**: Blocks specific page or path
      - **Keyword**: Blocks pages containing the keyword
-   - Add category (optional): Social Media, News, Entertainment, etc.
+   - Provide a name for the rule
    - Click "Add Rule"
 
-3. **Enable/Disable Rules**:
+2. **Enable/Disable Rules**:
    - Toggle the switch next to any rule
    - Disabled rules won't block the site but are saved
 

@@ -9,6 +9,7 @@ export { BlockRuleForm } from './BlockRuleForm';
 export { ScheduleList } from './ScheduleList';
 export { ScheduleForm } from './ScheduleForm';
 export { YouTubeSettings } from './YouTubeSettings';
+export { SuggestedSites } from './SuggestedSites';
 
 export type { SettingsFormProps } from './SettingsForm';
 export type { BlockRuleFormProps } from './BlockRuleForm';

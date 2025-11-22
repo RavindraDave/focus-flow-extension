@@ -25,7 +25,7 @@ const ONBOARDING_STEPS: Step[] = [
   },
   {
     title: 'Block Distracting Websites',
-    description: 'Add websites to your blocklist to prevent distractions during work sessions. Go to Settings to manage your block rules.',
+    description: 'Add websites to your blocklist to prevent distractions during work sessions. Choose from 100+ pre-suggested popular sites or add your own custom rules.',
     icon: '🚫',
   },
   {
@@ -118,9 +118,10 @@ const App: React.FC = () => {
               <ul className="space-y-2 text-sm text-neutral-700">
                 <li>1. Click the extension icon</li>
                 <li>2. Click "Settings & Analytics"</li>
-                <li>3. Go to "Blocking" tab</li>
-                <li>4. Add domains like "youtube.com" or "reddit.com"</li>
-                <li>5. Sites are blocked only during work sessions</li>
+                <li>3. Go to "Block List" tab</li>
+                <li>4. <strong>Quick Add:</strong> Browse 100+ suggested sites organized by category</li>
+                <li>5. Or add custom domains like "youtube.com" or "reddit.com"</li>
+                <li>6. Sites are blocked only during work sessions</li>
               </ul>
             </div>
           )}
