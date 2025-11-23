@@ -667,25 +667,176 @@ const GamificationTab: React.FC<{ theme: string }> = ({ theme }) => {
  * Data & Config Tab Component
  */
 const DataConfigTab: React.FC = () => {
-  const handleExportConfig = () => {
-    // TODO: Implement config export
-    alert('Exporting configuration...');
+  const [isExporting, setIsExporting] = React.useState(false);
+  const [isImporting, setIsImporting] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  /**
+   * Export all configuration to JSON file
+   */
+  const handleExportConfig = async () => {
+    setIsExporting(true);
+    try {
+      // Get all data from chrome.storage
+      const syncData = await chrome.storage.sync.get(null);
+      const localData = await chrome.storage.local.get(null);
+
+      const exportData = {
+        version: '1.0.0',
+        exportedAt: new Date().toISOString(),
+        sync: syncData,
+        local: {
+          // Only export non-sensitive local data
+          analytics: localData.analytics || {},
+          history: localData.history || [],
+        },
+      };
+
+      // Create downloadable JSON file
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `focus-flow-config-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log('Configuration exported successfully');
+    } catch (error) {
+      console.error('Failed to export configuration:', error);
+      alert('Failed to export configuration. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
+  /**
+   * Import configuration from JSON file
+   */
   const handleImportConfig = () => {
-    // TODO: Implement config import
-    alert('Import configuration...');
+    fileInputRef.current?.click();
   };
 
-  const handleExportHistory = () => {
-    // TODO: Implement history export
-    alert('Exporting history...');
+  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const text = await file.text();
+      const importData = JSON.parse(text);
+
+      // Validate import data structure
+      if (!importData.version || !importData.sync) {
+        throw new Error('Invalid configuration file format');
+      }
+
+      // Confirm before overwriting
+      if (!confirm('This will replace your current settings. Continue?')) {
+        setIsImporting(false);
+        return;
+      }
+
+      // Import sync data
+      await chrome.storage.sync.set(importData.sync);
+
+      // Import local data (if available)
+      if (importData.local) {
+        await chrome.storage.local.set(importData.local);
+      }
+
+      alert('Configuration imported successfully! Reloading page...');
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to import configuration:', error);
+      alert('Failed to import configuration. Please check the file and try again.');
+    } finally {
+      setIsImporting(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
-  const handleResetData = () => {
-    if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
-      // TODO: Implement data reset
-      alert('Resetting data...');
+  /**
+   * Export focus session history to CSV
+   */
+  const handleExportHistory = async () => {
+    try {
+      const { history } = await chrome.storage.local.get('history');
+      const sessions = history || [];
+
+      if (sessions.length === 0) {
+        alert('No history data to export.');
+        return;
+      }
+
+      // Create CSV content
+      const headers = ['Date', 'Duration (minutes)', 'Task Name', 'Session Type'];
+      const rows = sessions.map((session: any) => [
+        new Date(session.timestamp || session.date).toLocaleString(),
+        Math.round((session.duration || 0) / 60),
+        session.taskName || session.label || 'Untitled',
+        session.type || 'Focus',
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map((row: string[]) => row.map((cell: string | number) => `"${cell}"`).join(',')),
+      ].join('\n');
+
+      // Create downloadable CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `focus-flow-history-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log('History exported successfully');
+    } catch (error) {
+      console.error('Failed to export history:', error);
+      alert('Failed to export history. Please try again.');
+    }
+  };
+
+  /**
+   * Reset all stored data with confirmation
+   */
+  const handleResetData = async () => {
+    if (!confirm('⚠️ WARNING: This will permanently delete ALL your data, including:\n\n• Settings and preferences\n• Blocklist and schedules\n• Focus history and analytics\n• Achievements and streaks\n\nThis action CANNOT be undone.\n\nAre you absolutely sure?')) {
+      return;
+    }
+
+    // Double confirmation
+    if (!confirm('Last chance! Type YES in the next prompt to confirm deletion.')) {
+      return;
+    }
+
+    const userInput = prompt('Type "YES" (in capital letters) to confirm:');
+    if (userInput !== 'YES') {
+      alert('Deletion cancelled.');
+      return;
+    }
+
+    try {
+      // Clear all storage
+      await chrome.storage.sync.clear();
+      await chrome.storage.local.clear();
+
+      alert('All data has been deleted. Reloading extension...');
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to reset data:', error);
+      alert('Failed to reset data. Please try again or reinstall the extension.');
     }
   };
 
@@ -711,9 +862,10 @@ const DataConfigTab: React.FC = () => {
           </p>
           <button
             onClick={handleExportConfig}
-            className="bg-accent hover:bg-accent-hover text-text-inverse px-4 py-2 rounded-lg text-sm font-medium transition"
+            disabled={isExporting}
+            className="bg-accent hover:bg-accent-hover text-text-inverse px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Export Config (JSON)
+            {isExporting ? 'Exporting...' : 'Export Config (JSON)'}
           </button>
         </div>
 
@@ -725,11 +877,19 @@ const DataConfigTab: React.FC = () => {
           <p className="text-sm text-text-tertiary mb-4">
             Restore settings from a previously exported file
           </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleFileSelected}
+            className="hidden"
+          />
           <button
             onClick={handleImportConfig}
-            className="bg-accent hover:bg-accent-hover text-text-inverse px-4 py-2 rounded-lg text-sm font-medium transition"
+            disabled={isImporting}
+            className="bg-accent hover:bg-accent-hover text-text-inverse px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Choose File...
+            {isImporting ? 'Importing...' : 'Choose File...'}
           </button>
         </div>
 
