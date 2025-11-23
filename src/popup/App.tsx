@@ -1,22 +1,62 @@
 /**
  * Popup App - Main entry point for popup UI
  * Displays timer, controls, and quick stats
+ * Supports all three visual themes: Modern Pro, Zen Mode, Cyber Focus
  * WCAG 2.1 AA compliant
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PopupLayout } from '../components/templates/PopupLayout';
 import { TimerDisplay, TimerControls, QuickStats, NuclearModeModal, NuclearModeStatus } from './components';
 import { useTimer, useAnalytics, useNuclearMode } from '../hooks';
+import { useThemeContext } from '../contexts/ThemeContext';
 import { Button } from '../components/atoms/Button';
+import OnboardingModal from '../components/onboarding/OnboardingModal';
 
 /**
  * Main Popup App component
  * Complexity: 7 (multiple hooks + conditional rendering + nuclear mode)
  */
 const App: React.FC = () => {
+  // Get theme context (theme is initialized by ThemeProvider)
+  const { setTheme } = useThemeContext();
+
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [suggestedTheme, setSuggestedTheme] = useState<'modern' | 'zen' | 'cyber'>('modern');
+
   // Modal state
   const [isNuclearModalOpen, setIsNuclearModalOpen] = useState(false);
+
+  // Check for first run and detect OS theme preference
+  useEffect(() => {
+    async function checkFirstRun() {
+      const result = await chrome.storage.sync.get(['has_onboarded']);
+
+      if (!result.has_onboarded) {
+        // Detect OS theme preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const suggested = prefersDark ? 'cyber' : 'modern';
+
+        setSuggestedTheme(suggested);
+        setShowOnboarding(true);
+      }
+    }
+
+    checkFirstRun();
+  }, []);
+
+  // Handle onboarding completion
+  const handleOnboardingComplete = async (selectedTheme: 'modern' | 'zen' | 'cyber') => {
+    // Save onboarding completion flag
+    await chrome.storage.sync.set({ has_onboarded: true });
+
+    // Apply selected theme
+    await setTheme(selectedTheme);
+
+    // Close onboarding modal
+    setShowOnboarding(false);
+  };
 
   // Timer state and controls
   const {
@@ -54,9 +94,9 @@ const App: React.FC = () => {
     <PopupLayout>
       {/* Header */}
       <header className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-neutral-900">Focus Flow</h1>
+        <h1 className="text-2xl font-bold text-text-primary font-serif">Focus Flow</h1>
         {taskName && (
-          <p className="text-sm text-neutral-600 mt-1 truncate px-4" title={taskName}>
+          <p className="text-sm text-text-secondary mt-1 truncate px-4" title={taskName}>
             {taskName}
           </p>
         )}
@@ -156,9 +196,9 @@ const App: React.FC = () => {
           <button
             type="button"
             onClick={() => chrome.runtime.openOptionsPage()}
-            className="text-xs text-neutral-500 hover:text-neutral-700 underline focus:outline-none focus:ring-2 focus:ring-primary-500 rounded px-2 py-1"
+            className="text-xs text-text-tertiary hover:text-text-primary underline focus:outline-none focus:ring-2 focus:ring-accent rounded px-2 py-1 transition"
           >
-            Settings & Analytics
+            ⚙️ Settings & Analytics
           </button>
         </div>
       </footer>
@@ -169,6 +209,14 @@ const App: React.FC = () => {
         onClose={() => setIsNuclearModalOpen(false)}
         onActivate={activateNuclear}
       />
+
+      {/* Onboarding Modal (First Run) */}
+      {showOnboarding && (
+        <OnboardingModal
+          onComplete={handleOnboardingComplete}
+          suggestedTheme={suggestedTheme}
+        />
+      )}
     </PopupLayout>
   );
 };

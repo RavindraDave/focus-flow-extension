@@ -132,24 +132,34 @@ describe('PopupLayout', () => {
   });
 
   describe('Styling', () => {
-    it('should have background color', () => {
+    it('should have theme-aware background color', () => {
       const { container } = render(
         <PopupLayout>
           <div>Content</div>
         </PopupLayout>
       );
       const layout = container.firstChild as HTMLElement;
-      expect(layout).toHaveClass('bg-neutral-50');
+      expect(layout).toHaveClass('bg-bg-primary');
     });
 
-    it('should have dark mode background', () => {
+    it('should have header with surface background', () => {
       const { container } = render(
-        <PopupLayout>
+        <PopupLayout header={<div>Header</div>}>
           <div>Content</div>
         </PopupLayout>
       );
-      const layout = container.firstChild as HTMLElement;
-      expect(layout).toHaveClass('dark:bg-neutral-900');
+      const header = container.querySelector('header');
+      expect(header).toHaveClass('bg-surface');
+    });
+
+    it('should have footer with surface background', () => {
+      const { container } = render(
+        <PopupLayout footer={<div>Footer</div>}>
+          <div>Content</div>
+        </PopupLayout>
+      );
+      const footer = container.querySelector('footer');
+      expect(footer).toHaveClass('bg-surface');
     });
 
     it('should have header border', () => {
@@ -160,7 +170,7 @@ describe('PopupLayout', () => {
       );
       const header = container.querySelector('header');
       expect(header).toHaveClass('border-b');
-      expect(header).toHaveClass('border-neutral-200');
+      expect(header).toHaveClass('border-border');
     });
 
     it('should have footer border', () => {
@@ -171,7 +181,7 @@ describe('PopupLayout', () => {
       );
       const footer = container.querySelector('footer');
       expect(footer).toHaveClass('border-t');
-      expect(footer).toHaveClass('border-neutral-200');
+      expect(footer).toHaveClass('border-border');
     });
 
     it('should have consistent padding', () => {

@@ -9,6 +9,7 @@ export { useSettings } from './useSettings';
 export { useBlockRules } from './useBlockRules';
 export { useSchedules } from './useSchedules';
 export { useNuclearMode } from './useNuclearMode';
+export type { ThemeMode } from './useTheme';
 export type { UseTimerReturn } from './useTimer';
 export type { UseAnalyticsReturn, TodayStats, StreakData } from './useAnalytics';
 export type { UseSettingsReturn } from './useSettings';

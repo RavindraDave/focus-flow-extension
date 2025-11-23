@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useTheme } from '../../../src/hooks/useTheme';
+import { useTheme, ThemeMode } from '../../../src/hooks/useTheme';
 
 // Mock chrome.storage API
 const mockStorage: Record<string, unknown> = {};
@@ -10,7 +10,7 @@ const mockStorageListeners: Array<
 
 global.chrome = {
   storage: {
-    local: {
+    sync: {
       get: vi.fn((keys) => {
         if (typeof keys === 'string') {
           return Promise.resolve({ [keys]: mockStorage[keys] });
@@ -27,7 +27,7 @@ global.chrome = {
             oldValue: mockStorage[key],
           };
         });
-        mockStorageListeners.forEach((listener) => listener(changes, 'local'));
+        mockStorageListeners.forEach((listener) => listener(changes, 'sync'));
         return Promise.resolve();
       }),
     },
@@ -45,47 +45,23 @@ global.chrome = {
   },
 } as any;
 
-// Mock matchMedia
-const createMatchMediaMock = (matches: boolean) => {
-  const listeners: Array<(e: MediaQueryListEvent) => void> = [];
-
-  return {
-    matches,
-    media: '(prefers-color-scheme: dark)',
-    addEventListener: vi.fn((event: string, callback: (e: MediaQueryListEvent) => void) => {
-      if (event === 'change') {
-        listeners.push(callback);
-      }
-    }),
-    removeEventListener: vi.fn((event: string, callback: (e: MediaQueryListEvent) => void) => {
-      if (event === 'change') {
-        const index = listeners.indexOf(callback);
-        if (index > -1) {
-          listeners.splice(index, 1);
-        }
-      }
-    }),
-    dispatchEvent: vi.fn((event: MediaQueryListEvent) => {
-      listeners.forEach((listener) => listener(event));
-      return true;
-    }),
-  };
+// Mock document.body
+const mockBody = {
+  setAttribute: vi.fn(),
 };
+Object.defineProperty(global, 'document', {
+  value: {
+    body: mockBody,
+  },
+  writable: true,
+});
 
 describe('useTheme', () => {
-  let matchMediaMock: ReturnType<typeof createMatchMediaMock>;
-
   beforeEach(() => {
-    // Clear mock storage
+    // Clear mock storage before each test
     Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
     mockStorageListeners.length = 0;
-
-    // Mock matchMedia
-    matchMediaMock = createMatchMediaMock(false);
-    window.matchMedia = vi.fn(() => matchMediaMock as any);
-
-    // Mock document.documentElement
-    document.documentElement.classList.remove('dark');
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -93,309 +69,130 @@ describe('useTheme', () => {
   });
 
   describe('Initialization', () => {
-    it('should default to system theme', async () => {
+    it('should initialize with default theme (modern) when no saved theme', async () => {
       const { result } = renderHook(() => useTheme());
 
       await waitFor(() => {
-        expect(result.current.theme).toBe('system');
+        expect(result.current.isLoading).toBe(false);
       });
+
+      expect(result.current.theme).toBe('modern');
+      expect(mockBody.setAttribute).toHaveBeenCalledWith('data-theme', 'modern');
     });
 
     it('should load saved theme from storage', async () => {
-      mockStorage['theme_preference'] = 'dark';
+      mockStorage['visual_theme'] = 'zen';
 
       const { result } = renderHook(() => useTheme());
 
       await waitFor(() => {
-        expect(result.current.theme).toBe('dark');
-        expect(result.current.effectiveTheme).toBe('dark');
+        expect(result.current.isLoading).toBe(false);
       });
-    });
 
-    it('should apply dark theme to document when loaded', async () => {
-      mockStorage['theme_preference'] = 'dark';
-
-      renderHook(() => useTheme());
-
-      await waitFor(() => {
-        expect(document.documentElement.classList.contains('dark')).toBe(true);
-      });
-    });
-
-    it('should apply light theme to document when loaded', async () => {
-      mockStorage['theme_preference'] = 'light';
-
-      renderHook(() => useTheme());
-
-      await waitFor(() => {
-        expect(document.documentElement.classList.contains('dark')).toBe(false);
-      });
+      expect(result.current.theme).toBe('zen');
+      expect(mockBody.setAttribute).toHaveBeenCalledWith('data-theme', 'zen');
     });
   });
 
-  describe('System Preference', () => {
-    it('should use system dark preference when theme is system', async () => {
-      matchMediaMock = createMatchMediaMock(true);
-      window.matchMedia = vi.fn(() => matchMediaMock as any);
-
+  describe('Theme switching', () => {
+    it('should update theme when setTheme is called', async () => {
       const { result } = renderHook(() => useTheme());
 
       await waitFor(() => {
-        expect(result.current.effectiveTheme).toBe('dark');
+        expect(result.current.isLoading).toBe(false);
       });
+
+      await act(async () => {
+        await result.current.setTheme('cyber');
+      });
+
+      expect(result.current.theme).toBe('cyber');
+      expect(mockBody.setAttribute).toHaveBeenCalledWith('data-theme', 'cyber');
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith({ visual_theme: 'cyber' });
     });
 
-    it('should use system light preference when theme is system', async () => {
-      matchMediaMock = createMatchMediaMock(false);
-      window.matchMedia = vi.fn(() => matchMediaMock as any);
-
+    it('should support all three themes: modern, zen, cyber', async () => {
       const { result } = renderHook(() => useTheme());
 
       await waitFor(() => {
-        expect(result.current.effectiveTheme).toBe('light');
-      });
-    });
-
-    it('should listen to system preference changes', async () => {
-      mockStorage['theme_preference'] = 'system';
-
-      const { result } = renderHook(() => useTheme());
-
-      await waitFor(() => {
-        expect(result.current.theme).toBe('system');
+        expect(result.current.isLoading).toBe(false);
       });
 
-      // Simulate system preference change to dark
-      act(() => {
-        matchMediaMock.dispatchEvent({
-          matches: true,
-          media: '(prefers-color-scheme: dark)',
-        } as MediaQueryListEvent);
+      // Test modern
+      await act(async () => {
+        await result.current.setTheme('modern');
       });
+      expect(result.current.theme).toBe('modern');
 
-      await waitFor(() => {
-        expect(result.current.effectiveTheme).toBe('dark');
-        expect(document.documentElement.classList.contains('dark')).toBe(true);
+      // Test zen
+      await act(async () => {
+        await result.current.setTheme('zen');
       });
-    });
+      expect(result.current.theme).toBe('zen');
 
-    it('should not listen to system changes when theme is not system', async () => {
-      mockStorage['theme_preference'] = 'light';
-
-      const { result } = renderHook(() => useTheme());
-
-      await waitFor(() => {
-        expect(result.current.theme).toBe('light');
+      // Test cyber
+      await act(async () => {
+        await result.current.setTheme('cyber');
       });
-
-      // Simulate system preference change (should be ignored)
-      act(() => {
-        matchMediaMock.dispatchEvent({
-          matches: true,
-          media: '(prefers-color-scheme: dark)',
-        } as MediaQueryListEvent);
-      });
-
-      await waitFor(() => {
-        expect(result.current.effectiveTheme).toBe('light');
-      });
+      expect(result.current.theme).toBe('cyber');
     });
   });
 
-  describe('Setting Theme', () => {
-    it('should set theme to light', async () => {
-      const { result } = renderHook(() => useTheme());
-
-      await act(async () => {
-        await result.current.setTheme('light');
-      });
-
-      expect(result.current.theme).toBe('light');
-      expect(result.current.effectiveTheme).toBe('light');
-      expect(chrome.storage.local.set).toHaveBeenCalledWith({
-        theme_preference: 'light',
-      });
-    });
-
-    it('should set theme to dark', async () => {
-      const { result } = renderHook(() => useTheme());
-
-      await act(async () => {
-        await result.current.setTheme('dark');
-      });
-
-      expect(result.current.theme).toBe('dark');
-      expect(result.current.effectiveTheme).toBe('dark');
-      expect(chrome.storage.local.set).toHaveBeenCalledWith({
-        theme_preference: 'dark',
-      });
-    });
-
-    it('should set theme to system', async () => {
-      matchMediaMock = createMatchMediaMock(true);
-      window.matchMedia = vi.fn(() => matchMediaMock as any);
-
-      const { result } = renderHook(() => useTheme());
-
-      await act(async () => {
-        await result.current.setTheme('system');
-      });
-
-      expect(result.current.theme).toBe('system');
-      expect(result.current.effectiveTheme).toBe('dark');
-    });
-
-    it('should apply dark class to document', async () => {
-      const { result } = renderHook(() => useTheme());
-
-      await act(async () => {
-        await result.current.setTheme('dark');
-      });
-
-      expect(document.documentElement.classList.contains('dark')).toBe(true);
-    });
-
-    it('should remove dark class from document for light theme', async () => {
-      document.documentElement.classList.add('dark');
-
-      const { result } = renderHook(() => useTheme());
-
-      await act(async () => {
-        await result.current.setTheme('light');
-      });
-
-      expect(document.documentElement.classList.contains('dark')).toBe(false);
-    });
-
-    it('should handle storage errors gracefully', async () => {
-      vi.mocked(chrome.storage.local.set).mockRejectedValueOnce(
-        new Error('Storage quota exceeded')
-      );
-
-      const { result } = renderHook(() => useTheme());
-
-      await expect(
-        act(async () => {
-          await result.current.setTheme('dark');
-        })
-      ).rejects.toThrow('Unable to save theme preference');
-    });
-  });
-
-  describe('Storage Sync', () => {
-    it('should sync theme changes from other extension pages', async () => {
+  describe('Storage synchronization', () => {
+    it('should sync theme changes across extension pages', async () => {
       const { result } = renderHook(() => useTheme());
 
       await waitFor(() => {
-        expect(result.current.theme).toBe('system');
+        expect(result.current.isLoading).toBe(false);
       });
 
       // Simulate storage change from another page
       act(() => {
         const changes = {
-          theme_preference: {
-            newValue: 'dark',
-            oldValue: 'system',
-          },
-        };
-        mockStorageListeners.forEach((listener) => listener(changes, 'local'));
-      });
-
-      await waitFor(() => {
-        expect(result.current.theme).toBe('dark');
-        expect(result.current.effectiveTheme).toBe('dark');
-      });
-    });
-
-    it('should ignore storage changes from other areas', async () => {
-      const { result } = renderHook(() => useTheme());
-
-      await waitFor(() => {
-        expect(result.current.theme).toBe('system');
-      });
-
-      // Simulate storage change from sync storage (should be ignored)
-      act(() => {
-        const changes = {
-          theme_preference: {
-            newValue: 'dark',
-            oldValue: 'system',
+          visual_theme: {
+            newValue: 'zen' as ThemeMode,
+            oldValue: 'modern' as ThemeMode,
           },
         };
         mockStorageListeners.forEach((listener) => listener(changes, 'sync'));
       });
 
       await waitFor(() => {
-        expect(result.current.theme).toBe('system');
-      });
-    });
-
-    it('should ignore storage changes for other keys', async () => {
-      const { result } = renderHook(() => useTheme());
-
-      await waitFor(() => {
-        expect(result.current.theme).toBe('system');
+        expect(result.current.theme).toBe('zen');
       });
 
-      // Simulate storage change for different key
-      act(() => {
-        const changes = {
-          other_key: {
-            newValue: 'value',
-            oldValue: 'old_value',
-          },
-        };
-        mockStorageListeners.forEach((listener) => listener(changes, 'local'));
-      });
-
-      await waitFor(() => {
-        expect(result.current.theme).toBe('system');
-      });
+      expect(mockBody.setAttribute).toHaveBeenCalledWith('data-theme', 'zen');
     });
   });
 
-  describe('Cleanup', () => {
-    it('should remove event listeners on unmount', () => {
-      const { unmount } = renderHook(() => useTheme());
-
-      unmount();
-
-      expect(chrome.storage.onChanged.removeListener).toHaveBeenCalled();
-    });
-
-    it('should remove media query listeners on unmount', () => {
-      mockStorage['theme_preference'] = 'system';
-
-      const { unmount } = renderHook(() => useTheme());
-
-      unmount();
-
-      expect(matchMediaMock.removeEventListener).toHaveBeenCalled();
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should handle corrupted storage data', async () => {
-      mockStorage['theme_preference'] = { invalid: 'data' };
+  describe('Error handling', () => {
+    it('should fallback to default theme if storage fails', async () => {
+      vi.mocked(chrome.storage.sync.get).mockRejectedValueOnce(new Error('Storage error'));
 
       const { result } = renderHook(() => useTheme());
 
       await waitFor(() => {
-        // Should fall back to system preference
-        expect(result.current.effectiveTheme).toBeDefined();
+        expect(result.current.isLoading).toBe(false);
       });
+
+      expect(result.current.theme).toBe('modern');
+      expect(mockBody.setAttribute).toHaveBeenCalledWith('data-theme', 'modern');
     });
 
-    it('should handle multiple rapid theme changes', async () => {
+    it('should throw error if setTheme fails', async () => {
       const { result } = renderHook(() => useTheme());
 
-      await act(async () => {
-        await result.current.setTheme('dark');
-        await result.current.setTheme('light');
-        await result.current.setTheme('system');
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.theme).toBe('system');
+      vi.mocked(chrome.storage.sync.set).mockRejectedValueOnce(new Error('Save failed'));
+
+      await expect(
+        act(async () => {
+          await result.current.setTheme('zen');
+        })
+      ).rejects.toThrow('Unable to save theme preference');
     });
   });
 });
