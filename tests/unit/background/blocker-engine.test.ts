@@ -154,17 +154,46 @@ describe('BlockerEngine', () => {
   });
 
   describe('enableBlocking / disableBlocking', () => {
-    it('should enable blocking', async () => {
+    it('should enable blocking and sync rules', async () => {
+      const rules = [createMockRule({ pattern: 'youtube.com' })];
+      mockBlockRuleRepository.getActiveRules.mockResolvedValue(rules);
+
       await engine.enableBlocking();
 
       expect(engine.isActive()).toBe(true);
+      expect(mockChrome.declarativeNetRequest.updateDynamicRules).toHaveBeenCalled();
     });
 
-    it('should disable blocking', async () => {
+    it('should disable blocking and remove all dynamic rules', async () => {
+      // Setup: Enable blocking first
+      const rules = [createMockRule({ pattern: 'youtube.com' })];
+      mockBlockRuleRepository.getActiveRules.mockResolvedValue(rules);
       await engine.enableBlocking();
+
+      // Mock existing rules
+      mockChrome.declarativeNetRequest.getDynamicRules.mockResolvedValue([
+        { id: 1000 },
+        { id: 1001 },
+      ]);
+
+      // Disable blocking
       await engine.disableBlocking();
 
       expect(engine.isActive()).toBe(false);
+      expect(mockChrome.declarativeNetRequest.updateDynamicRules).toHaveBeenLastCalledWith({
+        removeRuleIds: [1000, 1001],
+        addRules: [],
+      });
+    });
+
+    it('should handle disable when no rules exist', async () => {
+      mockChrome.declarativeNetRequest.getDynamicRules.mockResolvedValue([]);
+
+      await engine.disableBlocking();
+
+      expect(engine.isActive()).toBe(false);
+      // Should not call update if no rules to remove
+      expect(mockChrome.declarativeNetRequest.updateDynamicRules).not.toHaveBeenCalled();
     });
 
     it('should start with blocking disabled', () => {
@@ -330,6 +359,10 @@ describe('BlockerEngine', () => {
 
   describe('handleBlockedAttempt', () => {
     it('should track blocked attempt when blocking is active', async () => {
+      // Setup rules for enableBlocking
+      const rules = [createMockRule({ pattern: 'youtube.com' })];
+      mockBlockRuleRepository.getActiveRules.mockResolvedValue(rules);
+
       await engine.enableBlocking();
       await engine.handleBlockedAttempt('youtube.com');
 

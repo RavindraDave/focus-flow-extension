@@ -101,20 +101,38 @@ export class BlockerEngine {
   /**
    * Enable blocking (called when work session starts)
    *
-   * Rules are already synced, this just tracks the state.
+   * Syncs and activates all enabled block rules.
    */
   async enableBlocking(): Promise<void> {
     this.isBlocking = true;
+
+    // Sync rules to Chrome declarativeNetRequest
+    await this.syncRules();
+
     console.info('🚫 Blocking enabled');
   }
 
   /**
-   * Disable blocking (called during breaks)
+   * Disable blocking (called during breaks or when timer stops)
    *
-   * Temporarily disables rules without removing them.
+   * Removes all dynamic rules to disable blocking.
    */
   async disableBlocking(): Promise<void> {
     this.isBlocking = false;
+
+    // Remove all dynamic rules from Chrome
+    if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest) {
+      const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
+      const ruleIdsToRemove = existingRules.map(r => r.id);
+
+      if (ruleIdsToRemove.length > 0) {
+        await chrome.declarativeNetRequest.updateDynamicRules({
+          removeRuleIds: ruleIdsToRemove,
+          addRules: [],
+        });
+      }
+    }
+
     console.info('✅ Blocking disabled (break time)');
   }
 

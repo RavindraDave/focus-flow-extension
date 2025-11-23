@@ -11,6 +11,7 @@ export interface UseBlockRulesReturn {
   isLoading: boolean;
   error: string | null;
   addRule: (rule: Omit<BlockRule, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addRules: (rules: Omit<BlockRule, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
   updateRule: (id: string, updates: Partial<BlockRule>) => Promise<void>;
   deleteRule: (id: string) => Promise<void>;
   toggleRule: (id: string, enabled: boolean) => Promise<void>;
@@ -76,6 +77,36 @@ export function useBlockRules(): UseBlockRulesReturn {
         await fetchRules();
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to add rule';
+        setError(message);
+        throw err;
+      }
+    },
+    [fetchRules]
+  );
+
+  /**
+   * Add multiple rules in batch (much faster than individual adds)
+   * Complexity: 4 (batch processing + error handling)
+   */
+  const addRules = useCallback(
+    async (rulesToAdd: Omit<BlockRule, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<void> => {
+      try {
+        setError(null);
+
+        // Send all add requests in parallel (don't wait for each)
+        await Promise.all(
+          rulesToAdd.map(rule =>
+            chrome.runtime.sendMessage({
+              type: 'BLOCKLIST_ADD',
+              rule,
+            })
+          )
+        );
+
+        // Only refresh once after all are added
+        await fetchRules();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to add rules';
         setError(message);
         throw err;
       }
@@ -216,6 +247,7 @@ export function useBlockRules(): UseBlockRulesReturn {
     isLoading,
     error,
     addRule,
+    addRules,
     updateRule,
     deleteRule,
     toggleRule,

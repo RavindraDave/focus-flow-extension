@@ -14,7 +14,7 @@ import { useBlockRules } from '../../hooks/useBlockRules';
  * SuggestedSites component
  */
 export const SuggestedSites: React.FC = () => {
-  const { rules, addRule } = useBlockRules();
+  const { rules, addRule, addRules } = useBlockRules();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [addingDomains, setAddingDomains] = useState<Set<string>>(new Set());
 
@@ -71,7 +71,7 @@ export const SuggestedSites: React.FC = () => {
   };
 
   /**
-   * Add all sites in a category
+   * Add all sites in a category (optimized batch add)
    */
   const handleAddCategory = async (category: SiteCategory) => {
     const sitesToAdd = category.sites.filter(site => !isDomainBlocked(site.domain));
@@ -88,18 +88,16 @@ export const SuggestedSites: React.FC = () => {
     });
 
     try {
-      // Add all sites in parallel
-      await Promise.all(
-        sitesToAdd.map(site =>
-          addRule({
-            name: site.name,
-            pattern: site.domain,
-            type: 'domain',
-            enabled: true,
-            allowance: null,
-            timeUsedToday: 0,
-          })
-        )
+      // Use batch add - much faster!
+      await addRules(
+        sitesToAdd.map(site => ({
+          name: site.name,
+          pattern: site.domain,
+          type: 'domain',
+          enabled: true,
+          allowance: null,
+          timeUsedToday: 0,
+        }))
       );
     } catch (error) {
       console.error('Failed to add category:', error);
