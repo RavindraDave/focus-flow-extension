@@ -162,7 +162,14 @@ const App: React.FC = () => {
               Upgrade Now
             </button>
           </div>
-          <p className="text-xs text-text-muted text-center mt-3">
+          <button
+            onClick={() => window.open('https://github.com/RavindraDave/focus-flow-extension/issues/new', '_blank')}
+            className="text-xs text-text-tertiary hover:text-accent mt-3 w-full text-center transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded py-1"
+            aria-label="Send feedback or report an issue"
+          >
+            📝 Send Feedback
+          </button>
+          <p className="text-xs text-text-muted text-center mt-2">
             Version 1.0.0
           </p>
         </div>
@@ -412,6 +419,37 @@ const TimerTab: React.FC<{
   theme: string;
   onThemeChange: (theme: any) => Promise<void>;
 }> = ({ settings, isLoading, error, onSave, theme, onThemeChange }) => {
+  const [soundEnabled, setSoundEnabled] = React.useState(true);
+  const [soundVolume, setSoundVolume] = React.useState(50);
+
+  // Load sound settings on mount
+  React.useEffect(() => {
+    async function loadSoundSettings() {
+      const result = await chrome.storage.sync.get(['sound_enabled', 'sound_volume']);
+      setSoundEnabled(result.sound_enabled ?? true);
+      setSoundVolume(result.sound_volume !== undefined ? result.sound_volume * 100 : 50);
+    }
+    loadSoundSettings();
+  }, []);
+
+  // Save sound enabled toggle
+  const handleSoundEnabledChange = async (enabled: boolean) => {
+    setSoundEnabled(enabled);
+    await chrome.storage.sync.set({ sound_enabled: enabled });
+  };
+
+  // Save sound volume
+  const handleVolumeChange = async (volume: number) => {
+    setSoundVolume(volume);
+    await chrome.storage.sync.set({ sound_volume: volume / 100 });
+  };
+
+  // Test current theme sound
+  const handleTestSound = async () => {
+    const { testThemeSound } = await import('../utils/sounds');
+    await testThemeSound(theme as any, soundVolume / 100);
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -466,6 +504,94 @@ const TimerTab: React.FC<{
             <h4 className="font-semibold text-text-primary">Cyber Focus</h4>
             <p className="text-xs text-text-tertiary mt-1">Neon & terminal</p>
           </button>
+        </div>
+      </div>
+
+      {/* Sound Settings */}
+      <div className="bg-surface p-6 rounded-xl shadow-md border border-border mb-6">
+        <h3 className="text-lg font-bold text-text-primary mb-4">Notification Sounds</h3>
+        <p className="text-sm text-text-tertiary mb-6">
+          Theme-appropriate sounds for timer notifications
+        </p>
+
+        {/* Enable/Disable Sound */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h4 className="font-semibold text-text-primary">Enable Sounds</h4>
+            <p className="text-sm text-text-tertiary">
+              Play notification when timer completes
+            </p>
+          </div>
+          <button
+            onClick={() => handleSoundEnabledChange(!soundEnabled)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+              soundEnabled ? 'bg-accent' : 'bg-bg-secondary'
+            }`}
+            aria-pressed={soundEnabled}
+            aria-label="Toggle notification sounds"
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                soundEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Volume Slider */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <label htmlFor="volume-slider" className="font-semibold text-text-primary">
+              Volume
+            </label>
+            <span className="text-sm text-text-tertiary">{soundVolume}%</span>
+          </div>
+          <input
+            id="volume-slider"
+            type="range"
+            min="0"
+            max="100"
+            value={soundVolume}
+            onChange={(e) => handleVolumeChange(Number(e.target.value))}
+            disabled={!soundEnabled}
+            className="w-full h-2 bg-bg-secondary rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed accent-accent"
+            aria-label="Adjust notification volume"
+          />
+        </div>
+
+        {/* Current Theme Sound */}
+        <div className="bg-bg-secondary rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-semibold text-text-primary mb-1">
+                Current Sound
+              </h4>
+              <p className="text-sm text-text-tertiary">
+                {theme === 'modern' && '🔔 Clean professional ping'}
+                {theme === 'zen' && '🎵 Calming singing bowl'}
+                {theme === 'cyber' && '⚡ Futuristic synthetic beep'}
+              </p>
+              <p className="text-xs text-text-muted mt-1">
+                Sound changes automatically with theme
+              </p>
+            </div>
+            <button
+              onClick={handleTestSound}
+              disabled={!soundEnabled}
+              className="bg-accent hover:bg-accent-hover text-text-inverse px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Test Sound
+            </button>
+          </div>
+        </div>
+
+        {/* Installation Note */}
+        <div className="mt-4 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+          <p className="text-xs text-text-secondary">
+            <strong>Note:</strong> Sound files must be installed manually. See{' '}
+            <code className="bg-bg-secondary px-1 rounded">public/assets/sounds/README.md</code>{' '}
+            for instructions.
+          </p>
         </div>
       </div>
 

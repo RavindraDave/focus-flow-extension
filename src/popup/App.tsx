@@ -5,11 +5,12 @@
  * WCAG 2.1 AA compliant
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PopupLayout } from '../components/templates/PopupLayout';
 import { TimerDisplay, TimerControls, QuickStats, NuclearModeModal, NuclearModeStatus } from './components';
 import { useTimer, useAnalytics, useNuclearMode, useTheme } from '../hooks';
 import { Button } from '../components/atoms/Button';
+import OnboardingModal from '../components/onboarding/OnboardingModal';
 
 /**
  * Main Popup App component
@@ -17,10 +18,44 @@ import { Button } from '../components/atoms/Button';
  */
 const App: React.FC = () => {
   // Initialize theme (will apply to document automatically)
-  useTheme();
+  const { setTheme } = useTheme();
+
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [suggestedTheme, setSuggestedTheme] = useState<'modern' | 'zen' | 'cyber'>('modern');
 
   // Modal state
   const [isNuclearModalOpen, setIsNuclearModalOpen] = useState(false);
+
+  // Check for first run and detect OS theme preference
+  useEffect(() => {
+    async function checkFirstRun() {
+      const result = await chrome.storage.sync.get(['has_onboarded']);
+
+      if (!result.has_onboarded) {
+        // Detect OS theme preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const suggested = prefersDark ? 'cyber' : 'modern';
+
+        setSuggestedTheme(suggested);
+        setShowOnboarding(true);
+      }
+    }
+
+    checkFirstRun();
+  }, []);
+
+  // Handle onboarding completion
+  const handleOnboardingComplete = async (selectedTheme: 'modern' | 'zen' | 'cyber') => {
+    // Save onboarding completion flag
+    await chrome.storage.sync.set({ has_onboarded: true });
+
+    // Apply selected theme
+    await setTheme(selectedTheme);
+
+    // Close onboarding modal
+    setShowOnboarding(false);
+  };
 
   // Timer state and controls
   const {
@@ -173,6 +208,14 @@ const App: React.FC = () => {
         onClose={() => setIsNuclearModalOpen(false)}
         onActivate={activateNuclear}
       />
+
+      {/* Onboarding Modal (First Run) */}
+      {showOnboarding && (
+        <OnboardingModal
+          onComplete={handleOnboardingComplete}
+          suggestedTheme={suggestedTheme}
+        />
+      )}
     </PopupLayout>
   );
 };
