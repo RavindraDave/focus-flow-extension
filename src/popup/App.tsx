@@ -8,7 +8,8 @@
 import React, { useState, useEffect } from 'react';
 import { PopupLayout } from '../components/templates/PopupLayout';
 import { TimerDisplay, TimerControls, QuickStats, NuclearModeModal, NuclearModeStatus } from './components';
-import { useTimer, useAnalytics, useNuclearMode, useTheme } from '../hooks';
+import { useTimer, useAnalytics, useNuclearMode } from '../hooks';
+import { useThemeContext } from '../contexts/ThemeContext';
 import { Button } from '../components/atoms/Button';
 import OnboardingModal from '../components/onboarding/OnboardingModal';
 
@@ -17,8 +18,8 @@ import OnboardingModal from '../components/onboarding/OnboardingModal';
  * Complexity: 7 (multiple hooks + conditional rendering + nuclear mode)
  */
 const App: React.FC = () => {
-  // Initialize theme (will apply to document automatically)
-  const { setTheme } = useTheme();
+  // Get theme context (theme is initialized by ThemeProvider)
+  const { setTheme } = useThemeContext();
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
