@@ -1,0 +1,66 @@
+/**
+ * Font Face Declarations
+ *
+ * IMPORTANT: For production (Manifest V3 compliance), these fonts must be downloaded
+ * and bundled locally in /public/assets/fonts/
+ *
+ * To download fonts:
+ * 1. Visit https://google-webfonts-helper.herokuapp.com/fonts
+ * 2. Download Inter (weights: 300, 400, 500, 600, 700)
+ * 3. Download Lato (weights: 300, 400, 700)
+ * 4. Download Merriweather (weights: 300, 400, 700, italic variants)
+ * 5. Download JetBrains Mono (weights: 300, 400, 700)
+ * 6. Place .woff2 files in /public/assets/fonts/
+ * 7. Update @font-face src URLs below
+ *
+ * Current setup uses system fonts as fallback
+ */
+
+/* Inter - Modern Pro Theme */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  /* TODO: Replace with local file: src: url('/assets/fonts/inter-var.woff2') format('woff2'); */
+  src: local('Inter'), local('system-ui');
+}
+
+/* Lato - Zen Mode Theme */
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  /* TODO: Replace with local file: src: url('/assets/fonts/lato-var.woff2') format('woff2'); */
+  src: local('Lato'), local('system-ui');
+}
+
+/* Merriweather - Zen Mode Theme (Serif) */
+@font-face {
+  font-family: 'Merriweather';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  /* TODO: Replace with local file: src: url('/assets/fonts/merriweather-var.woff2') format('woff2'); */
+  src: local('Merriweather'), local('Georgia');
+}
+
+@font-face {
+  font-family: 'Merriweather';
+  font-style: italic;
+  font-weight: 300 700;
+  font-display: swap;
+  /* TODO: Replace with local file: src: url('/assets/fonts/merriweather-italic-var.woff2') format('woff2'); */
+  src: local('Merriweather Italic'), local('Georgia');
+}
+
+/* JetBrains Mono - Cyber Focus Theme */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  /* TODO: Replace with local file: src: url('/assets/fonts/jetbrains-mono-var.woff2') format('woff2'); */
+  src: local('JetBrains Mono'), local('Consolas'), local('Monaco');
+}

@@ -1,61 +1,54 @@
 import { useEffect, useState, useCallback } from 'react';
 
 /**
- * Theme mode type
+ * Visual theme type
+ * - modern: Clean, minimal, SaaS-like (default)
+ * - zen: Organic, soft, calming
+ * - cyber: High-contrast, neon, terminal
  */
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'modern' | 'zen' | 'cyber';
 
 /**
  * Storage key for theme preference
  */
-const THEME_STORAGE_KEY = 'theme_preference';
+const THEME_STORAGE_KEY = 'visual_theme';
 
 /**
- * Get the effective theme based on user preference and system preference
+ * Default theme (Modern Pro)
  */
-function getEffectiveTheme(mode: ThemeMode): 'light' | 'dark' {
-  if (mode === 'system') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-  return mode;
-}
+const DEFAULT_THEME: ThemeMode = 'modern';
 
 /**
- * Apply theme to document
+ * Apply theme to document by setting data-theme attribute
  */
-function applyTheme(theme: 'light' | 'dark'): void {
-  const root = document.documentElement;
-  if (theme === 'dark') {
-    root.classList.add('dark');
-  } else {
-    root.classList.remove('dark');
-  }
+function applyTheme(theme: ThemeMode): void {
+  const root = document.body;
+  root.setAttribute('data-theme', theme);
 }
 
 /**
  * useTheme Hook
  *
- * Manages theme state with system preference detection and persistence.
- * Syncs theme preference across extension pages using chrome.storage.local.
+ * Manages visual theme state (Modern Pro, Zen Mode, Cyber Focus) with persistence.
+ * Syncs theme preference across extension pages using chrome.storage.sync.
  *
  * Features:
- * - Persists theme preference in chrome.storage.local
- * - Detects system color scheme preference
- * - Automatically applies theme to document
- * - Listens to system preference changes
- * - Syncs theme changes across all extension pages
+ * - Persists theme preference in chrome.storage.sync (syncs across devices)
+ * - Automatically applies theme to document via data-theme attribute
+ * - Real-time theme changes across all extension pages
+ * - Supports three visual themes: modern, zen, cyber
  *
  * @example
  * ```tsx
  * function App() {
- *   const { theme, effectiveTheme, setTheme } = useTheme();
+ *   const { theme, setTheme, isLoading } = useTheme();
  *
  *   return (
  *     <div>
- *       <p>Current theme: {effectiveTheme}</p>
- *       <button onClick={() => setTheme('light')}>Light</button>
- *       <button onClick={() => setTheme('dark')}>Dark</button>
- *       <button onClick={() => setTheme('system')}>System</button>
+ *       <p>Current theme: {theme}</p>
+ *       <button onClick={() => setTheme('modern')}>Modern Pro</button>
+ *       <button onClick={() => setTheme('zen')}>Zen Mode</button>
+ *       <button onClick={() => setTheme('cyber')}>Cyber Focus</button>
  *     </div>
  *   );
  * }
@@ -63,73 +56,42 @@ function applyTheme(theme: 'light' | 'dark'): void {
  */
 export function useTheme(): {
   /**
-   * Current theme mode (including 'system' option)
+   * Current active theme
    */
   theme: ThemeMode;
 
   /**
-   * Effective theme applied to the page ('light' or 'dark')
+   * Whether the theme is being loaded from storage
    */
-  effectiveTheme: 'light' | 'dark';
+  isLoading: boolean;
 
   /**
    * Update theme preference
    */
   setTheme: (mode: ThemeMode) => Promise<void>;
 } {
-  const [theme, setThemeState] = useState<ThemeMode>('system');
-  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>(() =>
-    getEffectiveTheme('system')
-  );
+  const [theme, setThemeState] = useState<ThemeMode>(DEFAULT_THEME);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load theme from storage on mount
   useEffect(() => {
     async function loadTheme(): Promise<void> {
       try {
-        const result = await chrome.storage.local.get(THEME_STORAGE_KEY);
-        const savedTheme = (result[THEME_STORAGE_KEY] as ThemeMode) || 'system';
+        const result = await chrome.storage.sync.get(THEME_STORAGE_KEY);
+        const savedTheme = (result[THEME_STORAGE_KEY] as ThemeMode) || DEFAULT_THEME;
         setThemeState(savedTheme);
-
-        const effective = getEffectiveTheme(savedTheme);
-        setEffectiveTheme(effective);
-        applyTheme(effective);
+        applyTheme(savedTheme);
       } catch (error) {
         console.error('Failed to load theme preference:', error);
-        // Fallback to system preference
-        const effective = getEffectiveTheme('system');
-        setEffectiveTheme(effective);
-        applyTheme(effective);
+        // Fallback to default theme
+        applyTheme(DEFAULT_THEME);
+      } finally {
+        setIsLoading(false);
       }
     }
 
     loadTheme();
   }, []);
-
-  // Listen to system preference changes
-  useEffect(() => {
-    if (theme !== 'system') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-    function handleChange(e: MediaQueryListEvent): void {
-      const newTheme = e.matches ? 'dark' : 'light';
-      setEffectiveTheme(newTheme);
-      applyTheme(newTheme);
-    }
-
-    // Modern browsers
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-    // Fallback for older browsers
-    else {
-      mediaQuery.addListener(handleChange);
-      return () => mediaQuery.removeListener(handleChange);
-    }
-  }, [theme]);
 
   // Listen to storage changes (sync across extension pages)
   useEffect(() => {
@@ -137,16 +99,14 @@ export function useTheme(): {
       changes: { [key: string]: chrome.storage.StorageChange },
       areaName: string
     ): void {
-      if (areaName !== 'local' || !(THEME_STORAGE_KEY in changes)) {
+      if (areaName !== 'sync' || !(THEME_STORAGE_KEY in changes)) {
         return;
       }
 
       const newTheme = changes[THEME_STORAGE_KEY].newValue as ThemeMode;
-      if (newTheme !== theme) {
+      if (newTheme && newTheme !== theme) {
         setThemeState(newTheme);
-        const effective = getEffectiveTheme(newTheme);
-        setEffectiveTheme(effective);
-        applyTheme(effective);
+        applyTheme(newTheme);
       }
     }
 
@@ -157,16 +117,14 @@ export function useTheme(): {
   // Update theme preference
   const setTheme = useCallback(async (mode: ThemeMode): Promise<void> => {
     try {
-      // Save to storage
-      await chrome.storage.local.set({ [THEME_STORAGE_KEY]: mode });
+      // Save to storage (will sync across devices)
+      await chrome.storage.sync.set({ [THEME_STORAGE_KEY]: mode });
 
       // Update local state
       setThemeState(mode);
 
-      // Apply theme
-      const effective = getEffectiveTheme(mode);
-      setEffectiveTheme(effective);
-      applyTheme(effective);
+      // Apply theme immediately
+      applyTheme(mode);
     } catch (error) {
       console.error('Failed to save theme preference:', error);
       throw new Error('Unable to save theme preference');
@@ -175,7 +133,7 @@ export function useTheme(): {
 
   return {
     theme,
-    effectiveTheme,
+    isLoading,
     setTheme,
   };
 }

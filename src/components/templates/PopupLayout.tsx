@@ -58,8 +58,7 @@ export const PopupLayout: React.FC<PopupLayoutProps> = ({
       className={`
         flex flex-col
         w-full min-h-screen
-        bg-neutral-50
-        dark:bg-neutral-900
+        bg-bg-primary
         ${className}
       `.trim()}
     >
@@ -69,8 +68,7 @@ export const PopupLayout: React.FC<PopupLayoutProps> = ({
           className="
             flex-shrink-0
             px-4 py-4
-            bg-white border-b border-neutral-200
-            dark:bg-neutral-800 dark:border-neutral-700
+            bg-surface border-b border-border
           "
         >
           {header}
@@ -96,8 +94,7 @@ export const PopupLayout: React.FC<PopupLayoutProps> = ({
           className="
             flex-shrink-0
             px-4 py-4
-            bg-white border-t border-neutral-200
-            dark:bg-neutral-800 dark:border-neutral-700
+            bg-surface border-t border-border
           "
         >
           {footer}

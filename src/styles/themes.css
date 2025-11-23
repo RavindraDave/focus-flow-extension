@@ -1,0 +1,297 @@
+/**
+ * Theme System - CSS Custom Properties
+ *
+ * Supports three visual themes:
+ * 1. Modern Pro (Default) - Clean, minimal, SaaS-like
+ * 2. Zen Mode - Organic, soft, calming
+ * 3. Cyber Focus - High-contrast, neon, terminal
+ *
+ * Usage:
+ * Apply data-theme attribute to <body> or <html>:
+ * - data-theme="modern" (default)
+ * - data-theme="zen"
+ * - data-theme="cyber"
+ *
+ * Reference mockups in /mockups/ for visual specifications
+ */
+
+/* ============================================================================
+   MODERN PRO THEME (Default)
+   Clean, Minimal, SaaS-like aesthetic
+   ============================================================================ */
+
+:root,
+[data-theme='modern'] {
+  /* Typography */
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Monaco, 'Cascadia Code', monospace;
+
+  /* Colors - Backgrounds */
+  --bg-primary: #0f172a;        /* slate-900 - main background */
+  --bg-secondary: #1e293b;      /* slate-800 - cards, panels */
+  --bg-tertiary: #334155;       /* slate-700 - hover states */
+  --bg-surface: #ffffff;        /* white - for light mode elements */
+  --bg-surface-secondary: #f8fafc; /* slate-50 - light background */
+
+  /* Colors - Text */
+  --text-primary: #ffffff;      /* white - primary text */
+  --text-secondary: #cbd5e1;    /* slate-300 - secondary text */
+  --text-tertiary: #94a3b8;     /* slate-400 - muted text */
+  --text-muted: #64748b;        /* slate-500 - very muted text */
+  --text-inverse: #0f172a;      /* slate-900 - text on light backgrounds */
+
+  /* Colors - Accent */
+  --accent-primary: #4f46e5;    /* indigo-600 - primary actions */
+  --accent-primary-hover: #6366f1; /* indigo-500 - hover state */
+  --accent-primary-active: #4338ca; /* indigo-700 - active state */
+  --accent-secondary: #8b5cf6;  /* violet-500 - secondary actions */
+
+  /* Colors - Status */
+  --color-success: #22c55e;     /* green-500 */
+  --color-warning: #f59e0b;     /* amber-500 */
+  --color-error: #ef4444;       /* red-500 */
+  --color-info: #3b82f6;        /* blue-500 */
+
+  /* Colors - Borders */
+  --border-primary: #334155;    /* slate-700 */
+  --border-secondary: #475569;  /* slate-600 */
+  --border-light: #e2e8f0;      /* slate-200 - light borders */
+
+  /* Effects - Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-accent: 0 0 20px rgba(79, 70, 229, 0.3);
+  --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.2);
+
+  /* Effects - Border Radius */
+  --radius-sm: 0.25rem;         /* 4px */
+  --radius-md: 0.375rem;        /* 6px */
+  --radius-lg: 0.5rem;          /* 8px */
+  --radius-xl: 0.75rem;         /* 12px */
+  --radius-2xl: 1rem;           /* 16px */
+  --radius-full: 9999px;        /* pill shape */
+
+  /* Effects - Transitions */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 250ms ease-in-out;
+  --transition-slow: 350ms ease-in-out;
+
+  /* Layout - Spacing */
+  --spacing-xs: 0.5rem;         /* 8px */
+  --spacing-sm: 0.75rem;        /* 12px */
+  --spacing-md: 1rem;           /* 16px */
+  --spacing-lg: 1.5rem;         /* 24px */
+  --spacing-xl: 2rem;           /* 32px */
+  --spacing-2xl: 3rem;          /* 48px */
+}
+
+/* ============================================================================
+   ZEN MODE THEME
+   Organic, Soft, Calming aesthetic
+   ============================================================================ */
+
+[data-theme='zen'] {
+  /* Typography */
+  --font-body: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Merriweather', Georgia, serif;
+  --font-mono: 'Courier New', monospace;
+
+  /* Colors - Backgrounds */
+  --bg-primary: #F4EBD0;        /* sand - main background */
+  --bg-secondary: #F8F6F0;      /* lighter sand - cards */
+  --bg-tertiary: #ffffff;       /* white - elevated surfaces */
+  --bg-surface: #ffffff;        /* white */
+  --bg-surface-secondary: #F4EBD0; /* sand */
+
+  /* Colors - Text */
+  --text-primary: #2C3333;      /* charcoal - primary text */
+  --text-secondary: #2C3333;    /* charcoal - secondary text */
+  --text-tertiary: rgba(44, 51, 51, 0.6);  /* charcoal 60% - muted */
+  --text-muted: rgba(44, 51, 51, 0.4);     /* charcoal 40% - very muted */
+  --text-inverse: #ffffff;      /* white - text on dark backgrounds */
+
+  /* Colors - Accent */
+  --accent-primary: #5F8D4E;    /* sage - primary actions */
+  --accent-primary-hover: #4E7A40; /* darker sage - hover */
+  --accent-primary-active: #3D6632; /* darkest sage - active */
+  --accent-secondary: #8B7355;  /* earthy brown - secondary */
+
+  /* Colors - Status */
+  --color-success: #5F8D4E;     /* sage */
+  --color-warning: #D4A574;     /* warm sand */
+  --color-error: #C85C5C;       /* muted red */
+  --color-info: #6B9AC4;        /* soft blue */
+
+  /* Colors - Borders */
+  --border-primary: #E8E0C5;    /* sand border */
+  --border-secondary: rgba(95, 141, 78, 0.3); /* sage 30% */
+  --border-light: rgba(0, 0, 0, 0.03);
+
+  /* Effects - Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.06);
+  --shadow-accent: 0 4px 12px rgba(95, 141, 78, 0.15);
+  --shadow-glow: 0 0 20px rgba(95, 141, 78, 0.1);
+
+  /* Effects - Border Radius */
+  --radius-sm: 0.5rem;          /* 8px */
+  --radius-md: 0.75rem;         /* 12px */
+  --radius-lg: 1rem;            /* 16px */
+  --radius-xl: 1.25rem;         /* 20px */
+  --radius-2xl: 1.5rem;         /* 24px */
+  --radius-full: 9999px;
+
+  /* Effects - Transitions */
+  --transition-fast: 200ms ease-in-out;
+  --transition-base: 400ms ease-in-out;
+  --transition-slow: 1000ms ease-in-out; /* Organic, slow transitions */
+
+  /* Zen-specific */
+  --organic-shape-1: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  --organic-shape-2: 60% 40% 30% 70% / 60% 30% 70% 40%;
+}
+
+/* ============================================================================
+   CYBER FOCUS THEME
+   High-contrast, Neon, Terminal aesthetic
+   ============================================================================ */
+
+[data-theme='cyber'] {
+  /* Typography */
+  --font-body: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  --font-heading: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+
+  /* Colors - Backgrounds */
+  --bg-primary: #050505;        /* near black - main background */
+  --bg-secondary: #0a0a0a;      /* slightly lighter black */
+  --bg-tertiary: #1a1a1a;       /* dark gray */
+  --bg-surface: #050505;        /* near black */
+  --bg-surface-secondary: #0a0a0a;
+
+  /* Colors - Text */
+  --text-primary: #00F0FF;      /* neon cyan - primary text */
+  --text-secondary: #00F0FF;    /* neon cyan - secondary text */
+  --text-tertiary: #666666;     /* gray - muted text */
+  --text-muted: #444444;        /* dark gray - very muted */
+  --text-inverse: #000000;      /* black - text on bright backgrounds */
+
+  /* Colors - Accent */
+  --accent-primary: #00F0FF;    /* neon cyan - primary actions */
+  --accent-primary-hover: #33F3FF; /* brighter cyan - hover */
+  --accent-primary-active: #00D4E6; /* darker cyan - active */
+  --accent-secondary: #FF0099;  /* neon pink - secondary actions */
+
+  /* Colors - Status */
+  --color-success: #00FF88;     /* neon green */
+  --color-warning: #FFD700;     /* neon yellow */
+  --color-error: #FF0055;       /* neon red */
+  --color-info: #00F0FF;        /* neon cyan */
+
+  /* Colors - Borders */
+  --border-primary: #333333;    /* dark gray */
+  --border-secondary: #00F0FF;  /* neon cyan */
+  --border-light: #1a1a1a;
+
+  /* Effects - Shadows (Neon Glows) */
+  --shadow-sm: 0 0 5px rgba(0, 240, 255, 0.1);
+  --shadow-md: 0 0 10px rgba(0, 240, 255, 0.2);
+  --shadow-lg: 0 0 20px rgba(0, 240, 255, 0.3);
+  --shadow-accent: 0 0 15px rgba(0, 240, 255, 0.5);
+  --shadow-glow: 0 0 30px rgba(0, 240, 255, 0.4);
+
+  /* Effects - Text Shadows (Neon Glows) */
+  --text-glow-cyan: 0 0 10px rgba(0, 240, 255, 0.5);
+  --text-glow-pink: 0 0 10px rgba(255, 0, 153, 0.5);
+
+  /* Effects - Border Radius */
+  --radius-sm: 0;               /* Sharp corners */
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-full: 0;
+
+  /* Effects - Transitions */
+  --transition-fast: 100ms linear;
+  --transition-base: 200ms linear;
+  --transition-slow: 300ms ease-out;
+
+  /* Cyber-specific */
+  --scanline-opacity: 0.1;
+  --glitch-intensity: 2px;
+}
+
+/* ============================================================================
+   ACCESSIBILITY - Reduced Motion
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  [data-theme='modern'],
+  [data-theme='zen'],
+  [data-theme='cyber'] {
+    --transition-fast: 0ms;
+    --transition-base: 0ms;
+    --transition-slow: 0ms;
+  }
+
+  /* Disable cyber theme animations for reduced motion */
+  [data-theme='cyber'] .glitch-effect::before,
+  [data-theme='cyber'] .glitch-effect::after {
+    animation: none !important;
+  }
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+/* Apply theme variables to body */
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+/* Heading styles */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* Organic shapes for Zen theme */
+[data-theme='zen'] .organic-shape {
+  border-radius: var(--organic-shape-1);
+  transition: border-radius var(--transition-slow);
+}
+
+[data-theme='zen'] .organic-shape:hover {
+  border-radius: var(--organic-shape-2);
+}
+
+/* Neon text glow for Cyber theme */
+[data-theme='cyber'] .text-neon {
+  color: var(--accent-primary);
+  text-shadow: var(--text-glow-cyan);
+}
+
+[data-theme='cyber'] .text-pink {
+  color: var(--accent-secondary);
+  text-shadow: var(--text-glow-pink);
+}
+
+/* Scanline effect for Cyber theme */
+[data-theme='cyber'] .scanline-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  background-size: 100% 2px, 3px 100%;
+  opacity: var(--scanline-opacity);
+}
