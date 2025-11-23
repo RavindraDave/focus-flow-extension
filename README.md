@@ -2,6 +2,29 @@
 
 A powerful Chrome Extension for productivity and focus management with Pomodoro timer, website blocking, and advanced analytics.
 
+## 🚀 Quick Start
+
+**First time using Focus Flow? Start here!**
+
+1. **Install dependencies and build**:
+   ```bash
+   npm install
+   npm run build
+   ```
+
+2. **Load the extension in Chrome**:
+   - Open Chrome and go to `chrome://extensions/`
+   - Enable "Developer mode" (toggle in top right corner)
+   - Click "Load unpacked"
+   - Select the `dist` folder from this project
+
+3. **Get started**:
+   - The onboarding guide will automatically open
+   - Click the Focus Flow icon in your toolbar to start your first Pomodoro session
+   - For detailed instructions, see the [Complete User Guide](USER_GUIDE.md)
+
+**Need help?** Check out the [User Guide](USER_GUIDE.md) for comprehensive documentation.
+
 ## Table of Contents
 
 - [Features](#features)

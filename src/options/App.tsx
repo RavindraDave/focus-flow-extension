@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { SettingsForm, AnalyticsDashboard, BlockRuleList, ScheduleList } from './components';
+import { SettingsForm, AnalyticsDashboard, BlockRuleList, ScheduleList, SuggestedSites } from './components';
 import { YouTubeSettings } from './components/YouTubeSettings';
 import { useSettings } from '../hooks';
 import { Spinner } from '../components/atoms/Spinner';
@@ -136,6 +136,7 @@ const App: React.FC = () => {
               <h2 className="text-2xl font-semibold text-neutral-900 mb-6">
                 Website Blocking
               </h2>
+              <SuggestedSites />
               <BlockRuleList />
             </div>
           )}

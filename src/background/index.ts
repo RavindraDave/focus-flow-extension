@@ -475,12 +475,17 @@ class BackgroundServiceWorker {
           // Schedule midnight check
           await this.scheduleMidnightCheck();
 
+          // Open onboarding page on first install
+          await chrome.tabs.create({
+            url: chrome.runtime.getURL('onboarding.html'),
+          });
+
           // Show welcome notification
           await chrome.notifications.create({
             type: 'basic',
             iconUrl: chrome.runtime.getURL('/icons/icon128.png'),
             title: 'Focus Flow Installed!',
-            message: 'Click the extension icon to start your first Pomodoro session.',
+            message: 'Welcome! Let\'s get you started with Focus Flow.',
           });
         } else if (details.reason === 'update') {
           console.info(`📦 Extension updated to version ${chrome.runtime.getManifest().version}`);
