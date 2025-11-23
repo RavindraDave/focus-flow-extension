@@ -24,8 +24,17 @@ type Tab = 'dashboard' | 'timer' | 'blocking' | 'integrations' | 'gamification' 
  */
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { settings, isLoading: settingsLoading, error, updateSettings } = useSettings();
+
+  /**
+   * Handle tab navigation and close sidebar on mobile
+   */
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+    setSidebarOpen(false); // Close sidebar on mobile after selection
+  };
 
   /**
    * Sidebar navigation item
@@ -38,7 +47,7 @@ const App: React.FC = () => {
   }> = ({ tab, icon, label, description }) => (
     <button
       type="button"
-      onClick={() => setActiveTab(tab)}
+      onClick={() => handleTabChange(tab)}
       className={`
         w-full text-left px-4 py-3 rounded-lg transition-all
         focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2
@@ -68,9 +77,25 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-bg-primary flex">
+    <div className="min-h-screen bg-bg-primary flex relative">
+      {/* Mobile Backdrop Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-80 bg-surface border-r border-border flex flex-col">
+      <aside
+        className={`
+          w-80 bg-surface border-r border-border flex flex-col
+          fixed md:sticky top-0 h-screen z-50 md:z-auto
+          transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
         {/* Logo/Header */}
         <div className="p-6 border-b border-border">
           <h1 className="text-2xl font-bold text-text-primary flex items-center font-serif">
@@ -144,8 +169,37 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-bg-primary">
-        <div className="max-w-6xl mx-auto p-8">
+      <main className="flex-1 overflow-y-auto bg-bg-primary md:ml-0">
+        {/* Mobile Header with Hamburger Menu */}
+        <div className="md:hidden sticky top-0 z-30 bg-bg-surface border-b border-border p-4 flex items-center justify-between shadow-sm">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg bg-bg-secondary hover:bg-accent/10 text-text-primary transition focus:outline-none focus:ring-2 focus:ring-accent"
+            aria-label="Open navigation menu"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+          <h1 className="text-lg font-bold text-text-primary flex items-center">
+            <span className="text-xl mr-2">🎯</span>
+            Focus Flow
+          </h1>
+          <div className="w-10" aria-hidden="true" /> {/* Spacer for centering */}
+        </div>
+
+        <div className="max-w-6xl mx-auto p-4 md:p-8">
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
             <DashboardTab settings={settings} />
@@ -186,6 +240,57 @@ const App: React.FC = () => {
 const DashboardTab: React.FC<{ settings: any }> = () => {
   const [nuclearMode, setNuclearMode] = useState(false);
   const [strictBlocking, setStrictBlocking] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load toggle states from chrome.storage on mount
+  React.useEffect(() => {
+    async function loadToggles() {
+      try {
+        const result = await chrome.storage.sync.get(['nuclear_mode', 'strict_blocking']);
+        setNuclearMode(result.nuclear_mode ?? false);
+        setStrictBlocking(result.strict_blocking ?? false);
+      } catch (error) {
+        console.error('Failed to load toggle states:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadToggles();
+  }, []);
+
+  // Save Nuclear Mode to storage with optimistic UI
+  const handleNuclearModeToggle = async () => {
+    const newValue = !nuclearMode;
+    const previousValue = nuclearMode;
+
+    // Optimistic update
+    setNuclearMode(newValue);
+
+    try {
+      await chrome.storage.sync.set({ nuclear_mode: newValue });
+    } catch (error) {
+      console.error('Failed to save nuclear mode:', error);
+      // Revert on error
+      setNuclearMode(previousValue);
+    }
+  };
+
+  // Save Strict Blocking to storage with optimistic UI
+  const handleStrictBlockingToggle = async () => {
+    const newValue = !strictBlocking;
+    const previousValue = strictBlocking;
+
+    // Optimistic update
+    setStrictBlocking(newValue);
+
+    try {
+      await chrome.storage.sync.set({ strict_blocking: newValue });
+    } catch (error) {
+      console.error('Failed to save strict blocking:', error);
+      // Revert on error
+      setStrictBlocking(previousValue);
+    }
+  };
 
   return (
     <div>
@@ -244,11 +349,13 @@ const DashboardTab: React.FC<{ settings: any }> = () => {
               </p>
             </div>
             <button
-              onClick={() => setNuclearMode(!nuclearMode)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+              onClick={handleNuclearModeToggle}
+              disabled={isLoading}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                 nuclearMode ? 'bg-accent' : 'bg-bg-secondary'
               }`}
               aria-pressed={nuclearMode}
+              aria-label="Toggle Nuclear Mode"
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -267,11 +374,13 @@ const DashboardTab: React.FC<{ settings: any }> = () => {
               </p>
             </div>
             <button
-              onClick={() => setStrictBlocking(!strictBlocking)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+              onClick={handleStrictBlockingToggle}
+              disabled={isLoading}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                 strictBlocking ? 'bg-accent' : 'bg-bg-secondary'
               }`}
               aria-pressed={strictBlocking}
+              aria-label="Toggle Strict Blocking"
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
