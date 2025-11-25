@@ -51,13 +51,28 @@ function formatMinutes(minutes) {
 
 /**
  * Get blocked site name from URL
+ * SECURITY: Validates URL parameter to prevent XSS attacks
  */
 function getBlockedSite() {
-  const urlParams = new URLParams(window.location.search);
-  const url = urlParams.get('url') || window.location.href;
+  const urlParams = new URLSearchParams(window.location.search);
+  const url = urlParams.get('url');
+
+  // Strict validation
+  if (!url || typeof url !== 'string') {
+    return 'this site';
+  }
+
+  // Only allow http/https URLs
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return 'this site';
+  }
 
   try {
     const urlObj = new URL(url);
+    // Additional validation - only allow http/https protocols
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return 'this site';
+    }
     return urlObj.hostname;
   } catch (e) {
     return 'this site';

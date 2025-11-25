@@ -27,8 +27,7 @@
     "alarms",
     "notifications",
     "tabs",
-    "declarativeNetRequest",
-    "declarativeNetRequestFeedback"
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "<all_urls>"
