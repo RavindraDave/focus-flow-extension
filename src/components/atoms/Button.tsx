@@ -78,26 +78,24 @@ export const Button: React.FC<ButtonProps> = ({
   // Variant styles
   const variantStyles: Record<typeof variant, string> = {
     primary: `
-      bg-primary-500 hover:bg-primary-600 active:bg-primary-700
-      text-white
-      focus:ring-primary-500
+      bg-accent hover:bg-accent-hover active:bg-accent-hover
+      text-text-inverse
+      focus:ring-accent
     `,
     secondary: `
-      bg-neutral-100 hover:bg-neutral-200 active:bg-neutral-300
-      text-neutral-900
-      focus:ring-neutral-400
-      dark:bg-neutral-700 dark:hover:bg-neutral-600 dark:text-white
+      bg-bg-secondary hover:bg-bg-tertiary active:bg-bg-tertiary
+      text-text-primary
+      focus:ring-border
     `,
     destructive: `
-      bg-error-500 hover:bg-error-600 active:bg-error-600
-      text-white
-      focus:ring-error-500
+      bg-error hover:bg-error/90 active:bg-error/90
+      text-text-inverse
+      focus:ring-error
     `,
     ghost: `
-      bg-transparent hover:bg-neutral-100 active:bg-neutral-200
-      text-neutral-700
-      focus:ring-neutral-400
-      dark:hover:bg-neutral-800 dark:text-neutral-200
+      bg-transparent hover:bg-bg-secondary active:bg-bg-tertiary
+      text-text-primary
+      focus:ring-border
     `,
   };
 

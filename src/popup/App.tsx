@@ -10,7 +10,6 @@ import { PopupLayout } from '../components/templates/PopupLayout';
 import { TimerDisplay, TimerControls, QuickStats, NuclearModeModal, NuclearModeStatus } from './components';
 import { useTimer, useAnalytics, useNuclearMode } from '../hooks';
 import { useThemeContext } from '../contexts/ThemeContext';
-import { Button } from '../components/atoms/Button';
 import OnboardingModal from '../components/onboarding/OnboardingModal';
 
 /**
@@ -65,7 +64,6 @@ const App: React.FC = () => {
     sessionType,
     remainingSeconds,
     totalSeconds,
-    taskName,
     start,
     pause,
     resume,
@@ -93,13 +91,21 @@ const App: React.FC = () => {
   return (
     <PopupLayout>
       {/* Header */}
-      <header className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-text-primary font-serif">Focus Flow</h1>
-        {taskName && (
-          <p className="text-sm text-text-secondary mt-1 truncate px-4" title={taskName}>
-            {taskName}
-          </p>
-        )}
+      <header className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-accent rounded-md flex items-center justify-center text-white text-xs font-bold">F</div>
+          <span className="font-semibold tracking-tight text-text-primary">Focus Flow</span>
+        </div>
+        <button
+          onClick={() => chrome.runtime.openOptionsPage()}
+          className="text-text-tertiary hover:text-text-primary transition"
+          aria-label="Settings"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+        </button>
       </header>
 
       {/* Main Content */}
@@ -179,26 +185,21 @@ const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="mt-8 space-y-3">
-        {/* Nuclear Mode Activation Button */}
-        {!isNuclearActive && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setIsNuclearModalOpen(true)}
-            className="w-full"
-          >
-            🚀 Activate Nuclear Mode
-          </Button>
-        )}
+      <footer className="mt-auto pt-4 border-t border-border">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+            <span className="text-xs text-text-tertiary">System Ready</span>
+          </div>
 
-        <div className="text-center">
           <button
-            type="button"
-            onClick={() => chrome.runtime.openOptionsPage()}
-            className="text-xs text-text-tertiary hover:text-text-primary underline focus:outline-none focus:ring-2 focus:ring-accent rounded px-2 py-1 transition"
+            onClick={() => setIsNuclearModalOpen(true)}
+            className="text-xs text-error hover:text-error/80 flex items-center gap-1 transition font-medium"
           >
-            ⚙️ Settings & Analytics
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Nuclear Mode
           </button>
         </div>
       </footer>

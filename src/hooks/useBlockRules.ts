@@ -14,6 +14,7 @@ export interface UseBlockRulesReturn {
   addRules: (rules: Omit<BlockRule, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
   updateRule: (id: string, updates: Partial<BlockRule>) => Promise<void>;
   deleteRule: (id: string) => Promise<void>;
+  deleteRules: (ids: string[]) => Promise<void>;
   toggleRule: (id: string, enabled: boolean) => Promise<void>;
   importRules: (rules: BlockRule[]) => Promise<void>;
   exportRules: () => Promise<void>;
@@ -85,7 +86,7 @@ export function useBlockRules(): UseBlockRulesReturn {
   );
 
   /**
-   * Add multiple rules in batch (much faster than individual adds)
+   * Add multiple rules in batch (sequential to avoid race conditions)
    * Complexity: 4 (batch processing + error handling)
    */
   const addRules = useCallback(
@@ -93,17 +94,19 @@ export function useBlockRules(): UseBlockRulesReturn {
       try {
         setError(null);
 
-        // Send all add requests in parallel (don't wait for each)
-        await Promise.all(
-          rulesToAdd.map(rule =>
-            chrome.runtime.sendMessage({
-              type: 'BLOCKLIST_ADD',
-              rule,
-            })
-          )
-        );
+        // Process sequentially to avoid race conditions with duplicate checks
+        for (const rule of rulesToAdd) {
+          const response = await chrome.runtime.sendMessage({
+            type: 'BLOCKLIST_ADD',
+            rule,
+          });
 
-        // Only refresh once after all are added
+          if (!response.success) {
+            console.error('Failed to add rule:', rule.pattern, response.error);
+          }
+        }
+
+        // Refresh once after all are added
         await fetchRules();
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to add rules';
@@ -164,6 +167,36 @@ export function useBlockRules(): UseBlockRulesReturn {
         await fetchRules();
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to delete rule';
+        setError(message);
+        throw err;
+      }
+    },
+    [fetchRules]
+  );
+
+  /**
+   * Delete multiple rules in batch
+   * Complexity: 3 (batch processing)
+   */
+  const deleteRules = useCallback(
+    async (ids: string[]): Promise<void> => {
+      try {
+        setError(null);
+
+        for (const id of ids) {
+          const response = await chrome.runtime.sendMessage({
+            type: 'BLOCKLIST_DELETE',
+            id,
+          });
+
+          if (!response.success) {
+            console.error('Failed to delete rule:', id, response.error);
+          }
+        }
+
+        await fetchRules();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to delete rules';
         setError(message);
         throw err;
       }
@@ -250,6 +283,7 @@ export function useBlockRules(): UseBlockRulesReturn {
     addRules,
     updateRule,
     deleteRule,
+    deleteRules,
     toggleRule,
     importRules,
     exportRules,

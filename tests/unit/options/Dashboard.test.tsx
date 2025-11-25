@@ -9,7 +9,7 @@
  * - Error handling
  */
 
-import React from 'react';
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
@@ -265,7 +265,7 @@ describe('Dashboard Component', () => {
     });
 
     it('should revert UI if storage save fails', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
       mockChrome.storage.sync.set.mockRejectedValue(new Error('Storage error'));
 
       render(<App />);

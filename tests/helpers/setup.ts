@@ -2,6 +2,12 @@ import { afterEach, vi, expect } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { toHaveNoViolations } from 'jest-axe';
+import { webcrypto } from 'node:crypto';
+
+// Polyfill crypto for JSDOM
+Object.defineProperty(global, 'crypto', {
+  value: webcrypto,
+});
 
 // Extend expect with jest-axe matchers
 expect.extend(toHaveNoViolations);

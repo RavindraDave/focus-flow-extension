@@ -10,10 +10,9 @@
  * - Accessibility
  */
 
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import App from '../../src/options/App';
+import App from '../../../src/options/App';
 
 // Mock chrome API
 const mockChrome = {

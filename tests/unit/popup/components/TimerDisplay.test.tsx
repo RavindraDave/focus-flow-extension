@@ -279,7 +279,7 @@ describe('TimerDisplay', () => {
       );
 
       const timer = screen.getByRole('timer');
-      expect(timer.className).toContain('text-primary-500');
+      expect(timer.className).toContain('text-accent');
     });
 
     it('should use success color for break sessions', () => {
@@ -294,7 +294,7 @@ describe('TimerDisplay', () => {
       );
 
       const timer = screen.getByRole('timer');
-      expect(timer.className).toContain('text-success-500');
+      expect(timer.className).toContain('text-success');
     });
 
     it('should use neutral color when idle', () => {
@@ -309,7 +309,7 @@ describe('TimerDisplay', () => {
       );
 
       const timer = screen.getByRole('timer');
-      expect(timer.className).toContain('text-neutral-500');
+      expect(timer.className).toContain('text-text-muted');
     });
   });
 });

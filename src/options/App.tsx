@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../hooks/useTheme';
 import { useSettings } from '../hooks/useSettings';
+import { useAnalytics } from '../hooks/useAnalytics';
 import {
   SettingsForm,
   AnalyticsDashboard,
@@ -41,7 +42,7 @@ const App: React.FC = () => {
    */
   const NavItem: React.FC<{
     tab: Tab;
-    icon: string;
+    icon: React.ReactNode;
     label: string;
     description: string;
   }> = ({ tab, icon, label, description }) => (
@@ -51,23 +52,21 @@ const App: React.FC = () => {
       className={`
         w-full text-left px-4 py-3 rounded-lg transition-all
         focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2
-        ${
-          activeTab === tab
-            ? 'bg-accent text-text-inverse shadow-md'
-            : 'text-text-secondary hover:bg-bg-secondary hover:text-text-primary'
+        ${activeTab === tab
+          ? 'bg-accent text-text-inverse shadow-md'
+          : 'text-text-secondary hover:bg-bg-secondary hover:text-text-primary'
         }
       `}
       aria-selected={activeTab === tab}
       role="tab"
     >
       <div className="flex items-center space-x-3">
-        <span className="text-xl">{icon}</span>
+        <span className="text-slate-500 group-hover:text-indigo-600 transition-colors">{icon}</span>
         <div className="flex-1">
           <div className="font-semibold text-sm">{label}</div>
           <div
-            className={`text-xs mt-0.5 ${
-              activeTab === tab ? 'opacity-90' : 'opacity-60'
-            }`}
+            className={`text-xs mt-0.5 ${activeTab === tab ? 'opacity-90' : 'opacity-60'
+              }`}
           >
             {description}
           </div>
@@ -97,11 +96,13 @@ const App: React.FC = () => {
         `}
       >
         {/* Logo/Header */}
-        <div className="p-6 border-b border-border">
-          <h1 className="text-2xl font-bold text-text-primary flex items-center font-serif">
-            <span className="text-3xl mr-3">🎯</span>
-            Focus Flow
-          </h1>
+        <div className="p-6 border-b border-border flex items-center gap-3">
+          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white font-bold">F</div>
+          <div>
+            <h1 className="text-lg font-bold text-text-primary tracking-tight">
+              Focus Flow
+            </h1>
+          </div>
           <p className="text-sm text-text-tertiary mt-1">
             Productivity & Focus Management
           </p>
@@ -115,37 +116,37 @@ const App: React.FC = () => {
         >
           <NavItem
             tab="dashboard"
-            icon="📊"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>}
             label="Dashboard"
             description="Overview & quick actions"
           />
           <NavItem
             tab="timer"
-            icon="⏱️"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
             label="Timer Settings"
             description="Pomodoro durations & sounds"
           />
           <NavItem
             tab="blocking"
-            icon="🚫"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>}
             label="Blocking Rules"
             description="Manage blocked sites & schedules"
           />
           <NavItem
             tab="integrations"
-            icon="🔗"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>}
             label="Integrations"
             description="Connect external apps & services"
           />
           <NavItem
             tab="gamification"
-            icon="🎮"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
             label="Gamification"
             description="Track progress & achievements"
           />
           <NavItem
             tab="data"
-            icon="💾"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>}
             label="Data & Config"
             description="Export, import, and manage data"
           />
@@ -176,7 +177,7 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-bg-primary md:ml-0">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-bg-primary md:ml-0">
         {/* Mobile Header with Hamburger Menu */}
         <div className="md:hidden sticky top-0 z-30 bg-bg-surface border-b border-border p-4 flex items-center justify-between shadow-sm">
           <button
@@ -199,8 +200,8 @@ const App: React.FC = () => {
               />
             </svg>
           </button>
-          <h1 className="text-lg font-bold text-text-primary flex items-center">
-            <span className="text-xl mr-2">🎯</span>
+          <h1 className="text-lg font-bold text-text-primary flex items-center gap-2">
+            <div className="w-6 h-6 bg-accent rounded flex items-center justify-center text-white text-xs font-bold">F</div>
             Focus Flow
           </h1>
           <div className="w-10" aria-hidden="true" /> {/* Spacer for centering */}
@@ -209,7 +210,7 @@ const App: React.FC = () => {
         <div className="max-w-6xl mx-auto p-4 md:p-8">
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
-            <DashboardTab settings={settings} />
+            <DashboardTab settings={settings} setActiveTab={setActiveTab} />
           )}
 
           {/* Timer Settings Tab */}
@@ -244,10 +245,13 @@ const App: React.FC = () => {
 /**
  * Dashboard Tab Component
  */
-const DashboardTab: React.FC<{ settings: any }> = () => {
+const DashboardTab: React.FC<{ settings: any; setActiveTab: (tab: Tab) => void }> = ({ setActiveTab }) => {
   const [nuclearMode, setNuclearMode] = useState(false);
   const [strictBlocking, setStrictBlocking] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Get real analytics data
+  const { todayStats, streak, isLoading: analyticsLoading } = useAnalytics();
 
   // Load toggle states from chrome.storage on mount
   React.useEffect(() => {
@@ -299,15 +303,47 @@ const DashboardTab: React.FC<{ settings: any }> = () => {
     }
   };
 
+  // Format focus time (minutes to hours and minutes)
+  const formatFocusTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours === 0) return `${mins}m`;
+    return `${hours}h ${mins}m`;
+  };
+
+  // Calculate focus score (simple formula based on pomodoros completed)
+  const calculateFocusScore = (): number => {
+    if (!todayStats) return 0;
+    const total = todayStats.pomodorosCompleted + todayStats.pomodorosAbandoned;
+    if (total === 0) return 0;
+    return Math.round((todayStats.pomodorosCompleted / total) * 100);
+  };
+
+  const focusScore = calculateFocusScore();
+  const focusTime = todayStats?.focusTime || 0;
+  const currentStreak = streak?.current || 0;
+
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-4xl font-bold text-text-primary font-serif mb-2">
-          Dashboard
-        </h2>
-        <p className="text-text-secondary">
-          At-a-glance overview of your productivity
-        </p>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-text-primary mb-1">
+            Dashboard
+          </h2>
+          <p className="text-text-secondary text-sm">
+            {analyticsLoading
+              ? 'Loading your stats...'
+              : focusTime > 0
+                ? `Welcome back! You've been focused for ${formatFocusTime(focusTime)} today.`
+                : 'Welcome back! Start a focus session to see your stats.'
+            }
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-bg-secondary border-2 border-surface shadow-sm overflow-hidden flex items-center justify-center text-xl">
+            👤
+          </div>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -317,29 +353,49 @@ const DashboardTab: React.FC<{ settings: any }> = () => {
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-sm font-medium text-text-tertiary">Focus Score</p>
-              <h3 className="text-4xl font-bold text-text-primary mt-2">85%</h3>
+              <h3 className="text-4xl font-bold text-text-primary mt-2">
+                {analyticsLoading ? '...' : `${focusScore}%`}
+              </h3>
             </div>
-            <span className="bg-success/20 text-success text-xs font-medium px-2.5 py-0.5 rounded-full">
-              Top 10%
-            </span>
+            {focusScore >= 80 && (
+              <span className="bg-success/20 text-success text-xs font-medium px-2.5 py-0.5 rounded-full">
+                Excellent
+              </span>
+            )}
           </div>
           <div className="h-2 bg-bg-secondary rounded-full overflow-hidden">
-            <div className="h-full bg-accent w-[85%] rounded-full"></div>
+            <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${focusScore}%` }}></div>
           </div>
+          <p className="text-xs text-text-muted mt-2">
+            {todayStats ? `${todayStats.pomodorosCompleted} completed, ${todayStats.pomodorosAbandoned} abandoned` : 'No sessions yet'}
+          </p>
         </div>
 
         {/* Today's Focus */}
         <div className="bg-surface p-6 rounded-xl shadow-md border border-border">
           <p className="text-sm font-medium text-text-tertiary">Today's Focus</p>
-          <h3 className="text-4xl font-bold text-text-primary mt-2">4h 12m</h3>
-          <p className="text-xs text-success mt-2">+18% vs. yesterday</p>
+          <h3 className="text-4xl font-bold text-text-primary mt-2">
+            {analyticsLoading ? '...' : formatFocusTime(focusTime)}
+          </h3>
+          <p className="text-xs text-text-muted mt-2">
+            {todayStats?.pomodorosCompleted || 0} pomodoros completed
+          </p>
         </div>
 
-        {/* Distractions Blocked */}
+        {/* Current Streak */}
         <div className="bg-surface p-6 rounded-xl shadow-md border border-border">
-          <p className="text-sm font-medium text-text-tertiary">Distractions Blocked</p>
-          <h3 className="text-4xl font-bold text-text-primary mt-2">142</h3>
-          <p className="text-xs text-text-muted mt-2">This week</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-text-tertiary">Current Streak</p>
+              <h3 className="text-4xl font-bold text-text-primary mt-2">
+                {analyticsLoading ? '...' : `${currentStreak} ${currentStreak === 1 ? 'Day' : 'Days'}`}
+              </h3>
+            </div>
+            {currentStreak > 0 && <span className="text-2xl">🔥</span>}
+          </div>
+          <p className="text-xs text-text-muted mt-2">
+            {streak ? `Longest: ${streak.longest} days` : 'Start your streak!'}
+          </p>
         </div>
       </div>
 
@@ -349,53 +405,62 @@ const DashboardTab: React.FC<{ settings: any }> = () => {
         <div className="space-y-4">
           {/* Nuclear Mode Toggle */}
           <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-semibold text-text-primary">Nuclear Mode</h4>
-              <p className="text-sm text-text-tertiary">
-                Instantly blocks ALL sites except whitelist
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center text-error">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              </div>
+              <div>
+                <h4 className="font-semibold text-text-primary text-sm">Nuclear Mode</h4>
+              </div>
             </div>
             <button
               onClick={handleNuclearModeToggle}
               disabled={isLoading}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                nuclearMode ? 'bg-accent' : 'bg-bg-secondary'
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${nuclearMode ? 'bg-accent' : 'bg-bg-secondary'
+                }`}
               aria-pressed={nuclearMode}
               aria-label="Toggle Nuclear Mode"
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  nuclearMode ? 'translate-x-6' : 'translate-x-1'
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${nuclearMode ? 'translate-x-6' : 'translate-x-1'
+                  }`}
               />
             </button>
           </div>
 
           {/* Strict Blocking Toggle */}
           <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-semibold text-text-primary">Strict Blocking</h4>
-              <p className="text-sm text-text-tertiary">
-                Prevents "Emergency Access" on blocked pages
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-info/10 flex items-center justify-center text-info">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              </div>
+              <div>
+                <h4 className="font-semibold text-text-primary text-sm">Strict Blocking</h4>
+              </div>
             </div>
             <button
               onClick={handleStrictBlockingToggle}
               disabled={isLoading}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                strictBlocking ? 'bg-accent' : 'bg-bg-secondary'
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${strictBlocking ? 'bg-accent' : 'bg-bg-secondary'
+                }`}
               aria-pressed={strictBlocking}
               aria-label="Toggle Strict Blocking"
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  strictBlocking ? 'translate-x-6' : 'translate-x-1'
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${strictBlocking ? 'translate-x-6' : 'translate-x-1'
+                  }`}
               />
             </button>
           </div>
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-border">
+          <button
+            onClick={() => setActiveTab('blocking')}
+            className="w-full py-2 px-4 border border-border rounded-lg text-sm font-medium text-text-secondary hover:bg-bg-secondary transition"
+          >
+            Manage Block List
+          </button>
         </div>
       </div>
 
@@ -470,11 +535,10 @@ const TimerTab: React.FC<{
         <div className="grid grid-cols-3 gap-4">
           <button
             onClick={() => onThemeChange('modern')}
-            className={`p-4 rounded-xl border-2 transition-all ${
-              theme === 'modern'
-                ? 'border-accent bg-accent/10'
-                : 'border-border hover:border-border-secondary'
-            }`}
+            className={`p-4 rounded-xl border-2 transition-all ${theme === 'modern'
+              ? 'border-accent bg-accent/10'
+              : 'border-border hover:border-border-secondary'
+              }`}
           >
             <div className="w-full h-20 bg-gradient-to-br from-slate-900 to-indigo-900 rounded-lg mb-3"></div>
             <h4 className="font-semibold text-text-primary">Modern Pro</h4>
@@ -482,11 +546,10 @@ const TimerTab: React.FC<{
           </button>
           <button
             onClick={() => onThemeChange('zen')}
-            className={`p-4 rounded-xl border-2 transition-all ${
-              theme === 'zen'
-                ? 'border-accent bg-accent/10'
-                : 'border-border hover:border-border-secondary'
-            }`}
+            className={`p-4 rounded-xl border-2 transition-all ${theme === 'zen'
+              ? 'border-accent bg-accent/10'
+              : 'border-border hover:border-border-secondary'
+              }`}
           >
             <div className="w-full h-20 bg-gradient-to-br from-[#F4EBD0] to-[#5F8D4E] rounded-lg mb-3"></div>
             <h4 className="font-semibold text-text-primary">Zen Mode</h4>
@@ -494,11 +557,10 @@ const TimerTab: React.FC<{
           </button>
           <button
             onClick={() => onThemeChange('cyber')}
-            className={`p-4 rounded-xl border-2 transition-all ${
-              theme === 'cyber'
-                ? 'border-accent bg-accent/10'
-                : 'border-border hover:border-border-secondary'
-            }`}
+            className={`p-4 rounded-xl border-2 transition-all ${theme === 'cyber'
+              ? 'border-accent bg-accent/10'
+              : 'border-border hover:border-border-secondary'
+              }`}
           >
             <div className="w-full h-20 bg-gradient-to-br from-black via-[#00F0FF] to-[#FF0099] rounded-lg mb-3"></div>
             <h4 className="font-semibold text-text-primary">Cyber Focus</h4>
@@ -524,16 +586,14 @@ const TimerTab: React.FC<{
           </div>
           <button
             onClick={() => handleSoundEnabledChange(!soundEnabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
-              soundEnabled ? 'bg-accent' : 'bg-bg-secondary'
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${soundEnabled ? 'bg-accent' : 'bg-bg-secondary'
+              }`}
             aria-pressed={soundEnabled}
             aria-label="Toggle notification sounds"
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                soundEnabled ? 'translate-x-6' : 'translate-x-1'
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${soundEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
             />
           </button>
         </div>
@@ -554,7 +614,7 @@ const TimerTab: React.FC<{
             value={soundVolume}
             onChange={(e) => handleVolumeChange(Number(e.target.value))}
             disabled={!soundEnabled}
-            className="w-full h-2 bg-bg-secondary rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed accent-accent"
+            className="w-full h-2 bg-bg-secondary rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed accent-accent [&::-webkit-slider-track]:bg-bg-tertiary [&::-webkit-slider-track]:rounded-lg [&::-webkit-slider-track]:border [&::-webkit-slider-track]:border-border [&::-moz-range-track]:bg-bg-tertiary [&::-moz-range-track]:rounded-lg [&::-moz-range-track]:border [&::-moz-range-track]:border-border"
             aria-label="Adjust notification volume"
           />
         </div>
@@ -587,9 +647,9 @@ const TimerTab: React.FC<{
 
         {/* Installation Note */}
         <div className="mt-4 p-3 bg-warning/10 border border-warning/20 rounded-lg">
-          <p className="text-xs text-text-secondary">
+          <p className="text-sm text-text-primary">
             <strong>Note:</strong> Sound files must be installed manually. See{' '}
-            <code className="bg-bg-secondary px-1 rounded">public/assets/sounds/README.md</code>{' '}
+            <code className="bg-bg-secondary px-1 rounded text-text-primary">public/assets/sounds/README.md</code>{' '}
             for instructions.
           </p>
         </div>

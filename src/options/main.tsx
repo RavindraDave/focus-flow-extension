@@ -4,7 +4,7 @@ import App from './App';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import '../styles/fonts.css';
 import '../styles/themes.css';
-import '../popup/styles.css';
+import './styles.css';
 
 const root = document.getElementById('root');
 

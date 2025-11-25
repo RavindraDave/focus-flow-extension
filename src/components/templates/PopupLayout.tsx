@@ -29,7 +29,7 @@ export interface PopupLayoutProps {
  * PopupLayout Component
  *
  * A fixed-size layout template for Chrome extension popup pages.
- * Dimensions: 400px × 600px (as per manifest requirements).
+ * Dimensions: 400px × 600px (as per Chrome extension popup requirements).
  *
  * Layout structure:
  * - Header: Fixed at top (optional)
@@ -56,8 +56,9 @@ export const PopupLayout: React.FC<PopupLayoutProps> = ({
   return (
     <div
       className={`
+        relative
         flex flex-col
-        w-full min-h-screen
+        w-full h-[600px]
         bg-bg-primary
         ${className}
       `.trim()}

@@ -4,7 +4,8 @@
  */
 
 import React, { useState } from 'react';
-import { Button } from '../components/atoms/Button';
+import { useThemeContext } from '../contexts/ThemeContext';
+import { ThemeMode } from '../hooks/useTheme';
 
 interface Step {
   title: string;
@@ -17,6 +18,11 @@ const ONBOARDING_STEPS: Step[] = [
     title: 'Welcome to Focus Flow',
     description: 'Focus Flow helps you stay productive with the Pomodoro technique, website blocking, and focus tracking.',
     icon: '🎯',
+  },
+  {
+    title: 'Choose Your Theme',
+    description: 'Personalize your experience. Choose a theme that fits your style and helps you focus.',
+    icon: '🎨',
   },
   {
     title: 'Pomodoro Timer',
@@ -47,6 +53,7 @@ const ONBOARDING_STEPS: Step[] = [
 
 const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const { theme, setTheme } = useThemeContext();
 
   const handleNext = () => {
     if (currentStep < ONBOARDING_STEPS.length - 1) {
@@ -75,18 +82,18 @@ const App: React.FC = () => {
   const progress = ((currentStep + 1) / ONBOARDING_STEPS.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <div className="min-h-screen bg-bg-primary flex items-center justify-center p-4 transition-colors duration-300 overflow-x-hidden">
+      <div className="max-w-4xl w-full bg-surface rounded-2xl shadow-2xl overflow-hidden border border-border transition-colors duration-300">
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white p-8">
-          <h1 className="text-3xl font-bold mb-2">Focus Flow</h1>
-          <p className="text-primary-100">Your productivity companion</p>
+        <div className="bg-bg-secondary border-b border-border p-8 transition-colors duration-300">
+          <h1 className="text-3xl font-bold mb-2 text-text-primary">Focus Flow</h1>
+          <p className="text-text-secondary">Your productivity companion</p>
         </div>
 
         {/* Progress Bar */}
-        <div className="bg-neutral-100 h-2">
+        <div className="bg-bg-secondary h-2">
           <div
-            className="bg-gradient-to-r from-primary-600 to-secondary-600 h-full transition-all duration-300"
+            className="bg-accent h-full transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -95,15 +102,39 @@ const App: React.FC = () => {
         <div className="p-12">
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">{step.icon}</div>
-            <h2 className="text-2xl font-bold text-neutral-900 mb-4">{step.title}</h2>
-            <p className="text-lg text-neutral-600 leading-relaxed">{step.description}</p>
+            <h2 className="text-2xl font-bold text-text-primary mb-4">{step.title}</h2>
+            <p className="text-lg text-text-secondary leading-relaxed max-w-2xl mx-auto">{step.description}</p>
           </div>
 
-          {/* Quick Tips Section */}
+          {/* Theme Selection Section */}
           {currentStep === 1 && (
-            <div className="mt-8 bg-primary-50 border border-primary-200 rounded-lg p-6">
-              <h3 className="font-semibold text-neutral-900 mb-3">💡 Quick Tips:</h3>
-              <ul className="space-y-2 text-sm text-neutral-700">
+            <div className="mt-8 grid grid-cols-3 gap-4 max-w-3xl mx-auto">
+              {(['modern', 'zen', 'cyber'] as ThemeMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setTheme(mode)}
+                  className={`p-4 rounded-xl border-2 transition-all duration-200 ${theme === mode
+                    ? 'border-accent bg-accent/10 scale-105'
+                    : 'border-border hover:border-accent/50 bg-bg-secondary'
+                    }`}
+                >
+                  <div className={`h-20 rounded-lg mb-3 ${mode === 'modern' ? 'bg-gradient-to-br from-indigo-500 to-purple-600' :
+                    mode === 'zen' ? 'bg-gradient-to-br from-stone-200 to-stone-400' :
+                      'bg-gradient-to-br from-slate-900 to-cyan-500'
+                    }`} />
+                  <div className="font-medium capitalize text-text-primary">
+                    {mode}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Quick Tips Section */}
+          {currentStep === 2 && (
+            <div className="mt-8 bg-bg-secondary border border-border rounded-lg p-6 max-w-2xl mx-auto">
+              <h3 className="font-semibold text-text-primary mb-3">💡 Quick Tips:</h3>
+              <ul className="space-y-2 text-sm text-text-secondary">
                 <li>• Default work session: 25 minutes</li>
                 <li>• Short break: 5 minutes</li>
                 <li>• Long break (after 4 sessions): 15 minutes</li>
@@ -112,10 +143,10 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {currentStep === 2 && (
-            <div className="mt-8 bg-warning-50 border border-warning-200 rounded-lg p-6">
-              <h3 className="font-semibold text-neutral-900 mb-3">🎯 How to Block Websites:</h3>
-              <ul className="space-y-2 text-sm text-neutral-700">
+          {currentStep === 3 && (
+            <div className="mt-8 bg-warning/10 border border-warning/20 rounded-lg p-6 max-w-2xl mx-auto">
+              <h3 className="font-semibold text-text-primary mb-3">🎯 How to Block Websites:</h3>
+              <ul className="space-y-2 text-sm text-text-secondary">
                 <li>1. Click the extension icon</li>
                 <li>2. Click "Settings & Analytics"</li>
                 <li>3. Go to "Block List" tab</li>
@@ -126,19 +157,19 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {currentStep === 3 && (
-            <div className="mt-8 bg-error-50 border border-error-200 rounded-lg p-6">
-              <h3 className="font-semibold text-error-900 mb-3">⚠️ Important Warning:</h3>
-              <p className="text-sm text-error-800">
+          {currentStep === 4 && (
+            <div className="mt-8 bg-error/10 border border-error/20 rounded-lg p-6 max-w-2xl mx-auto">
+              <h3 className="font-semibold text-error mb-3">⚠️ Important Warning:</h3>
+              <p className="text-sm text-error/90">
                 Nuclear Mode CANNOT be deactivated once started. Use this feature only when you need maximum focus and commitment.
               </p>
             </div>
           )}
 
-          {currentStep === 5 && (
-            <div className="mt-8 bg-success-50 border border-success-200 rounded-lg p-6">
-              <h3 className="font-semibold text-neutral-900 mb-3">📚 Additional Resources:</h3>
-              <ul className="space-y-2 text-sm text-neutral-700">
+          {currentStep === 6 && (
+            <div className="mt-8 bg-success/10 border border-success/20 rounded-lg p-6 max-w-2xl mx-auto">
+              <h3 className="font-semibold text-text-primary mb-3">📚 Additional Resources:</h3>
+              <ul className="space-y-2 text-sm text-text-secondary">
                 <li>• All your data is stored locally and private</li>
                 <li>• Export your analytics anytime</li>
                 <li>• Customize themes in Settings</li>
@@ -153,11 +184,10 @@ const App: React.FC = () => {
               <button
                 key={index}
                 onClick={() => setCurrentStep(index)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === currentStep
-                    ? 'bg-primary-600 w-8'
-                    : 'bg-neutral-300 hover:bg-neutral-400'
-                }`}
+                className={`w-2 h-2 rounded-full transition-all ${index === currentStep
+                  ? 'bg-accent w-8'
+                  : 'bg-border hover:bg-border-secondary'
+                  }`}
                 aria-label={`Go to step ${index + 1}`}
               />
             ))}
@@ -165,27 +195,33 @@ const App: React.FC = () => {
         </div>
 
         {/* Footer Navigation */}
-        <div className="bg-neutral-50 px-12 py-6 flex justify-between items-center border-t">
-          <Button
-            variant="ghost"
+        <div className="bg-bg-secondary px-12 py-6 flex justify-between items-center border-t border-border transition-colors duration-300">
+          <button
             onClick={handlePrevious}
             disabled={currentStep === 0}
+            className="px-6 py-2.5 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed text-text-secondary hover:text-text-primary hover:bg-bg-tertiary"
           >
             ← Previous
-          </Button>
+          </button>
 
-          <span className="text-sm text-neutral-500">
+          <span className="text-sm text-text-secondary font-medium">
             Step {currentStep + 1} of {ONBOARDING_STEPS.length}
           </span>
 
           {currentStep < ONBOARDING_STEPS.length - 1 ? (
-            <Button variant="primary" onClick={handleNext}>
+            <button
+              onClick={handleNext}
+              className="px-6 py-2.5 bg-accent hover:bg-accent-hover text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg"
+            >
               Next →
-            </Button>
+            </button>
           ) : (
-            <Button variant="primary" onClick={handleGetStarted}>
+            <button
+              onClick={handleGetStarted}
+              className="px-6 py-2.5 bg-accent hover:bg-accent-hover text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg"
+            >
               Get Started 🚀
-            </Button>
+            </button>
           )}
         </div>
       </div>

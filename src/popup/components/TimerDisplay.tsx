@@ -31,12 +31,12 @@ function formatTime(seconds: number): string {
 function getSessionColor(sessionType: SessionType | null): string {
   switch (sessionType) {
     case 'work':
-      return 'text-primary-500'; // Focus red
+      return 'text-accent'; // Focus red
     case 'short-break':
     case 'long-break':
-      return 'text-success-500'; // Break green
+      return 'text-success'; // Break green
     default:
-      return 'text-neutral-500'; // Neutral gray
+      return 'text-text-muted'; // Neutral gray
   }
 }
 
@@ -81,11 +81,11 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
     <div className="flex flex-col items-center space-y-6">
       {/* Session Type Label */}
       <div className="text-center">
-        <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">
+        <p className="text-xs font-medium text-text-muted uppercase tracking-wide">
           {label}
         </p>
         {isPaused && (
-          <p className="text-xs font-medium text-warning-500 mt-1" role="status">
+          <p className="text-xs font-medium text-warning mt-1" role="status">
             Paused
           </p>
         )}
@@ -108,7 +108,7 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
             stroke="currentColor"
             strokeWidth="8"
             fill="none"
-            className="text-neutral-200"
+            className="text-border-light"
           />
 
           {/* Progress circle */}
@@ -122,7 +122,7 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
-            className={sessionType === 'work' ? 'text-primary-500' : 'text-success-500'}
+            className={sessionType === 'work' ? 'text-accent' : 'text-success'}
             style={{
               transition: 'stroke-dashoffset 0.5s ease-in-out',
             }}
@@ -141,7 +141,7 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
           </time>
 
           {isActive && !isPaused && remainingSeconds <= 60 && (
-            <p className="text-xs font-medium text-warning-500 mt-2" role="status">
+            <p className="text-xs font-medium text-warning mt-2" role="status">
               Last minute!
             </p>
           )}

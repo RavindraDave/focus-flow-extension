@@ -33,7 +33,6 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
   const [autoStartNextSession, setAutoStartNextSession] = useState(settings.autoStartNextSession);
   const [enableSounds, setEnableSounds] = useState(settings.enableSounds);
   const [enableNotifications, setEnableNotifications] = useState(settings.enableNotifications);
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(settings.theme);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -48,7 +47,6 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
     setAutoStartNextSession(settings.autoStartNextSession);
     setEnableSounds(settings.enableSounds);
     setEnableNotifications(settings.enableNotifications);
-    setTheme(settings.theme);
   }, [settings]);
 
   /**
@@ -98,7 +96,6 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
         autoStartNextSession,
         enableSounds,
         enableNotifications,
-        theme,
       });
 
       setSaveSuccess(true);
@@ -122,7 +119,6 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
     setAutoStartNextSession(false);
     setEnableSounds(true);
     setEnableNotifications(true);
-    setTheme('system');
     setValidationErrors({});
   };
 
@@ -130,7 +126,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Pomodoro Durations */}
       <section>
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Timer Durations</h3>
+        <h3 className="text-lg font-semibold text-text-primary mb-4">Timer Durations</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
             id="work-duration"
@@ -188,7 +184,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
 
       {/* Preferences */}
       <section>
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Preferences</h3>
+        <h3 className="text-lg font-semibold text-text-primary mb-4">Preferences</h3>
         <div className="space-y-3">
           <label className="flex items-center space-x-3 cursor-pointer">
             <input
@@ -196,9 +192,9 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
               checked={autoStartNextSession}
               onChange={(e) => setAutoStartNextSession(e.target.checked)}
               disabled={disabled || isSaving}
-              className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              className="w-4 h-4 text-accent border-border rounded focus:ring-2 focus:ring-accent focus:ring-offset-2"
             />
-            <span className="text-sm text-neutral-700">
+            <span className="text-sm text-text-secondary">
               Auto-start next session
             </span>
           </label>
@@ -209,9 +205,9 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
               checked={enableSounds}
               onChange={(e) => setEnableSounds(e.target.checked)}
               disabled={disabled || isSaving}
-              className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              className="w-4 h-4 text-accent border-border rounded focus:ring-2 focus:ring-accent focus:ring-offset-2"
             />
-            <span className="text-sm text-neutral-700">
+            <span className="text-sm text-text-secondary">
               Enable notification sounds
             </span>
           </label>
@@ -222,38 +218,19 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
               checked={enableNotifications}
               onChange={(e) => setEnableNotifications(e.target.checked)}
               disabled={disabled || isSaving}
-              className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              className="w-4 h-4 text-accent border-border rounded focus:ring-2 focus:ring-accent focus:ring-offset-2"
             />
-            <span className="text-sm text-neutral-700">
+            <span className="text-sm text-text-secondary">
               Enable desktop notifications
             </span>
           </label>
         </div>
       </section>
 
-      {/* Theme */}
-      <section>
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Appearance</h3>
-        <div className="flex space-x-4">
-          {(['light', 'dark', 'system'] as const).map((themeOption) => (
-            <label key={themeOption} className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="theme"
-                value={themeOption}
-                checked={theme === themeOption}
-                onChange={(e) => setTheme(e.target.value as typeof theme)}
-                disabled={disabled || isSaving}
-                className="w-4 h-4 text-primary-500 border-neutral-300 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-              />
-              <span className="text-sm text-neutral-700 capitalize">{themeOption}</span>
-            </label>
-          ))}
-        </div>
-      </section>
+
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-4 border-t border-neutral-200">
+      <div className="flex items-center justify-between pt-4 border-t border-border-light">
         <Button
           type="button"
           variant="secondary"
@@ -266,7 +243,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
 
         <div className="flex items-center space-x-3">
           {saveSuccess && (
-            <span className="text-sm text-success-600">
+            <span className="text-sm text-success">
               ✓ Settings saved successfully
             </span>
           )}

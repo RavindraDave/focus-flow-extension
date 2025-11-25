@@ -17,12 +17,25 @@ export const SuggestedSites: React.FC = () => {
   const { rules, addRule, addRules } = useBlockRules();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [addingDomains, setAddingDomains] = useState<Set<string>>(new Set());
+  const [addingCategories, setAddingCategories] = useState<Set<string>>(new Set());
+
+  // Clear loading states when rules update (after successful add)
+  React.useEffect(() => {
+    // If we were adding categories/domains and rules changed, clear the loading states
+    if (addingCategories.size > 0 || addingDomains.size > 0) {
+      setAddingCategories(new Set());
+      setAddingDomains(new Set());
+    }
+  }, [rules]); // Re-run when rules change
 
   /**
-   * Check if a domain is already in the block list
+   * Check if a domain is already blocked
    */
   const isDomainBlocked = (domain: string): boolean => {
-    return rules.some(rule => rule.pattern === domain);
+    return rules.some(
+      (rule) =>
+        rule.pattern === domain && rule.type === 'domain' && rule.enabled
+    );
   };
 
   /**
@@ -74,13 +87,22 @@ export const SuggestedSites: React.FC = () => {
    * Add all sites in a category (optimized batch add)
    */
   const handleAddCategory = async (category: SiteCategory) => {
+    // Prevent multiple clicks
+    if (addingCategories.has(category.name)) {
+      return;
+    }
+
+    // Filter out already blocked sites
     const sitesToAdd = category.sites.filter(site => !isDomainBlocked(site.domain));
 
     if (sitesToAdd.length === 0) {
       return;
     }
 
-    // Mark all as adding
+    // Mark category as adding
+    setAddingCategories(prev => new Set(prev).add(category.name));
+
+    // Mark all sites as adding
     setAddingDomains(prev => {
       const next = new Set(prev);
       sitesToAdd.forEach(site => next.add(site.domain));
@@ -102,6 +124,13 @@ export const SuggestedSites: React.FC = () => {
     } catch (error) {
       console.error('Failed to add category:', error);
     } finally {
+      // Clear category loading state
+      setAddingCategories(prev => {
+        const next = new Set(prev);
+        next.delete(category.name);
+        return next;
+      });
+
       // Clear all adding states
       setAddingDomains(prev => {
         const next = new Set(prev);
@@ -142,10 +171,10 @@ export const SuggestedSites: React.FC = () => {
           return (
             <div
               key={category.name}
-              className="bg-white border border-neutral-200 rounded-lg overflow-hidden"
+              className="bg-surface border border-border rounded-lg overflow-hidden"
             >
               {/* Category Header */}
-              <div className="flex items-center justify-between p-4 bg-neutral-50">
+              <div className="flex items-center justify-between p-4 bg-bg-secondary">
                 <button
                   type="button"
                   onClick={() => toggleCategory(category.name)}
@@ -155,16 +184,16 @@ export const SuggestedSites: React.FC = () => {
                   <span className="text-2xl">{category.icon}</span>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium text-neutral-900">{category.name}</span>
+                      <span className="font-medium text-text-primary">{category.name}</span>
                       <Badge variant="info" size="sm">
                         {blockedCount}/{totalCount}
                       </Badge>
                     </div>
-                    <p className="text-xs text-neutral-500 mt-0.5">
+                    <p className="text-xs text-text-tertiary mt-0.5">
                       {totalCount} sites {allBlocked && '(all blocked)'}
                     </p>
                   </div>
-                  <span className="text-neutral-400 text-xl">
+                  <span className="text-text-muted text-xl">
                     {isExpanded ? '▼' : '▶'}
                   </span>
                 </button>
@@ -175,17 +204,20 @@ export const SuggestedSites: React.FC = () => {
                     variant="primary"
                     size="sm"
                     onClick={() => handleAddCategory(category)}
-                    disabled={allBlocked}
+                    disabled={allBlocked || addingCategories.has(category.name)}
                     className="ml-3"
                   >
-                    + Add All ({totalCount - blockedCount})
+                    {addingCategories.has(category.name)
+                      ? 'Adding...'
+                      : `+ Add All (${totalCount - blockedCount})`
+                    }
                   </Button>
                 )}
               </div>
 
               {/* Site List (Expanded) */}
               {isExpanded && (
-                <div className="p-4 border-t border-neutral-200">
+                <div className="p-4 border-t border-border">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {category.sites.map((site) => {
                       const isBlocked = isDomainBlocked(site.domain);
@@ -194,19 +226,16 @@ export const SuggestedSites: React.FC = () => {
                       return (
                         <div
                           key={site.domain}
-                          className={`
-                            flex items-center justify-between p-3 rounded-md border
-                            ${isBlocked
-                              ? 'bg-neutral-50 border-neutral-200'
-                              : 'bg-white border-neutral-200 hover:border-primary-300'
-                            }
-                          `}
+                          className={`flex items-center gap-3 p-3 border-b transition ${isDomainBlocked(site.domain)
+                            ? 'bg-success/10 border-success/30'
+                            : 'bg-surface border-border hover:border-accent'
+                            }`}
                         >
                           <div className="flex-1 min-w-0 mr-2">
-                            <div className="font-medium text-sm text-neutral-900 truncate">
+                            <div className="font-medium text-sm text-text-primary truncate">
                               {site.name}
                             </div>
-                            <div className="text-xs text-neutral-500 truncate">
+                            <div className="text-xs text-text-tertiary truncate">
                               {site.domain}
                             </div>
                           </div>

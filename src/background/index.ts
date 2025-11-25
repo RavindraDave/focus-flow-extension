@@ -312,6 +312,20 @@ class BackgroundServiceWorker {
         return await this.blockRuleRepository.getAllRules();
 
       case 'BLOCKLIST_ADD': {
+        // Check for duplicate pattern
+        const existingRules = await this.blockRuleRepository.getAllRules();
+        const isDuplicate = existingRules.some(
+          rule => rule.pattern === message.rule.pattern && rule.type === message.rule.type
+        );
+
+        if (isDuplicate) {
+          // Return existing rule instead of creating duplicate
+          const existing = existingRules.find(
+            rule => rule.pattern === message.rule.pattern && rule.type === message.rule.type
+          );
+          return existing;
+        }
+
         const now = new Date().toISOString();
         const newRule = {
           ...message.rule,
@@ -483,7 +497,7 @@ class BackgroundServiceWorker {
           // Show welcome notification
           await chrome.notifications.create({
             type: 'basic',
-            iconUrl: chrome.runtime.getURL('/icons/icon128.png'),
+            iconUrl: chrome.runtime.getURL('/icons/icon_v7_128.png'),
             title: 'Focus Flow Installed!',
             message: 'Welcome! Let\'s get you started with Focus Flow.',
           });

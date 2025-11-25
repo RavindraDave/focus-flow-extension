@@ -1,6 +1,7 @@
 /**
  * BlockRuleList - Display and manage block rules
  * WCAG 2.1 AA compliant table with actions
+ * Now with bulk delete and custom themed confirmations
  */
 
 import React, { useState } from 'react';
@@ -8,6 +9,7 @@ import { Button } from '../../components/atoms/Button';
 import { Badge } from '../../components/atoms/Badge';
 import { Spinner } from '../../components/atoms/Spinner';
 import { BlockRuleForm } from './BlockRuleForm';
+import { ConfirmDialog } from '../../components/molecules/ConfirmDialog';
 import { useBlockRules } from '../../hooks/useBlockRules';
 import type { BlockRule } from '../../types';
 
@@ -24,9 +26,18 @@ function formatTimeUsed(minutes: number): string {
   return mins === 0 ? `${hours}h` : `${hours}h ${mins}min`;
 }
 
+interface ConfirmState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  variant: 'danger' | 'warning' | 'info';
+  isLoading: boolean;
+  onConfirm: () => Promise<void>;
+}
+
 /**
  * BlockRuleList component
- * Complexity: 8 (CRUD operations + modal management)
+ * Complexity: 10 (CRUD + bulk operations + modal management)
  */
 export const BlockRuleList: React.FC = () => {
   const {
@@ -36,6 +47,7 @@ export const BlockRuleList: React.FC = () => {
     addRule,
     updateRule,
     deleteRule,
+    deleteRules,
     toggleRule,
     exportRules,
   } = useBlockRules();
@@ -43,10 +55,11 @@ export const BlockRuleList: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<BlockRule | undefined>(undefined);
   const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
+  const [selectedRuleIds, setSelectedRuleIds] = useState<Set<string>>(new Set());
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
 
   /**
    * Handle add new rule
-   * Complexity: 1
    */
   const handleAdd = (): void => {
     setEditingRule(undefined);
@@ -55,7 +68,6 @@ export const BlockRuleList: React.FC = () => {
 
   /**
    * Handle edit rule
-   * Complexity: 2
    */
   const handleEdit = (rule: BlockRule): void => {
     setEditingRule(rule);
@@ -64,7 +76,6 @@ export const BlockRuleList: React.FC = () => {
 
   /**
    * Handle save rule (add or update)
-   * Complexity: 3 (conditional add/update)
    */
   const handleSave = async (
     ruleData: Omit<BlockRule, 'id' | 'createdAt' | 'updatedAt'>
@@ -77,27 +88,112 @@ export const BlockRuleList: React.FC = () => {
   };
 
   /**
-   * Handle delete rule with confirmation
-   * Complexity: 3 (confirmation + async delete)
+   * Handle delete single rule with contextual confirmation
    */
-  const handleDelete = async (rule: BlockRule): Promise<void> => {
-    if (
-      confirm(
-        `Are you sure you want to delete "${rule.name}"?\n\nThis action cannot be undone.`
-      )
-    ) {
-      try {
-        setDeletingRuleId(rule.id);
-        await deleteRule(rule.id);
-      } finally {
-        setDeletingRuleId(null);
+  const handleDelete = (rule: BlockRule): void => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Delete Rule?',
+      message: `Are you sure you want to delete "${rule.name}"?\n\nPattern: ${rule.pattern}\n\nThis action cannot be undone.`,
+      variant: 'warning',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmState(prev => prev ? { ...prev, isLoading: true } : null);
+        try {
+          setDeletingRuleId(rule.id);
+          await deleteRule(rule.id);
+          setConfirmState(null);
+        } catch (error) {
+          console.error('Failed to delete rule:', error);
+          setConfirmState(prev => prev ? { ...prev, isLoading: false } : null);
+        } finally {
+          setDeletingRuleId(null);
+        }
+      },
+    });
+  };
+
+  /**
+   * Handle bulk delete with contextual confirmation
+   */
+  const handleBulkDelete = (): void => {
+    const count = selectedRuleIds.size;
+    const ruleWord = count === 1 ? 'rule' : 'rules';
+
+    setConfirmState({
+      isOpen: true,
+      title: `Delete ${count} ${ruleWord}?`,
+      message: `Are you sure you want to delete ${count} selected ${ruleWord}?\n\nThis action cannot be undone.`,
+      variant: 'warning',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmState(prev => prev ? { ...prev, isLoading: true } : null);
+        try {
+          await deleteRules(Array.from(selectedRuleIds));
+          setSelectedRuleIds(new Set());
+          setConfirmState(null);
+        } catch (error) {
+          console.error('Failed to delete rules:', error);
+          setConfirmState(prev => prev ? { ...prev, isLoading: false } : null);
+        }
+      },
+    });
+  };
+
+  /**
+   * Handle clear all rules with STRONG caution
+   */
+  const handleClearAll = (): void => {
+    const count = rules.length;
+
+    setConfirmState({
+      isOpen: true,
+      title: 'DELETE ALL RULES?',
+      message: `🚨 CAUTION: This will permanently delete ALL ${count} blocking rules!\n\nYou will lose:\n• All custom block rules\n• All allowance settings\n• All usage tracking data\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?`,
+      variant: 'danger',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmState(prev => prev ? { ...prev, isLoading: true } : null);
+        try {
+          await deleteRules(rules.map(r => r.id));
+          setSelectedRuleIds(new Set());
+          setConfirmState(null);
+        } catch (error) {
+          console.error('Failed to clear all rules:', error);
+          setConfirmState(prev => prev ? { ...prev, isLoading: false } : null);
+        }
+      },
+    });
+  };
+
+  /**
+   * Toggle selection for a rule
+   */
+  const toggleSelection = (ruleId: string): void => {
+    setSelectedRuleIds(prev => {
+      const next = new Set(prev);
+      if (next.has(ruleId)) {
+        next.delete(ruleId);
+      } else {
+        next.add(ruleId);
       }
+      return next;
+    });
+  };
+
+  /**
+   * Toggle select all
+   */
+  const toggleSelectAll = (): void => {
+    if (selectedRuleIds.size === rules.length) {
+      setSelectedRuleIds(new Set());
+    } else {
+      setSelectedRuleIds(new Set(rules.map(r => r.id)));
     }
   };
 
   /**
    * Handle import from JSON file
-   * Complexity: 4 (file reading + JSON parsing + validation)
    */
   const handleImport = (): void => {
     const input = document.createElement('input');
@@ -143,6 +239,9 @@ export const BlockRuleList: React.FC = () => {
     );
   }
 
+  const hasSelection = selectedRuleIds.size > 0;
+  const allSelected = rules.length > 0 && selectedRuleIds.size === rules.length;
+
   return (
     <div className="space-y-4">
       {/* Header Actions */}
@@ -152,9 +251,30 @@ export const BlockRuleList: React.FC = () => {
             {rules.length} {rules.length === 1 ? 'rule' : 'rules'} total
             {' • '}
             {rules.filter((r) => r.enabled).length} active
+            {hasSelection && ` • ${selectedRuleIds.size} selected`}
           </p>
         </div>
         <div className="flex space-x-2">
+          {hasSelection && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleBulkDelete}
+              className="bg-error/10 text-error hover:bg-error/20"
+            >
+              Delete Selected ({selectedRuleIds.size})
+            </Button>
+          )}
+          {rules.length > 0 && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleClearAll}
+              className="text-error hover:bg-error/10"
+            >
+              Clear All
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={handleImport}>
             Import JSON
           </Button>
@@ -174,11 +294,11 @@ export const BlockRuleList: React.FC = () => {
 
       {/* Rules Table */}
       {rules.length === 0 ? (
-        <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-12 text-center">
-          <p className="text-neutral-600 mb-4">
+        <div className="bg-bg-secondary border border-border rounded-lg p-12 text-center">
+          <p className="text-text-secondary mb-4">
             🚫 No block rules yet
           </p>
-          <p className="text-sm text-neutral-500 mb-6">
+          <p className="text-sm text-text-tertiary mb-6">
             Add your first rule to start blocking distracting websites
           </p>
           <Button variant="primary" size="md" onClick={handleAdd}>
@@ -186,10 +306,19 @@ export const BlockRuleList: React.FC = () => {
           </Button>
         </div>
       ) : (
-        <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-neutral-200">
-            <thead className="bg-neutral-50">
+        <div className="bg-surface border border-border rounded-lg overflow-hidden">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-bg-secondary">
               <tr>
+                <th className="px-6 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-neutral-300 text-accent focus:ring-accent"
+                    aria-label="Select all rules"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                   Status
                 </th>
@@ -210,9 +339,18 @@ export const BlockRuleList: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-neutral-200">
+            <tbody className="bg-surface divide-y divide-border">
               {rules.map((rule) => (
-                <tr key={rule.id} className="hover:bg-neutral-50">
+                <tr key={rule.id} className={`hover:bg-bg-secondary ${selectedRuleIds.has(rule.id) ? 'bg-accent/5' : ''}`}>
+                  <td className="px-6 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedRuleIds.has(rule.id)}
+                      onChange={() => toggleSelection(rule.id)}
+                      className="w-4 h-4 rounded border-neutral-300 text-accent focus:ring-accent"
+                      aria-label={`Select ${rule.name}`}
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
                       type="button"
@@ -288,6 +426,21 @@ export const BlockRuleList: React.FC = () => {
         onCancel={() => setIsFormOpen(false)}
         isOpen={isFormOpen}
       />
+
+      {/* Confirmation Dialog */}
+      {confirmState && (
+        <ConfirmDialog
+          isOpen={confirmState.isOpen}
+          title={confirmState.title}
+          message={confirmState.message}
+          variant={confirmState.variant}
+          isLoading={confirmState.isLoading}
+          confirmText={confirmState.variant === 'danger' ? 'Yes, Delete All' : 'Delete'}
+          cancelText="Cancel"
+          onConfirm={confirmState.onConfirm}
+          onCancel={() => setConfirmState(null)}
+        />
+      )}
     </div>
   );
 };

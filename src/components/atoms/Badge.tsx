@@ -57,20 +57,20 @@ export const Badge: React.FC<BadgeProps> = ({
   // Variant styles
   const variantStyles: Record<typeof variant, string> = {
     success: `
-      bg-success-100 text-success-700
-      dark:bg-success-900 dark:text-success-200
+      bg-success/10 text-success
+      border border-success/30
     `,
     warning: `
-      bg-warning-100 text-warning-700
-      dark:bg-warning-900 dark:text-warning-200
+      bg-warning/10 text-warning
+      border border-warning/30
     `,
     error: `
-      bg-error-50 text-error-600
-      dark:bg-error-900 dark:text-error-200
+      bg-error/10 text-error
+      border border-error/30
     `,
     info: `
-      bg-info-50 text-info-600
-      dark:bg-info-900 dark:text-info-200
+      bg-info/10 text-info
+      border border-info/30
     `,
   };
 

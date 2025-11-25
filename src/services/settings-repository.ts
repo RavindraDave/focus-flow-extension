@@ -17,7 +17,7 @@ import {
 } from '../utils/constants';
 import type { UserSettings } from '../types';
 import type { z } from 'zod';
-import crypto from 'crypto';
+import nodeCrypto from 'crypto';
 
 /**
  * Repository for managing user settings
@@ -232,17 +232,16 @@ export class SettingsRepository {
    */
   private generateDeviceSecret(): string {
     // Use Web Crypto API (browser environment) or crypto module (Node.js/tests)
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
       // Browser: Generate secure random bytes
       const bytes = new Uint8Array(32);
-      crypto.getRandomValues(bytes);
+      globalThis.crypto.getRandomValues(bytes);
       return Array.from(bytes)
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
     } else {
       // Node.js (for tests): Use crypto module
       try {
-        const nodeCrypto = require('crypto');
         return nodeCrypto.randomBytes(32).toString('hex');
       } catch {
         // Fallback: This should never happen in production

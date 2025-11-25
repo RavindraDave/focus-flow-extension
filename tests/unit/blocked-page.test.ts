@@ -46,7 +46,7 @@ describe('Blocked Page Theme System', () => {
 
     // Create virtual console to suppress CSS/JS loading errors
     const virtualConsole = new VirtualConsole();
-    virtualConsole.sendTo(console, { omitJSDOMErrors: true });
+    (virtualConsole as any).sendTo(console, { omitJSDOMErrors: true });
 
     // Create JSDOM instance with error suppression for resource loading
     dom = new JSDOM(blockedHtml, {
@@ -63,7 +63,7 @@ describe('Blocked Page Theme System', () => {
     (window as any).chrome = mockChrome;
 
     // Default storage mock
-    mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
       callback({ visual_theme: 'modern' });
     });
 
@@ -78,9 +78,9 @@ describe('Blocked Page Theme System', () => {
   });
 
   describe('Theme Loading on Page Load', () => {
-    it('should load theme from chrome.storage.sync on initialization', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
-        expect(keys).toBe('visual_theme');
+    it('should load theme from chrome.storage.sync on initialization', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
+        expect(_keys).toBe('visual_theme');
         callback({ visual_theme: 'cyber' });
 
         // Wait for script to execute
@@ -93,10 +93,10 @@ describe('Blocked Page Theme System', () => {
       // Trigger DOMContentLoaded
       const event = new window.Event('DOMContentLoaded');
       document.dispatchEvent(event);
-    });
+    }));
 
-    it('should apply modern theme by default when no stored theme exists', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should apply modern theme by default when no stored theme exists', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({}); // Empty result
 
         setTimeout(() => {
@@ -107,10 +107,10 @@ describe('Blocked Page Theme System', () => {
 
       const event = new window.Event('DOMContentLoaded');
       document.dispatchEvent(event);
-    });
+    }));
 
-    it('should apply zen theme when stored in chrome.storage', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should apply zen theme when stored in chrome.storage', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'zen' });
 
         setTimeout(() => {
@@ -121,10 +121,10 @@ describe('Blocked Page Theme System', () => {
 
       const event = new window.Event('DOMContentLoaded');
       document.dispatchEvent(event);
-    });
+    }));
 
-    it('should set data-theme attribute on body element', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should set data-theme attribute on body element', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'modern' });
 
         setTimeout(() => {
@@ -136,11 +136,11 @@ describe('Blocked Page Theme System', () => {
 
       const event = new window.Event('DOMContentLoaded');
       document.dispatchEvent(event);
-    });
+    }));
   });
 
   describe('Real-Time Theme Updates', () => {
-    it('should register storage change listener on initialization', (done) => {
+    it('should register storage change listener on initialization', () => new Promise<void>(done => {
       const event = new window.Event('DOMContentLoaded');
       document.dispatchEvent(event);
 
@@ -149,11 +149,11 @@ describe('Blocked Page Theme System', () => {
         expect(storageChangeListeners.length).toBeGreaterThan(0);
         done();
       }, 100);
-    });
+    }));
 
-    it('should update data-theme when visual_theme changes in storage', (done) => {
+    it('should update data-theme when visual_theme changes in storage', () => new Promise<void>(done => {
       // Initialize with modern theme
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'modern' });
       });
 
@@ -180,10 +180,10 @@ describe('Blocked Page Theme System', () => {
           done();
         }, 50);
       }, 100);
-    });
+    }));
 
-    it('should update to zen theme when changed from modern', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should update to zen theme when changed from modern', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'modern' });
       });
 
@@ -207,10 +207,10 @@ describe('Blocked Page Theme System', () => {
           done();
         }, 50);
       }, 100);
-    });
+    }));
 
-    it('should only respond to sync storage area changes', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should only respond to sync storage area changes', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'modern' });
       });
 
@@ -238,10 +238,10 @@ describe('Blocked Page Theme System', () => {
           done();
         }, 50);
       }, 100);
-    });
+    }));
 
-    it('should ignore changes to other storage keys', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should ignore changes to other storage keys', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'modern' });
       });
 
@@ -268,12 +268,12 @@ describe('Blocked Page Theme System', () => {
           done();
         }, 50);
       }, 100);
-    });
+    }));
   });
 
   describe('Theme Rendering - All Themes', () => {
-    it('should render modern theme correctly', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should render modern theme correctly', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'modern' });
       });
 
@@ -284,15 +284,15 @@ describe('Blocked Page Theme System', () => {
         expect(document.body.getAttribute('data-theme')).toBe('modern');
 
         // Modern theme should not have special pseudo-elements
-        const styles = window.getComputedStyle(document.body, ':before');
+
         // For modern theme, the ::before pseudo-element should not apply
         expect(document.body.getAttribute('data-theme')).not.toBe('cyber');
         done();
       }, 100);
-    });
+    }));
 
-    it('should render zen theme correctly', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should render zen theme correctly', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'zen' });
       });
 
@@ -307,10 +307,10 @@ describe('Blocked Page Theme System', () => {
         expect(container).toBeTruthy();
         done();
       }, 100);
-    });
+    }));
 
-    it('should render cyber theme correctly', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should render cyber theme correctly', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'cyber' });
       });
 
@@ -325,12 +325,12 @@ describe('Blocked Page Theme System', () => {
         expect(document.body.getAttribute('data-theme')).toBe('cyber');
         done();
       }, 100);
-    });
+    }));
   });
 
   describe('Theme-Specific Visual Effects', () => {
-    it('should apply cyber scanline effect via CSS', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should apply cyber scanline effect via CSS', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'cyber' });
       });
 
@@ -348,10 +348,10 @@ describe('Blocked Page Theme System', () => {
         expect(hasCyberStyles).toBe(true);
         done();
       }, 100);
-    });
+    }));
 
-    it('should apply zen organic shapes via CSS', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should apply zen organic shapes via CSS', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'zen' });
       });
 
@@ -369,7 +369,7 @@ describe('Blocked Page Theme System', () => {
         expect(hasZenStyles).toBe(true);
         done();
       }, 100);
-    });
+    }));
 
     it('should have CSS custom properties for theming', () => {
       const styleTags = Array.from(document.querySelectorAll('style'));
@@ -392,8 +392,8 @@ describe('Blocked Page Theme System', () => {
   });
 
   describe('Error Handling', () => {
-    it('should fallback to modern theme when chrome.storage throws error', (done) => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    it('should fallback to modern theme when chrome.storage throws error', () => new Promise<void>(done => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       mockChrome.storage.sync.get.mockImplementation(() => {
         throw new Error('Storage access denied');
@@ -413,10 +413,10 @@ describe('Blocked Page Theme System', () => {
         consoleErrorSpy.mockRestore();
         done();
       }, 100);
-    });
+    }));
 
-    it('should handle storage listener setup errors gracefully', (done) => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    it('should handle storage listener setup errors gracefully', () => new Promise<void>(done => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       mockChrome.storage.onChanged.addListener.mockImplementation(() => {
         throw new Error('Listener setup failed');
@@ -434,12 +434,12 @@ describe('Blocked Page Theme System', () => {
         consoleErrorSpy.mockRestore();
         done();
       }, 100);
-    });
+    }));
 
-    it('should log theme loading to console', (done) => {
-      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    it('should log theme loading to console', () => new Promise<void>(done => {
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'zen' });
       });
 
@@ -452,12 +452,12 @@ describe('Blocked Page Theme System', () => {
         consoleLogSpy.mockRestore();
         done();
       }, 100);
-    });
+    }));
 
-    it('should log theme changes to console', (done) => {
-      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    it('should log theme changes to console', () => new Promise<void>(done => {
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'modern' });
       });
 
@@ -485,7 +485,7 @@ describe('Blocked Page Theme System', () => {
           done();
         }, 50);
       }, 100);
-    });
+    }));
   });
 
   describe('Page Structure', () => {
@@ -520,7 +520,7 @@ describe('Blocked Page Theme System', () => {
   });
 
   describe('Initialization Timing', () => {
-    it('should initialize when document is already loaded', (done) => {
+    it('should initialize when document is already loaded', () => new Promise<void>(done => {
       // Create a new DOM with readyState = 'complete'
       const completeDom = new JSDOM(
         fs.readFileSync(path.resolve(__dirname, '../../public/blocked.html'), 'utf-8'),
@@ -539,7 +539,7 @@ describe('Blocked Page Theme System', () => {
 
       (completeDom.window as any).chrome = mockChrome;
 
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'cyber' });
 
         setTimeout(() => {
@@ -552,10 +552,10 @@ describe('Blocked Page Theme System', () => {
       // Script should execute immediately since readyState is 'complete'
       const event = new completeDom.window.Event('load');
       completeDom.window.dispatchEvent(event);
-    });
+    }));
 
-    it('should wait for DOMContentLoaded when document is loading', (done) => {
-      mockChrome.storage.sync.get.mockImplementation((keys: string | string[], callback: (result: any) => void) => {
+    it('should wait for DOMContentLoaded when document is loading', () => new Promise<void>(done => {
+      mockChrome.storage.sync.get.mockImplementation((_keys: string | string[], callback: (result: any) => void) => {
         callback({ visual_theme: 'modern' });
       });
 
@@ -569,7 +569,7 @@ describe('Blocked Page Theme System', () => {
         expect(document.body.getAttribute('data-theme')).toBeTruthy();
         done();
       }, 100);
-    });
+    }));
   });
 
   describe('Accessibility - Reduced Motion', () => {

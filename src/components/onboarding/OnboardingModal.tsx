@@ -30,28 +30,28 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
     gradient: string;
     icon: string;
   }> = [
-    {
-      id: 'modern',
-      name: 'Modern Pro',
-      description: 'Clean, minimal, and professional',
-      gradient: 'from-slate-900 to-indigo-900',
-      icon: '💼',
-    },
-    {
-      id: 'zen',
-      name: 'Zen Mode',
-      description: 'Organic, calming, and peaceful',
-      gradient: 'from-[#F4EBD0] to-[#5F8D4E]',
-      icon: '🍃',
-    },
-    {
-      id: 'cyber',
-      name: 'Cyber Focus',
-      description: 'Neon, futuristic, and intense',
-      gradient: 'from-black via-[#00F0FF] to-[#FF0099]',
-      icon: '⚡',
-    },
-  ];
+      {
+        id: 'modern',
+        name: 'Modern Pro',
+        description: 'Clean, minimal, and professional',
+        gradient: 'from-slate-900 to-indigo-900',
+        icon: '💼',
+      },
+      {
+        id: 'zen',
+        name: 'Zen Mode',
+        description: 'Organic, calming, and peaceful',
+        gradient: 'from-[#F4EBD0] to-[#5F8D4E]',
+        icon: '🍃',
+      },
+      {
+        id: 'cyber',
+        name: 'Cyber Focus',
+        description: 'Neon, futuristic, and intense',
+        gradient: 'from-black via-[#00F0FF] to-[#FF0099]',
+        icon: '⚡',
+      },
+    ];
 
   const steps = [
     {
@@ -94,11 +94,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
               <button
                 key={theme.id}
                 onClick={() => setSelectedTheme(theme.id)}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  selectedTheme === theme.id
+                className={`p-4 rounded-xl border-2 transition-all ${selectedTheme === theme.id
                     ? 'border-accent bg-accent/10 shadow-lg'
                     : 'border-border hover:border-border-secondary'
-                }`}
+                  }`}
               >
                 <div
                   className={`w-full h-20 bg-gradient-to-br ${theme.gradient} rounded-lg mb-3`}
@@ -189,43 +188,42 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-bg-primary rounded-2xl shadow-2xl max-w-3xl w-full mx-4 overflow-hidden border border-border">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-bg-primary rounded-2xl shadow-2xl w-full max-w-md mx-4 my-4 overflow-hidden border border-border">
         {/* Header */}
-        <div className="bg-gradient-to-r from-accent to-accent-hover p-6 text-white">
-          <h2 className="text-3xl font-bold font-serif">{steps[step]?.title}</h2>
-          <div className="mt-4 flex space-x-2">
+        <div className="bg-gradient-to-r from-accent to-accent-hover p-4 text-white">
+          <h2 className="text-xl font-bold font-serif">{steps[step]?.title}</h2>
+          <div className="mt-3 flex space-x-2">
             {steps.map((_, index) => (
               <div
                 key={index}
-                className={`h-1 flex-1 rounded-full transition-all ${
-                  index <= step ? 'bg-white' : 'bg-white/30'
-                }`}
+                className={`h-1 flex-1 rounded-full transition-all ${index <= step ? 'bg-white' : 'bg-white/30'
+                  }`}
               />
             ))}
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-8 min-h-[400px]">{steps[step]?.content}</div>
+        {/* Content - Scrollable */}
+        <div className="p-6 max-h-[350px] overflow-y-auto">{steps[step]?.content}</div>
 
         {/* Footer */}
-        <div className="p-6 bg-bg-secondary flex items-center justify-between">
+        <div className="p-4 bg-bg-secondary flex items-center justify-between border-t border-border">
           <button
             onClick={handleBack}
             disabled={step === 0}
-            className="px-4 py-2 text-text-secondary hover:text-text-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             ← Back
           </button>
 
-          <div className="text-sm text-text-tertiary">
+          <div className="text-xs text-text-tertiary">
             Step {step + 1} of {steps.length}
           </div>
 
           <button
             onClick={handleNext}
-            className="px-6 py-2 bg-accent hover:bg-accent-hover text-text-inverse rounded-lg font-semibold transition shadow-lg"
+            className="px-4 py-1.5 text-sm bg-accent hover:bg-accent-hover text-text-inverse rounded-lg font-semibold transition shadow-lg"
           >
             {step === steps.length - 1 ? 'Get Started 🚀' : 'Next →'}
           </button>

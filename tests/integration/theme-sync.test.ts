@@ -10,10 +10,10 @@
  * - chrome.storage.sync persistence
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useTheme } from '../../src/hooks/useTheme';
-import React from 'react';
+
 
 // Mock chrome API
 const mockChrome = {
@@ -313,7 +313,7 @@ describe('Theme Integration', () => {
     });
 
     it('should throw error on storage.set failures', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       mockChrome.storage.sync.set.mockRejectedValue(new Error('Storage quota exceeded'));
 
@@ -335,7 +335,7 @@ describe('Theme Integration', () => {
     });
 
     it('should handle storage.get failures gracefully', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       mockChrome.storage.sync.get.mockRejectedValue(new Error('Storage unavailable'));
 

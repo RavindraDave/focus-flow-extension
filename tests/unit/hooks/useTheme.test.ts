@@ -45,16 +45,7 @@ global.chrome = {
   },
 } as any;
 
-// Mock document.body
-const mockBody = {
-  setAttribute: vi.fn(),
-};
-Object.defineProperty(global, 'document', {
-  value: {
-    body: mockBody,
-  },
-  writable: true,
-});
+
 
 describe('useTheme', () => {
   beforeEach(() => {
@@ -62,6 +53,9 @@ describe('useTheme', () => {
     Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
     mockStorageListeners.length = 0;
     vi.clearAllMocks();
+
+    // Spy on document.body.setAttribute
+    vi.spyOn(document.body, 'setAttribute');
   });
 
   afterEach(() => {
@@ -77,7 +71,7 @@ describe('useTheme', () => {
       });
 
       expect(result.current.theme).toBe('modern');
-      expect(mockBody.setAttribute).toHaveBeenCalledWith('data-theme', 'modern');
+      expect(document.body.setAttribute).toHaveBeenCalledWith('data-theme', 'modern');
     });
 
     it('should load saved theme from storage', async () => {
@@ -90,7 +84,7 @@ describe('useTheme', () => {
       });
 
       expect(result.current.theme).toBe('zen');
-      expect(mockBody.setAttribute).toHaveBeenCalledWith('data-theme', 'zen');
+      expect(document.body.setAttribute).toHaveBeenCalledWith('data-theme', 'zen');
     });
   });
 
@@ -107,7 +101,7 @@ describe('useTheme', () => {
       });
 
       expect(result.current.theme).toBe('cyber');
-      expect(mockBody.setAttribute).toHaveBeenCalledWith('data-theme', 'cyber');
+      expect(document.body.setAttribute).toHaveBeenCalledWith('data-theme', 'cyber');
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({ visual_theme: 'cyber' });
     });
 
@@ -161,7 +155,7 @@ describe('useTheme', () => {
         expect(result.current.theme).toBe('zen');
       });
 
-      expect(mockBody.setAttribute).toHaveBeenCalledWith('data-theme', 'zen');
+      expect(document.body.setAttribute).toHaveBeenCalledWith('data-theme', 'zen');
     });
   });
 
@@ -176,7 +170,7 @@ describe('useTheme', () => {
       });
 
       expect(result.current.theme).toBe('modern');
-      expect(mockBody.setAttribute).toHaveBeenCalledWith('data-theme', 'modern');
+      expect(document.body.setAttribute).toHaveBeenCalledWith('data-theme', 'modern');
     });
 
     it('should throw error if setTheme fails', async () => {

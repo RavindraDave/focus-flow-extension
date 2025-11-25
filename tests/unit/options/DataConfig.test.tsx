@@ -10,7 +10,7 @@
  * - Error handling
  */
 
-import React from 'react';
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import App from '../../../src/options/App';
@@ -48,17 +48,17 @@ global.URL.createObjectURL = mockCreateObjectURL;
 global.URL.revokeObjectURL = mockRevokeObjectURL;
 
 describe('Data Export/Import', () => {
-  let mockAlert: ReturnType<typeof vi.fn>;
-  let mockConfirm: ReturnType<typeof vi.fn>;
-  let mockPrompt: ReturnType<typeof vi.fn>;
+  let mockAlert: any;
+  let mockConfirm: any;
+  let mockPrompt: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     // Mock window methods
     mockAlert = vi.fn();
-    mockConfirm = vi.fn(() => true);
-    mockPrompt = vi.fn(() => 'YES');
+    mockConfirm = vi.fn((_message?: string) => true);
+    mockPrompt = vi.fn((_message?: string, _default?: string) => 'YES');
     global.alert = mockAlert;
     global.confirm = mockConfirm;
     global.prompt = mockPrompt;
@@ -168,7 +168,7 @@ describe('Data Export/Import', () => {
     });
 
     it('should show alert on export failure', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       mockChrome.storage.sync.get.mockRejectedValue(new Error('Storage access denied'));
 
@@ -341,7 +341,7 @@ describe('Data Export/Import', () => {
     });
 
     it('should handle export history errors', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       mockChrome.storage.local.get.mockRejectedValue(new Error('Storage error'));
 
@@ -469,7 +469,7 @@ describe('Data Export/Import', () => {
     });
 
     it('should handle reset errors gracefully', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       mockChrome.storage.sync.clear.mockRejectedValue(new Error('Clear failed'));
 
