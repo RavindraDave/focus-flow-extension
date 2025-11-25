@@ -42,6 +42,7 @@
     {
       "resources": [
         "blocked.html",
+        "blocked.css",
         "blocked.js",
         "blocked-theme-init.js",
         "assets/*.css",
