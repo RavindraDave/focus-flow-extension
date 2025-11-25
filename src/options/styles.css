@@ -17,3 +17,40 @@ body {
   width: 100%;
   min-height: 100vh;
 }
+
+/* Volume Control Slider - Zen Theme Fix */
+/* Ensure proper contrast and visibility for Zen theme volume control */
+/* The inline gradient works for Modern and Cyber, but Zen needs custom styling */
+
+[data-theme='zen'] input[type='range']#volume-slider::-webkit-slider-track {
+  background: var(--bg-secondary) !important;
+  border: 2px solid var(--border-primary) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='zen'] input[type='range']#volume-slider::-moz-range-track {
+  background: var(--bg-secondary) !important;
+  border: 2px solid var(--border-primary) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Enhance Zen theme slider thumb for better visibility */
+[data-theme='zen'] input[type='range']#volume-slider::-webkit-slider-thumb {
+  background: var(--accent-primary) !important;
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 2px 8px rgba(95, 141, 78, 0.3);
+}
+
+[data-theme='zen'] input[type='range']#volume-slider::-moz-range-thumb {
+  background: var(--accent-primary) !important;
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 2px 8px rgba(95, 141, 78, 0.3);
+}
+
+/* Override the inline gradient background for Zen theme */
+/* Use a cleaner, more organic look that fits the Zen aesthetic */
+[data-theme='zen'] input[type='range']#volume-slider {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-primary);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+}

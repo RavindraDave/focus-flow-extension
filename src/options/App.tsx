@@ -621,6 +621,8 @@ const TimerTab: React.FC<{
               [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0"
             aria-label="Adjust notification volume"
             style={{
+              // @ts-ignore - CSS custom property for Zen theme
+              '--volume-percent': `${soundVolume}%`,
               background: `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${soundVolume}%, var(--bg-tertiary) ${soundVolume}%, var(--bg-tertiary) 100%)`
             }}
           />
