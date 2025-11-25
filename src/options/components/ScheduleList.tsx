@@ -135,7 +135,7 @@ export const ScheduleList: React.FC = () => {
     return (
       <div className="flex items-center justify-center py-12">
         <Spinner size="lg" color="primary" />
-        <span className="ml-3 text-neutral-600">Loading schedules...</span>
+        <span className="ml-3 text-text-secondary">Loading schedules...</span>
       </div>
     );
   }
@@ -145,7 +145,7 @@ export const ScheduleList: React.FC = () => {
     return (
       <div
         role="alert"
-        className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-md"
+        className="bg-error/10 border border-error/20 text-error px-4 py-3 rounded-md"
       >
         {error}
       </div>
@@ -157,10 +157,10 @@ export const ScheduleList: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-neutral-900">
+          <h3 className="text-lg font-semibold text-text-primary">
             Your Schedules ({schedules.length})
           </h3>
-          <p className="text-sm text-neutral-600 mt-1">
+          <p className="text-sm text-text-secondary mt-1">
             Automatically activate blocking rules at specific times
           </p>
         </div>
@@ -175,12 +175,12 @@ export const ScheduleList: React.FC = () => {
 
       {/* Empty State */}
       {schedules.length === 0 && (
-        <div className="border-2 border-dashed border-neutral-300 rounded-lg p-12 text-center">
+        <div className="border-2 border-dashed border-border rounded-lg p-12 text-center">
           <div className="text-4xl mb-4">📅</div>
-          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+          <h3 className="text-lg font-semibold text-text-primary mb-2">
             No schedules yet
           </h3>
-          <p className="text-neutral-600 mb-4">
+          <p className="text-text-secondary mb-4">
             Create a schedule to automatically activate blocking rules at specific times
           </p>
           <Button variant="primary" onClick={() => setIsFormOpen(true)}>
@@ -195,7 +195,7 @@ export const ScheduleList: React.FC = () => {
           {schedules.map(schedule => (
             <div
               key={schedule.id}
-              className="border border-neutral-200 rounded-lg p-4 hover:border-neutral-300 transition-colors"
+              className="border border-border rounded-lg p-4 hover:border-accent transition-colors"
             >
               <div className="flex items-start justify-between">
                 {/* Schedule Info */}
@@ -207,10 +207,9 @@ export const ScheduleList: React.FC = () => {
                       className={`
                         px-2 py-1 text-xs font-medium rounded
                         transition-colors cursor-pointer
-                        ${
-                          schedule.enabled
-                            ? 'bg-success-100 text-success-700 hover:bg-success-200'
-                            : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                        ${schedule.enabled
+                          ? 'bg-success/10 text-success hover:bg-success/20'
+                          : 'bg-bg-secondary text-text-tertiary hover:bg-bg-tertiary'
                         }
                       `}
                       aria-label={`Toggle schedule ${schedule.enabled ? 'off' : 'on'}`}
@@ -219,13 +218,13 @@ export const ScheduleList: React.FC = () => {
                     </button>
 
                     {/* Name */}
-                    <h4 className="text-base font-medium text-neutral-900">
+                    <h4 className="text-base font-medium text-text-primary">
                       {schedule.name}
                     </h4>
                   </div>
 
                   {/* Time and Days */}
-                  <div className="flex items-center space-x-4 text-sm text-neutral-600 mb-2">
+                  <div className="flex items-center space-x-4 text-sm text-text-secondary mb-2">
                     <span className="flex items-center space-x-1">
                       <span className="text-lg">🕐</span>
                       <span>
@@ -239,14 +238,14 @@ export const ScheduleList: React.FC = () => {
                   </div>
 
                   {/* Block Rules */}
-                  <div className="text-sm text-neutral-600">
+                  <div className="text-sm text-text-secondary">
                     <span className="font-medium">Blocks:</span>{' '}
                     {getBlockRuleNames(schedule.blockRuleIds)}
                   </div>
 
                   {/* Exceptions */}
                   {schedule.exceptions.length > 0 && (
-                    <div className="mt-2 text-xs text-neutral-500">
+                    <div className="mt-2 text-xs text-text-tertiary">
                       {schedule.exceptions.length} exception date(s)
                     </div>
                   )}
@@ -266,7 +265,7 @@ export const ScheduleList: React.FC = () => {
                     variant="secondary"
                     size="sm"
                     onClick={() => handleDelete(schedule)}
-                    className="text-error-600 hover:bg-error-50"
+                    className="text-error hover:bg-error/10"
                     aria-label={`Delete schedule ${schedule.name}`}
                   >
                     Delete
@@ -288,12 +287,12 @@ export const ScheduleList: React.FC = () => {
       )}
 
       {/* Info Box */}
-      <div className="border border-info-200 bg-info-50 rounded-lg p-4">
+      <div className="border border-info/20 bg-info/10 rounded-lg p-4">
         <div className="flex items-start space-x-3">
           <span className="text-xl">💡</span>
-          <div className="text-sm text-info-900">
+          <div className="text-sm text-text-primary">
             <p className="font-medium mb-1">How schedules work</p>
-            <p className="text-info-800">
+            <p className="text-text-secondary">
               Schedules automatically enable/disable your block rules at the specified times.
               Multiple schedules can be active simultaneously. Click the status badge to
               quickly enable or disable a schedule.

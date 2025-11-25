@@ -148,13 +148,13 @@ export const SuggestedSites: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-primary-50 to-secondary-50 border border-primary-200 rounded-lg p-6 mb-6">
+    <div className="bg-bg-secondary border border-border rounded-lg p-6 mb-6">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+          <h3 className="text-lg font-semibold text-text-primary mb-1">
             ⚡ Quick Add: Popular Distracting Sites
           </h3>
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-text-secondary">
             Add commonly distracting websites with a single click. Choose individual sites or entire categories.
           </p>
         </div>
@@ -267,8 +267,8 @@ export const SuggestedSites: React.FC = () => {
       </div>
 
       {/* Info Footer */}
-      <div className="mt-4 p-3 bg-info-50 border border-info-200 rounded-md">
-        <p className="text-xs text-info-800">
+      <div className="mt-4 p-3 bg-info/10 border border-info/20 rounded-md">
+        <p className="text-xs text-text-primary">
           <strong>💡 Tip:</strong> Added sites will only be blocked during work sessions (not during breaks).
           You can enable/disable or remove them anytime from your block list below.
         </p>

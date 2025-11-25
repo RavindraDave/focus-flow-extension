@@ -295,10 +295,10 @@ export const BlockRuleList: React.FC = () => {
       {/* Rules Table */}
       {rules.length === 0 ? (
         <div className="bg-bg-secondary border border-border rounded-lg p-12 text-center">
-          <p className="text-text-secondary mb-4">
+          <p className="text-text-primary mb-4 font-medium text-lg">
             🚫 No block rules yet
           </p>
-          <p className="text-sm text-text-tertiary mb-6">
+          <p className="text-sm text-text-secondary mb-6">
             Add your first rule to start blocking distracting websites
           </p>
           <Button variant="primary" size="md" onClick={handleAdd}>
