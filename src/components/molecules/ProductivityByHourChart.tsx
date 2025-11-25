@@ -131,12 +131,12 @@ export const ProductivityByHourChart: React.FC<ProductivityByHourChartProps> = (
   if (totalSessions === 0) {
     return (
       <div
-        className="flex items-center justify-center bg-neutral-50 rounded-lg"
+        className="flex items-center justify-center bg-bg-secondary rounded-lg"
         style={{ height: `${height}px` }}
         role="img"
         aria-label="No productivity data available by hour"
       >
-        <p className="text-neutral-500 text-sm">
+        <p className="text-text-tertiary text-sm">
           No sessions completed yet. Complete Pomodoros throughout the day to see your productivity
           patterns!
         </p>

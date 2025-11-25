@@ -216,7 +216,7 @@ export const AnalyticsDashboard: React.FC = () => {
 
   const completionRate = todayStats
     ? todayStats.pomodorosCompleted /
-      (todayStats.pomodorosCompleted + (todayStats.pomodorosAbandoned || 0))
+    (todayStats.pomodorosCompleted + (todayStats.pomodorosAbandoned || 0))
     : 0;
 
   return (
@@ -224,46 +224,46 @@ export const AnalyticsDashboard: React.FC = () => {
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Today's Focus Time */}
-        <div className="bg-white border border-neutral-200 rounded-lg p-6">
+        <div className="bg-surface border border-border rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
+            <h3 className="text-sm font-medium text-text-tertiary uppercase tracking-wide">
               Today's Focus Time
             </h3>
             <span className="text-2xl">⏱️</span>
           </div>
-          <p className="text-3xl font-bold text-neutral-900 tabular-nums">
+          <p className="text-3xl font-bold text-text-primary tabular-nums">
             {formatDuration(todayStats?.focusTime || 0)}
           </p>
-          <p className="text-xs text-neutral-500 mt-1">
+          <p className="text-xs text-text-tertiary mt-1">
             {todayStats?.pomodorosCompleted || 0} Pomodoros completed
           </p>
         </div>
 
         {/* Current Streak */}
-        <div className="bg-gradient-to-br from-primary-50 to-success-50 border border-primary-200 rounded-lg p-6">
+        <div className="bg-surface border border-border rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-neutral-700 uppercase tracking-wide">
+            <h3 className="text-sm font-medium text-text-tertiary uppercase tracking-wide">
               Current Streak
             </h3>
             <span className="text-2xl">🔥</span>
           </div>
-          <p className="text-3xl font-bold text-primary-600 tabular-nums">
+          <p className="text-3xl font-bold text-accent tabular-nums">
             {streak?.current || 0}
           </p>
-          <p className="text-xs text-neutral-600 mt-1">
+          <p className="text-xs text-text-secondary mt-1">
             Personal best: {streak?.longest || 0} days
           </p>
         </div>
 
         {/* Completion Rate */}
-        <div className="bg-white border border-neutral-200 rounded-lg p-6">
+        <div className="bg-surface border border-border rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
+            <h3 className="text-sm font-medium text-text-tertiary uppercase tracking-wide">
               Completion Rate
             </h3>
             <span className="text-2xl">📊</span>
           </div>
-          <p className="text-3xl font-bold text-neutral-900 tabular-nums">
+          <p className="text-3xl font-bold text-text-primary tabular-nums">
             {isNaN(completionRate) ? '0' : Math.round(completionRate * 100)}%
           </p>
           <div className="mt-2">
@@ -288,32 +288,32 @@ export const AnalyticsDashboard: React.FC = () => {
 
       {/* Weekly Summary */}
       {weeklyData && (
-        <div className="bg-white border border-neutral-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+        <div className="bg-surface border border-border rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-text-primary mb-4">
             This Week
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-sm text-neutral-500 mb-1">Total Pomodoros</p>
-              <p className="text-2xl font-bold text-neutral-900 tabular-nums">
+              <p className="text-sm text-text-tertiary mb-1">Total Pomodoros</p>
+              <p className="text-2xl font-bold text-text-primary tabular-nums">
                 {weeklyData.totalPomodoros || 0}
               </p>
             </div>
             <div>
-              <p className="text-sm text-neutral-500 mb-1">Total Focus Time</p>
-              <p className="text-2xl font-bold text-neutral-900">
+              <p className="text-sm text-text-tertiary mb-1">Total Focus Time</p>
+              <p className="text-2xl font-bold text-text-primary">
                 {formatDuration(weeklyData.totalFocusTime || 0)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-neutral-500 mb-1">Daily Average</p>
-              <p className="text-2xl font-bold text-neutral-900 tabular-nums">
+              <p className="text-sm text-text-tertiary mb-1">Daily Average</p>
+              <p className="text-2xl font-bold text-text-primary tabular-nums">
                 {weeklyData.averagePerDay ? weeklyData.averagePerDay.toFixed(1) : '0'}
               </p>
             </div>
             <div>
-              <p className="text-sm text-neutral-500 mb-1">Completion Rate</p>
-              <p className="text-2xl font-bold text-neutral-900 tabular-nums">
+              <p className="text-sm text-text-tertiary mb-1">Completion Rate</p>
+              <p className="text-2xl font-bold text-text-primary tabular-nums">
                 {weeklyData.completionRate
                   ? Math.round(weeklyData.completionRate * 100)
                   : 0}
@@ -327,8 +327,8 @@ export const AnalyticsDashboard: React.FC = () => {
       {/* Charts Section */}
       <div className="space-y-6">
         {/* Focus Time Trend */}
-        <div className="bg-white border border-neutral-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+        <div className="bg-surface border border-border rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-text-primary mb-4">
             7-Day Focus Time Trend
           </h3>
           <FocusTimeChart
@@ -341,8 +341,8 @@ export const AnalyticsDashboard: React.FC = () => {
         {/* Session Distribution and Productivity by Hour */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Session Distribution */}
-          <div className="bg-white border border-neutral-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+          <div className="bg-surface border border-border rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-text-primary mb-4">
               Session Distribution
             </h3>
             <SessionDistributionChart
@@ -354,8 +354,8 @@ export const AnalyticsDashboard: React.FC = () => {
           </div>
 
           {/* Productivity by Hour */}
-          <div className="bg-white border border-neutral-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+          <div className="bg-surface border border-border rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-text-primary mb-4">
               Productivity by Hour
             </h3>
             <ProductivityByHourChart sessionsPerHour={productivityByHour} height={250} />
@@ -364,17 +364,17 @@ export const AnalyticsDashboard: React.FC = () => {
       </div>
 
       {/* Export Data */}
-      <div className="bg-white border border-neutral-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-3">
+      <div className="bg-surface border border-border rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-text-primary mb-3">
           Export Your Data
         </h3>
-        <p className="text-sm text-neutral-600 mb-4">
+        <p className="text-sm text-text-secondary mb-4">
           Download your productivity data in JSON or CSV format for analysis in other tools.
         </p>
         <div className="flex space-x-3">
           <button
             type="button"
-            className="px-4 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            className="px-4 py-2 text-sm font-medium text-text-primary bg-bg-secondary hover:bg-bg-tertiary disabled:opacity-50 disabled:cursor-not-allowed rounded-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 border border-border"
             onClick={handleExportJSON}
             disabled={isExporting || !analyticsData}
             aria-label="Export analytics data as JSON"
@@ -383,7 +383,7 @@ export const AnalyticsDashboard: React.FC = () => {
           </button>
           <button
             type="button"
-            className="px-4 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            className="px-4 py-2 text-sm font-medium text-text-primary bg-bg-secondary hover:bg-bg-tertiary disabled:opacity-50 disabled:cursor-not-allowed rounded-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 border border-border"
             onClick={handleExportCSV}
             disabled={isExporting || sessions.length === 0}
             aria-label="Export session data as CSV"

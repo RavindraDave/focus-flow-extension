@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '../../components/atoms/Button';
-import type { SessionType } from '../../types';
+import type { SessionType, UserSettings } from '../../types';
 
 export interface TimerControlsProps {
   isActive: boolean;
@@ -15,6 +15,7 @@ export interface TimerControlsProps {
   onResume: () => void;
   onStop: () => void;
   disabled?: boolean;
+  settings?: UserSettings | null;
 }
 
 /**
@@ -29,9 +30,15 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
   onResume,
   onStop,
   disabled = false,
+  settings,
 }) => {
   const [taskName, setTaskName] = useState('');
   const [showTaskInput, setShowTaskInput] = useState(false);
+
+  // Get durations from settings or use defaults
+  const workDuration = settings?.workDuration || 25;
+  const shortBreakDuration = settings?.shortBreakDuration || 5;
+  const longBreakDuration = settings?.longBreakDuration || 15;
 
   /**
    * Handle start button click
@@ -82,7 +89,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
       {/* Task name input (optional) */}
       {showTaskInput && (
         <div className="flex flex-col space-y-2">
-          <label htmlFor="task-name" className="text-sm font-medium text-neutral-700">
+          <label htmlFor="task-name" className="text-sm font-medium text-text-primary">
             What are you working on? (optional)
           </label>
           <input
@@ -92,7 +99,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
             onChange={(e) => setTaskName(e.target.value)}
             placeholder="e.g., Write documentation"
             maxLength={100}
-            className="px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="px-3 py-2 border border-border rounded-md text-sm bg-bg-primary text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
             disabled={disabled}
           />
         </div>
@@ -106,9 +113,9 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
           onClick={() => handleStart('work')}
           disabled={disabled}
           className="w-full"
-          aria-label="Start 25-minute focus session"
+          aria-label={`Start ${workDuration}-minute focus session`}
         >
-          Start Focus (25min)
+          Start Focus ({workDuration}min)
         </Button>
 
         <div className="flex space-x-2">
@@ -118,9 +125,9 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
             onClick={() => handleStart('short-break')}
             disabled={disabled}
             className="flex-1"
-            aria-label="Start 5-minute short break"
+            aria-label={`Start ${shortBreakDuration}-minute short break`}
           >
-            Short Break (5min)
+            Short Break ({shortBreakDuration}min)
           </Button>
           <Button
             variant="secondary"
@@ -128,9 +135,9 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
             onClick={() => handleStart('long-break')}
             disabled={disabled}
             className="flex-1"
-            aria-label="Start 15-minute long break"
+            aria-label={`Start ${longBreakDuration}-minute long break`}
           >
-            Long Break (15min)
+            Long Break ({longBreakDuration}min)
           </Button>
         </div>
 
@@ -138,7 +145,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
         <button
           type="button"
           onClick={() => setShowTaskInput(!showTaskInput)}
-          className="text-xs text-neutral-500 hover:text-neutral-700 underline focus:outline-none focus:ring-2 focus:ring-primary-500 rounded px-2 py-1"
+          className="text-xs text-text-tertiary hover:text-text-primary underline focus:outline-none focus:ring-2 focus:ring-accent rounded px-2 py-1"
           disabled={disabled}
         >
           {showTaskInput ? 'Hide task name' : 'Add task name'}

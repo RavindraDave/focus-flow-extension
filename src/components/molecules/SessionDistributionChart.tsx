@@ -55,7 +55,11 @@ export const SessionDistributionChart: React.FC<SessionDistributionChartProps> =
           chartColors.success.main,
           chartColors.warning.main,
         ],
-        borderColor: ['#fff', '#fff', '#fff'],
+        borderColor: [
+          'rgba(0, 0, 0, 0.1)',
+          'rgba(0, 0, 0, 0.1)',
+          'rgba(0, 0, 0, 0.1)',
+        ],
         borderWidth: 2,
         hoverOffset: 8,
       },
@@ -92,12 +96,12 @@ export const SessionDistributionChart: React.FC<SessionDistributionChartProps> =
   if (totalSessions === 0) {
     return (
       <div
-        className="flex items-center justify-center bg-neutral-50 rounded-lg"
+        className="flex items-center justify-center bg-bg-secondary rounded-lg"
         style={{ height: `${height}px` }}
         role="img"
         aria-label="No session data available"
       >
-        <p className="text-neutral-500 text-sm">
+        <p className="text-text-tertiary text-sm">
           No sessions completed yet. Start a Pomodoro to see your session distribution!
         </p>
       </div>

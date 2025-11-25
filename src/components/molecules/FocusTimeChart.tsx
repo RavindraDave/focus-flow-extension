@@ -106,12 +106,12 @@ export const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
   if (dailyFocusTime.length === 0 || dailyFocusTime.every(val => val === 0)) {
     return (
       <div
-        className="flex items-center justify-center bg-neutral-50 rounded-lg"
+        className="flex items-center justify-center bg-bg-secondary rounded-lg"
         style={{ height: `${height}px` }}
         role="img"
         aria-label="No focus time data available for the past 7 days"
       >
-        <p className="text-neutral-500 text-sm">
+        <p className="text-text-tertiary text-sm">
           No focus time recorded yet. Complete a Pomodoro session to see your progress!
         </p>
       </div>

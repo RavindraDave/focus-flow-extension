@@ -164,7 +164,7 @@ const App: React.FC = () => {
             </button>
           </div>
           <button
-            onClick={() => window.open('https://github.com/RavindraDave/focus-flow-extension/issues/new', '_blank')}
+            onClick={() => window.open('mailto:your-email@example.com?subject=Focus%20Flow%20Feedback', '_blank')}
             className="text-xs text-text-tertiary hover:text-accent mt-3 w-full text-center transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded py-1"
             aria-label="Send feedback or report an issue"
           >
@@ -614,8 +614,15 @@ const TimerTab: React.FC<{
             value={soundVolume}
             onChange={(e) => handleVolumeChange(Number(e.target.value))}
             disabled={!soundEnabled}
-            className="w-full h-2 bg-bg-secondary rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed accent-accent [&::-webkit-slider-track]:bg-bg-tertiary [&::-webkit-slider-track]:rounded-lg [&::-webkit-slider-track]:border [&::-webkit-slider-track]:border-border [&::-moz-range-track]:bg-bg-tertiary [&::-moz-range-track]:rounded-lg [&::-moz-range-track]:border [&::-moz-range-track]:border-border"
+            className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed accent-accent
+              [&::-webkit-slider-track]:h-2 [&::-webkit-slider-track]:rounded-lg [&::-webkit-slider-track]:border [&::-webkit-slider-track]:border-border [&::-webkit-slider-track]:bg-bg-tertiary
+              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg
+              [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-lg [&::-moz-range-track]:border [&::-moz-range-track]:border-border [&::-moz-range-track]:bg-bg-tertiary
+              [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0"
             aria-label="Adjust notification volume"
+            style={{
+              background: `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${soundVolume}%, var(--bg-tertiary) ${soundVolume}%, var(--bg-tertiary) 100%)`
+            }}
           />
         </div>
 
@@ -646,12 +653,34 @@ const TimerTab: React.FC<{
         </div>
 
         {/* Installation Note */}
-        <div className="mt-4 p-3 bg-warning/10 border border-warning/20 rounded-lg">
-          <p className="text-sm text-text-primary">
-            <strong>Note:</strong> Sound files must be installed manually. See{' '}
-            <code className="bg-bg-secondary px-1 rounded text-text-primary">public/assets/sounds/README.md</code>{' '}
-            for instructions.
+        <div className="mt-4 p-4 bg-warning/10 border border-warning/20 rounded-lg">
+          <p className="text-sm text-text-primary mb-2">
+            <strong>⚠️ Sound Files Not Included:</strong> Due to licensing, sound files must be added manually.
           </p>
+          <details className="text-sm text-text-secondary">
+            <summary className="cursor-pointer hover:text-text-primary font-medium mb-2">
+              📖 Click to view installation instructions
+            </summary>
+            <div className="mt-2 space-y-2 pl-4 border-l-2 border-warning/30">
+              <p><strong>Required Files:</strong></p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li><code className="bg-bg-secondary px-1 rounded">modern.mp3</code> - Clean professional ping</li>
+                <li><code className="bg-bg-secondary px-1 rounded">zen.mp3</code> - Calming singing bowl</li>
+                <li><code className="bg-bg-secondary px-1 rounded">cyber.mp3</code> - Futuristic synthetic beep</li>
+              </ul>
+              <p className="mt-3"><strong>Installation Steps:</strong></p>
+              <ol className="list-decimal list-inside space-y-1 ml-2">
+                <li>Find or create sound files (MP3 format, ~1-2 seconds each)</li>
+                <li>Navigate to extension folder: <code className="bg-bg-secondary px-1 rounded">chrome://extensions</code></li>
+                <li>Click "Details" on Focus Flow extension</li>
+                <li>Note the extension ID in the URL</li>
+                <li>Place files in: <code className="bg-bg-secondary px-1 rounded">public/assets/sounds/</code></li>
+              </ol>
+              <p className="mt-3 text-xs text-text-muted">
+                💡 Tip: You can use any royalty-free sound files or create your own
+              </p>
+            </div>
+          </details>
         </div>
       </div>
 

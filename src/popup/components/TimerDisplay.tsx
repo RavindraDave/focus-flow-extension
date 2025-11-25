@@ -73,7 +73,8 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
   const label = getSessionLabel(sessionType);
 
   // SVG circle parameters for progress ring
-  const radius = 90;
+  // Reduced radius from 90 to 85 to create more space between text and circle
+  const radius = 85;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
@@ -129,10 +130,10 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
           />
         </svg>
 
-        {/* Timer Display */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
+        {/* Timer Display - Added padding and reduced text size slightly */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
           <time
-            className={`text-6xl font-bold ${color} tabular-nums`}
+            className={`text-5xl font-bold ${color} tabular-nums`}
             role="timer"
             aria-live="polite"
             aria-atomic="true"

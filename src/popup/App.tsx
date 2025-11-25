@@ -11,6 +11,7 @@ import { TimerDisplay, TimerControls, QuickStats, NuclearModeModal, NuclearModeS
 import { useTimer, useAnalytics, useNuclearMode } from '../hooks';
 import { useThemeContext } from '../contexts/ThemeContext';
 import OnboardingModal from '../components/onboarding/OnboardingModal';
+import type { UserSettings } from '../types';
 
 /**
  * Main Popup App component
@@ -23,6 +24,9 @@ const App: React.FC = () => {
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [suggestedTheme, setSuggestedTheme] = useState<'modern' | 'zen' | 'cyber'>('modern');
+
+  // Settings state
+  const [settings, setSettings] = useState<UserSettings | null>(null);
 
   // Modal state
   const [isNuclearModalOpen, setIsNuclearModalOpen] = useState(false);
@@ -43,6 +47,22 @@ const App: React.FC = () => {
     }
 
     checkFirstRun();
+  }, []);
+
+  // Load user settings
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const response = await chrome.runtime.sendMessage({ type: 'SETTINGS_GET' });
+        if (response.success) {
+          setSettings(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    }
+
+    loadSettings();
   }, []);
 
   // Handle onboarding completion
@@ -158,6 +178,7 @@ const App: React.FC = () => {
             onResume={resume}
             onStop={stop}
             disabled={timerLoading}
+            settings={settings}
           />
         </section>
 
