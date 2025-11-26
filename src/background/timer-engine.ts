@@ -199,12 +199,16 @@ export class TimerEngine {
         (endTime.getTime() - session.startTime.getTime()) / 1000
       );
 
+      // Clamp actualDuration to max allowed value to prevent validation errors
+      // This handles edge cases where sessions run abnormally long
+      const clampedDuration = Math.min(elapsed, 7200); // Max 2 hours
+
       const completedSession: PomodoroSession = {
         ...session,
         startTime: (session.startTime instanceof Date ? session.startTime.toISOString() : session.startTime) as unknown as Date,
         status: 'abandoned',
         endTime: endTime.toISOString() as unknown as Date,
-        actualDuration: elapsed, // in seconds
+        actualDuration: clampedDuration, // in seconds, clamped to prevent validation errors
       };
 
       await this.sessionRepository.addToHistory(completedSession);
@@ -251,16 +255,20 @@ export class TimerEngine {
     }
 
     const endTime = new Date();
-    const actualDuration = Math.floor(
+    const elapsed = Math.floor(
       (endTime.getTime() - session.startTime.getTime()) / 1000
     );
+
+    // Clamp actualDuration to max allowed value to prevent validation errors
+    // This handles edge cases where sessions run abnormally long
+    const actualDuration = Math.min(elapsed, 7200); // Max 2 hours
 
     const completedSession: PomodoroSession = {
       ...session,
       startTime: (session.startTime instanceof Date ? session.startTime.toISOString() : session.startTime) as unknown as Date,
       status: 'completed',
       endTime: endTime.toISOString() as unknown as Date,
-      actualDuration, // in seconds
+      actualDuration, // in seconds, clamped to prevent validation errors
     };
 
     // Save to history

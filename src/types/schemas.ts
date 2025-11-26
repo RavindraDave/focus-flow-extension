@@ -271,7 +271,7 @@ export const PomodoroSessionSchema = z.object({
   taskName: createSanitizedTextSchema(200).optional(),
   category: createSanitizedTextSchema(50).optional(),
   status: SessionStatusSchema,
-  actualDuration: z.number().int().min(0).max(3600).optional(),
+  actualDuration: z.number().int().min(0).max(7200).optional(), // Allow up to 2 hours for edge cases
 });
 
 /**

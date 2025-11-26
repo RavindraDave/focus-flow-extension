@@ -555,12 +555,12 @@ class BackgroundServiceWorker {
       const elapsed = Math.floor(
         (Date.now() - currentSession.startTime.getTime()) / 1000
       );
-      const totalSeconds = currentSession.duration * 60;
+      const totalSeconds = currentSession.duration; // duration is already in seconds
       const remainingSeconds = Math.max(0, totalSeconds - elapsed);
 
       if (remainingSeconds > 0) {
-        // Resume the session
-        await this.timerEngine.start(currentSession.type, currentSession.duration);
+        // Resume the session (convert seconds to minutes for start method)
+        await this.timerEngine.start(currentSession.type, currentSession.duration / 60);
       } else {
         // Session expired while browser was closed
         console.info('⏱️ Session expired, marking as abandoned');
