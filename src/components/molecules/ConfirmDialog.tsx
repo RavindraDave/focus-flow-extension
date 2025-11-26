@@ -37,7 +37,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
     // Handle keyboard events
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {return;}
 
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -58,7 +58,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         }
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!isOpen) {return null;}
 
     const variantStyles = {
         danger: {

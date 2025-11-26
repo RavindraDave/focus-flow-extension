@@ -177,7 +177,7 @@ export class BlockerEngine {
     const rules = await this.blockRuleRepository.getActiveRules();
     const rule = rules.find(r => r.pattern === domain);
 
-    if (!rule || !rule.allowance) {
+    if (!rule?.allowance) {
       return { allowed: false, remaining: 0 };
     }
 

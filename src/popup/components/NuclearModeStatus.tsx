@@ -45,7 +45,7 @@ export const NuclearModeStatus: React.FC<NuclearModeStatusProps> = ({
   isActive,
   remainingSeconds,
 }) => {
-  if (!isActive) return null;
+  if (!isActive) {return null;}
 
   return (
     <div

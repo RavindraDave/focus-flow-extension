@@ -217,7 +217,7 @@ describe('Data Export/Import', () => {
 
         // Create a spy on the file input click
         const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-        const clickSpy = vi.spyOn(fileInput!, 'click');
+        const clickSpy = vi.spyOn(fileInput, 'click');
 
         fireEvent.click(importButton);
 

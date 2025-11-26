@@ -358,7 +358,7 @@ export class StorageService {
    */
   private async flushDebouncedWrite(key: string): Promise<void> {
     const write = this.writeQueue.get(key);
-    if (!write) return;
+    if (!write) {return;}
 
     this.writeQueue.delete(key);
     this.writeTimers.delete(key);

@@ -18,8 +18,8 @@ import type { BlockRule } from '../../types';
  * Complexity: 2 (conditional formatting)
  */
 function formatTimeUsed(minutes: number): string {
-  if (minutes === 0) return '0min';
-  if (minutes < 60) return `${minutes}min`;
+  if (minutes === 0) {return '0min';}
+  if (minutes < 60) {return `${minutes}min`;}
 
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
@@ -201,7 +201,7 @@ export const BlockRuleList: React.FC = () => {
     input.accept = '.json';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+      if (!file) {return;}
 
       try {
         const text = await file.text();

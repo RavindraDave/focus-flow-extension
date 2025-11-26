@@ -17,6 +17,10 @@ import { AnalyticsRepository } from '../services/analytics-repository';
 import { SettingsRepository } from '../services/settings-repository';
 import { BlockRuleRepository } from '../services/block-rule-repository';
 import { ScheduleRepository } from '../services/schedule-repository';
+import { TimerMessageHandler } from './handlers/timer-handler';
+import { BlockListMessageHandler } from './handlers/blocklist-handler';
+import { ScheduleMessageHandler } from './handlers/schedule-handler';
+import type { BackgroundMessage, BackgroundResponse } from './message-types';
 import { z } from 'zod';
 
 /**
@@ -111,6 +115,11 @@ class BackgroundServiceWorker {
   private nuclearModeManager: NuclearModeManager;
   private scheduleManager: ScheduleManager;
 
+  // Message Handlers
+  private timerHandler: TimerMessageHandler;
+  private blockListHandler: BlockListMessageHandler;
+  private scheduleHandler: ScheduleMessageHandler;
+
   // Constants
   private static readonly ALARM_TIMER_TICK = 'pomodoro-timer';
   private static readonly ALARM_MIDNIGHT_CHECK = 'midnight-check';
@@ -147,6 +156,20 @@ class BackgroundServiceWorker {
       this.blockerEngine
     );
 
+    // Initialize message handlers
+    this.timerHandler = new TimerMessageHandler(
+      this.timerEngine,
+      this.settingsRepository
+    );
+    this.blockListHandler = new BlockListMessageHandler(
+      this.blockRuleRepository,
+      this.blockerEngine
+    );
+    this.scheduleHandler = new ScheduleMessageHandler(
+      this.scheduleRepository,
+      this.scheduleManager
+    );
+
     console.info('🚀 Focus Flow background service worker initialized');
   }
 
@@ -160,6 +183,7 @@ class BackgroundServiceWorker {
     this.setupMessageListener();
     this.setupAlarmListener();
     this.setupInstallListener();
+    this.setupSuspendListener();
 
     // Schedule midnight check alarm (runs daily at midnight)
     await this.scheduleMidnightCheck();
@@ -181,11 +205,15 @@ class BackgroundServiceWorker {
    */
   private setupMessageListener(): void {
     chrome.runtime.onMessage.addListener(
-      (message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
+      (
+        message: BackgroundMessage,
+        sender: chrome.runtime.MessageSender,
+        sendResponse: (response: BackgroundResponse) => void
+      ) => {
         // Handle message asynchronously
         this.handleMessage(message, sender)
           .then(response => sendResponse({ success: true, data: response }))
-          .catch(error => {
+          .catch((error: unknown) => {
             console.error('Message handler error:', error);
             sendResponse({
               success: false,
@@ -203,216 +231,170 @@ class BackgroundServiceWorker {
    * Handle incoming message
    *
    * @param message - Message from popup/options/content script
-   * @param sender - Message sender info
+   * @param _sender - Message sender info
    * @returns Response data
    * @private
    */
   private async handleMessage(
-    message: any,
+    message: BackgroundMessage,
     _sender: chrome.runtime.MessageSender
-  ): Promise<any> {
+  ): Promise<unknown> {
     const { type } = message;
 
-    switch (type) {
-      // Timer controls
-      case 'TIMER_START': {
-        // Validate message structure
-        const validatedMsg = validateMessage(message, MessageSchemas.TIMER_START);
-        if (!validatedMsg) {
-          throw new BackgroundError('Invalid TIMER_START message format');
-        }
+    // Route message to appropriate handler based on type prefix
+    if (type.startsWith('TIMER_')) {
+      return await this.handleTimerMessage(message);
+    }
 
-        // Use user settings for duration, ignore client-provided fallback
-        const settings = await this.settingsRepository.getSettings();
-        let duration: number;
+    if (type.startsWith('NUCLEAR_MODE_')) {
+      return await this.handleNuclearModeMessage(message);
+    }
 
-        switch (validatedMsg.sessionType) {
-          case 'work':
-            duration = settings.workDuration;
-            break;
-          case 'short-break':
-            duration = settings.shortBreakDuration;
-            break;
-          case 'long-break':
-            duration = settings.longBreakDuration;
-            break;
-          default:
-            duration = 25; // Fallback only if sessionType is somehow invalid
-        }
+    if (type.startsWith('ANALYTICS_')) {
+      return await this.handleAnalyticsMessage(message);
+    }
 
-        return await this.timerEngine.start(validatedMsg.sessionType, duration, validatedMsg.taskName);
-      }
+    if (type.startsWith('STREAK_')) {
+      return await this.handleStreakMessage(message);
+    }
 
+    if (type.startsWith('BLOCKER_')) {
+      return await this.handleBlockerMessage(message);
+    }
+
+    if (type.startsWith('BLOCKLIST_')) {
+      return await this.handleBlockListMessage(message);
+    }
+
+    if (type.startsWith('SESSION_')) {
+      return await this.handleSessionMessage(message);
+    }
+
+    if (type.startsWith('SETTINGS_')) {
+      return await this.handleSettingsMessage(message);
+    }
+
+    if (type.startsWith('SCHEDULE_')) {
+      return await this.handleScheduleMessage(message);
+    }
+
+    throw new BackgroundError(`Unknown message type: ${type}`);
+  }
+
+  /** Handle timer messages */
+  private async handleTimerMessage(message: BackgroundMessage): Promise<unknown> {
+    switch (message.type) {
+      case 'TIMER_START':
+        return await this.timerHandler.handleStart(message);
       case 'TIMER_PAUSE':
-        return await this.timerEngine.pause();
-
       case 'TIMER_RESUME':
-        return await this.timerEngine.resume();
-
       case 'TIMER_STOP':
-        return await this.timerEngine.stop();
-
       case 'TIMER_GET_STATUS':
-        return await this.timerEngine.getStatus();
+        return await this.timerHandler.handleControl(message);
+    }
+  }
 
-      // Nuclear mode
-      case 'NUCLEAR_MODE_ACTIVATE': {
-        // Validate message structure
-        const validatedMsg = validateMessage(message, MessageSchemas.NUCLEAR_MODE_ACTIVATE);
-        if (!validatedMsg) {
-          throw new BackgroundError('Invalid NUCLEAR_MODE_ACTIVATE message format');
-        }
-        return await this.nuclearModeManager.activate(validatedMsg.durationHours);
-      }
-
+  /** Handle nuclear mode messages */
+  private async handleNuclearModeMessage(message: BackgroundMessage): Promise<unknown> {
+    switch (message.type) {
+      case 'NUCLEAR_MODE_ACTIVATE':
+        return await this.nuclearModeManager.activate(message.durationHours);
       case 'NUCLEAR_MODE_DEACTIVATE':
         return await this.nuclearModeManager.deactivate();
-
       case 'NUCLEAR_MODE_GET_STATUS':
         return {
           isActive: await this.nuclearModeManager.isActive(),
           remainingTime: await this.nuclearModeManager.getRemainingTime(),
         };
+    }
+  }
 
-      // Analytics
+  /** Handle analytics messages */
+  private async handleAnalyticsMessage(message: BackgroundMessage): Promise<unknown> {
+    switch (message.type) {
       case 'ANALYTICS_GET':
         return await this.analyticsRepository.getAnalytics();
-
       case 'ANALYTICS_GET_FOCUS_SCORE':
         return await this.analyticsTracker.calculateFocusScore();
-
       case 'ANALYTICS_GET_WEEKLY_SUMMARY':
         return await this.analyticsTracker.getWeeklySummary();
-
       case 'ANALYTICS_GET_MONTHLY_SUMMARY':
         return await this.analyticsTracker.getMonthlySummary();
+    }
+  }
 
-      // Streak
+  /** Handle streak messages */
+  private async handleStreakMessage(message: BackgroundMessage): Promise<unknown> {
+    switch (message.type) {
       case 'STREAK_GET':
         return await this.analyticsRepository.getStreak();
-
-      case 'STREAK_CHECK':
+      case 'STREAK_CHECK': {
         const settings = await this.settingsRepository.getSettings();
         return await this.streakTracker.checkDailyStreak(
           settings.premiumLicenseKey !== undefined
         );
+      }
+    }
+  }
 
-      // Blocker
+  /** Handle blocker messages */
+  private async handleBlockerMessage(message: BackgroundMessage): Promise<unknown> {
+    switch (message.type) {
       case 'BLOCKER_SYNC_RULES':
         return await this.blockerEngine.syncRules();
-
       case 'BLOCKER_GET_STATS':
         return await this.blockerEngine.getStats();
-
       case 'BLOCKER_TRACK_ATTEMPT':
         return await this.blockerEngine.handleBlockedAttempt(message.domain);
+    }
+  }
 
-      // Block List CRUD
+  /** Handle blocklist messages */
+  private async handleBlockListMessage(message: BackgroundMessage): Promise<unknown> {
+    switch (message.type) {
       case 'BLOCKLIST_GET_ALL':
-        return await this.blockRuleRepository.getAllRules();
+        return await this.blockListHandler.handleGetAll(message);
+      case 'BLOCKLIST_ADD':
+        return await this.blockListHandler.handleAdd(message);
+      case 'BLOCKLIST_UPDATE':
+        return await this.blockListHandler.handleUpdate(message);
+      case 'BLOCKLIST_DELETE':
+        return await this.blockListHandler.handleDelete(message);
+    }
+  }
 
-      case 'BLOCKLIST_ADD': {
-        // Check for duplicate pattern
-        const existingRules = await this.blockRuleRepository.getAllRules();
-        const isDuplicate = existingRules.some(
-          rule => rule.pattern === message.rule.pattern && rule.type === message.rule.type
-        );
-
-        if (isDuplicate) {
-          // Return existing rule instead of creating duplicate
-          const existing = existingRules.find(
-            rule => rule.pattern === message.rule.pattern && rule.type === message.rule.type
-          );
-          return existing;
-        }
-
-        const now = new Date().toISOString();
-        const newRule = {
-          ...message.rule,
-          id: crypto.randomUUID(),
-          createdAt: now,
-          updatedAt: now,
-        };
-        await this.blockRuleRepository.addRule(newRule);
-        await this.blockerEngine.syncRules(); // Sync rules to declarativeNetRequest
-        return newRule;
-      }
-
-      case 'BLOCKLIST_UPDATE': {
-        const updates = {
-          ...message.updates,
-          updatedAt: new Date().toISOString(),
-        };
-        await this.blockRuleRepository.updateRule(message.id, updates);
-        await this.blockerEngine.syncRules(); // Sync rules to declarativeNetRequest
-        return true;
-      }
-
-      case 'BLOCKLIST_DELETE': {
-        const deleted = await this.blockRuleRepository.deleteRule(message.id);
-        if (deleted) {
-          await this.blockerEngine.syncRules(); // Sync rules to declarativeNetRequest
-        }
-        return deleted;
-      }
-
-      // Session history
+  /** Handle session messages */
+  private async handleSessionMessage(message: BackgroundMessage): Promise<unknown> {
+    switch (message.type) {
       case 'SESSION_GET_HISTORY':
         return await this.sessionRepository.getSessionHistory(message.limit);
-
       case 'SESSION_GET_TODAY':
         return await this.sessionRepository.getTodaySessions();
+    }
+  }
 
-      // Settings
+  /** Handle settings messages */
+  private async handleSettingsMessage(message: BackgroundMessage): Promise<unknown> {
+    switch (message.type) {
       case 'SETTINGS_GET':
         return await this.settingsRepository.getSettings();
-
       case 'SETTINGS_UPDATE':
         return await this.settingsRepository.updateSettings(message.updates);
+    }
+  }
 
-      // Schedules
+  /** Handle schedule messages */
+  private async handleScheduleMessage(message: BackgroundMessage): Promise<unknown> {
+    switch (message.type) {
       case 'SCHEDULE_GET_ALL':
-        return await this.scheduleRepository.getAllSchedules();
-
-      case 'SCHEDULE_ADD': {
-        const now = new Date().toISOString();
-        const newSchedule = {
-          ...message.schedule,
-          id: crypto.randomUUID(),
-          createdAt: now,
-          updatedAt: now,
-        };
-        await this.scheduleRepository.addSchedule(newSchedule);
-        // Trigger immediate schedule check
-        await this.scheduleManager.checkSchedules();
-        return newSchedule;
-      }
-
-      case 'SCHEDULE_UPDATE': {
-        const updates = {
-          ...message.updates,
-          updatedAt: new Date().toISOString(),
-        };
-        await this.scheduleRepository.updateSchedule(message.id, updates);
-        // Trigger immediate schedule check
-        await this.scheduleManager.checkSchedules();
-        return true;
-      }
-
-      case 'SCHEDULE_DELETE': {
-        const deleted = await this.scheduleRepository.deleteSchedule(message.id);
-        if (deleted) {
-          // Trigger immediate schedule check
-          await this.scheduleManager.checkSchedules();
-        }
-        return deleted;
-      }
-
       case 'SCHEDULE_GET_NEXT':
-        return await this.scheduleManager.getNextSchedule();
-
-      default:
-        throw new BackgroundError(`Unknown message type: ${type}`);
+        return await this.scheduleHandler.handleGet(message);
+      case 'SCHEDULE_ADD':
+        return await this.scheduleHandler.handleAdd(message);
+      case 'SCHEDULE_UPDATE':
+        return await this.scheduleHandler.handleUpdate(message);
+      case 'SCHEDULE_DELETE':
+        return await this.scheduleHandler.handleDelete(message);
     }
   }
 
@@ -459,6 +441,22 @@ class BackgroundServiceWorker {
         console.error(`Alarm handler error (${alarm.name}):`, error);
       }
     });
+  }
+
+  /**
+   * Set up chrome.runtime.onSuspend listener
+   *
+   * Handles cleanup before service worker unloads.
+   * @private
+   */
+  private setupSuspendListener(): void {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.onSuspend) {
+      chrome.runtime.onSuspend.addListener(() => {
+        console.info('🔄 Service worker suspending - performing cleanup');
+        // Note: Can't use async operations here as they may not complete
+        // Storage writes are already debounced and will flush automatically
+      });
+    }
   }
 
   /**
@@ -576,7 +574,7 @@ class BackgroundServiceWorker {
    * @private
    */
   private async runMigrations(previousVersion?: string): Promise<void> {
-    if (!previousVersion) return;
+    if (!previousVersion) {return;}
 
     console.info(`🔄 Running migrations from version ${previousVersion}`);
 

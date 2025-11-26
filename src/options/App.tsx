@@ -307,15 +307,15 @@ const DashboardTab: React.FC<{ settings: any; setActiveTab: (tab: Tab) => void }
   const formatFocusTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    if (hours === 0) return `${mins}m`;
+    if (hours === 0) {return `${mins}m`;}
     return `${hours}h ${mins}m`;
   };
 
   // Calculate focus score (simple formula based on pomodoros completed)
   const calculateFocusScore = (): number => {
-    if (!todayStats) return 0;
+    if (!todayStats) {return 0;}
     const total = todayStats.pomodorosCompleted + todayStats.pomodorosAbandoned;
-    if (total === 0) return 0;
+    if (total === 0) {return 0;}
     return Math.round((todayStats.pomodorosCompleted / total) * 100);
   };
 
@@ -940,7 +940,7 @@ const DataConfigTab: React.FC = () => {
 
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {return;}
 
     setIsImporting(true);
     try {

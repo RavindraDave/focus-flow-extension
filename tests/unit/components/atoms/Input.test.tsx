@@ -103,7 +103,7 @@ describe('Input', () => {
       const user = userEvent.setup();
 
       render(<Input />);
-      const input = screen.getByRole('textbox') as HTMLInputElement;
+      const input = screen.getByRole('textbox');
 
       await user.type(input, 'Hello World');
       expect(input.value).toBe('Hello World');
@@ -308,7 +308,7 @@ describe('Input', () => {
       const user = userEvent.setup();
       render(<TestComponent />);
 
-      const input = screen.getByRole('textbox') as HTMLInputElement;
+      const input = screen.getByRole('textbox');
       await user.type(input, 'controlled');
 
       expect(input.value).toBe('controlled');
