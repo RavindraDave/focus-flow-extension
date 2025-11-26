@@ -74,11 +74,11 @@ export class TimerEngine {
     settingsRepository?: SettingsRepository,
     blockerEngine?: BlockerEngine
   ) {
-    this.sessionRepository = sessionRepository || new SessionRepository();
-    this.analyticsTracker = analyticsTracker || new AnalyticsTracker();
-    this.streakTracker = streakTracker || new StreakTracker();
-    this.settingsRepository = settingsRepository || new SettingsRepository();
-    this.blockerEngine = blockerEngine || new BlockerEngine();
+    this.sessionRepository = sessionRepository ?? new SessionRepository();
+    this.analyticsTracker = analyticsTracker ?? new AnalyticsTracker();
+    this.streakTracker = streakTracker ?? new StreakTracker();
+    this.settingsRepository = settingsRepository ?? new SettingsRepository();
+    this.blockerEngine = blockerEngine ?? new BlockerEngine();
   }
 
   /**
@@ -109,7 +109,7 @@ export class TimerEngine {
       duration: minutes * 60, // Convert minutes to seconds for schema validation
       startTime: this.startTime.toISOString() as unknown as Date, // Schema expects ISO string, transforms to Date
       endTime: undefined,
-      taskName: taskName || 'Focus Session',
+      taskName: taskName ?? 'Focus Session',
       category: 'general',
       status: 'active',
       actualDuration: undefined,
@@ -361,7 +361,7 @@ export class TimerEngine {
    * @private
    */
   private async createAlarm(): Promise<void> {
-    if (typeof chrome !== 'undefined' && chrome.alarms) {
+    if (chrome?.alarms) {
       await chrome.alarms.create(TimerEngine.ALARM_NAME, {
         periodInMinutes: 1 / 60, // Every second (minimum is 1/60 = 1 second)
       });
@@ -374,7 +374,7 @@ export class TimerEngine {
    * @private
    */
   private async clearAlarm(): Promise<void> {
-    if (typeof chrome !== 'undefined' && chrome.alarms) {
+    if (chrome?.alarms) {
       await chrome.alarms.clear(TimerEngine.ALARM_NAME);
     }
   }
@@ -385,7 +385,7 @@ export class TimerEngine {
    * @private
    */
   private async updateBadge(): Promise<void> {
-    if (typeof chrome !== 'undefined' && chrome.action) {
+    if (chrome?.action) {
       if (this.state === 'idle') {
         await chrome.action.setBadgeText({ text: '' });
         return;
@@ -419,7 +419,7 @@ export class TimerEngine {
       return;
     }
 
-    if (typeof chrome !== 'undefined' && chrome.notifications) {
+    if (chrome?.notifications) {
       const title =
         completedType === 'work'
           ? '✅ Work Session Complete!'

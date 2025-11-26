@@ -56,8 +56,8 @@ export class BlockerEngine {
     blockRuleRepository?: BlockRuleRepository,
     analyticsTracker?: AnalyticsTracker
   ) {
-    this.blockRuleRepository = blockRuleRepository || new BlockRuleRepository();
-    this.analyticsTracker = analyticsTracker || new AnalyticsTracker();
+    this.blockRuleRepository = blockRuleRepository ?? new BlockRuleRepository();
+    this.analyticsTracker = analyticsTracker ?? new AnalyticsTracker();
   }
 
   /**
@@ -76,7 +76,7 @@ export class BlockerEngine {
       );
 
       // Update dynamic rules
-      if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest) {
+      if (chrome?.declarativeNetRequest) {
         // Remove all existing dynamic rules
         const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
         const ruleIdsToRemove = existingRules.map(r => r.id);
@@ -306,11 +306,11 @@ export class BlockerEngine {
    * @private
    */
   private async getAllowances(): Promise<DomainAllowance[]> {
-    if (typeof chrome !== 'undefined' && chrome.storage) {
+    if (chrome?.storage) {
       const result = await chrome.storage.local.get(
         BlockerEngine.ALLOWANCE_KEY
       );
-      return result[BlockerEngine.ALLOWANCE_KEY] || [];
+      return result[BlockerEngine.ALLOWANCE_KEY] ?? [];
     }
     return [];
   }
@@ -322,7 +322,7 @@ export class BlockerEngine {
    * @private
    */
   private async saveAllowances(allowances: DomainAllowance[]): Promise<void> {
-    if (typeof chrome !== 'undefined' && chrome.storage) {
+    if (chrome?.storage) {
       await chrome.storage.local.set({
         [BlockerEngine.ALLOWANCE_KEY]: allowances,
       });

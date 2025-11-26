@@ -53,8 +53,8 @@ export class AnalyticsTracker {
     analyticsRepository?: AnalyticsRepository,
     sessionRepository?: SessionRepository
   ) {
-    this.analyticsRepository = analyticsRepository || new AnalyticsRepository();
-    this.sessionRepository = sessionRepository || new SessionRepository();
+    this.analyticsRepository = analyticsRepository ?? new AnalyticsRepository();
+    this.sessionRepository = sessionRepository ?? new SessionRepository();
   }
 
   /**
@@ -73,7 +73,7 @@ export class AnalyticsTracker {
     const todayStats = await this.analyticsRepository.getTodayStats();
 
     // Calculate actual duration in minutes (session.duration and actualDuration are in SECONDS per schema)
-    const durationSeconds = session.actualDuration || session.duration;
+    const durationSeconds = session.actualDuration ?? session.duration;
     const durationMinutes = Math.floor(durationSeconds / 60);
 
     // Update today's stats
@@ -82,7 +82,7 @@ export class AnalyticsTracker {
       completedSessions: todayStats.completedSessions + 1,
       sessionsByCategory: this.updateSessionsByCategory(
         todayStats.sessionsByCategory,
-        session.category || 'uncategorized'
+        session.category ?? 'uncategorized'
       ),
     });
 
@@ -200,7 +200,7 @@ export class AnalyticsTracker {
     );
     const totalFocusTime = dailyStats.reduce((sum, s) => sum + s.focusTimeMinutes, 0);
 
-    const dayCount = dailyStats.length || 1;
+    const dayCount = dailyStats.length !== 0 ? dailyStats.length : 1;
     const averagePerDay = totalPomodoros / dayCount;
 
     const completedCount = sessions.filter(s => s.status === 'completed').length;
@@ -212,7 +212,7 @@ export class AnalyticsTracker {
     const categoryTotals: Record<string, number> = {};
     dailyStats.forEach(stat => {
       Object.entries(stat.sessionsByCategory).forEach(([category, count]) => {
-        categoryTotals[category] = (categoryTotals[category] || 0) + count;
+        categoryTotals[category] = (categoryTotals[category] ?? 0) + count;
       });
     });
 
@@ -273,7 +273,7 @@ export class AnalyticsTracker {
   ): Record<string, number> {
     return {
       ...sessionsByCategory,
-      [category]: (sessionsByCategory[category] || 0) + 1,
+      [category]: (sessionsByCategory[category] ?? 0) + 1,
     };
   }
 
