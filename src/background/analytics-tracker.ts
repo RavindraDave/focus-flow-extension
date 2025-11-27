@@ -278,6 +278,53 @@ export class AnalyticsTracker {
   }
 
   /**
+   * Achievement definitions with their unlock conditions
+   * @private
+   */
+  private static readonly ACHIEVEMENTS = [
+    {
+      id: 'first-pomodoro',
+      name: 'First Pomodoro',
+      description: 'Complete your first Pomodoro session',
+      category: 'sessions' as const,
+      icon: '🍅',
+      check: (analytics: any) => analytics.totalSessions === 1,
+    },
+    {
+      id: 'century-club',
+      name: 'Century Club',
+      description: 'Complete 100 Pomodoro sessions',
+      category: 'sessions' as const,
+      icon: '💯',
+      check: (analytics: any) => analytics.totalSessions >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.CENTURY_CLUB,
+    },
+    {
+      id: 'streak-warrior',
+      name: 'Streak Warrior',
+      description: 'Maintain a 7-day streak',
+      category: 'streak' as const,
+      icon: '🔥',
+      check: (analytics: any) => analytics.streak.currentStreak >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.STREAK_WARRIOR,
+    },
+    {
+      id: 'marathon-runner',
+      name: 'Marathon Runner',
+      description: 'Maintain a 30-day streak',
+      category: 'streak' as const,
+      icon: '🏃',
+      check: (analytics: any) => analytics.streak.currentStreak >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.MARATHON_RUNNER,
+    },
+    {
+      id: 'focus-beast',
+      name: 'Focus Beast',
+      description: 'Accumulate 1000 minutes of focus time',
+      category: 'focus-time' as const,
+      icon: '🦁',
+      check: (analytics: any) => analytics.totalFocusTimeMinutes >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.FOCUS_BEAST,
+    },
+  ];
+
+  /**
    * Check and award achievements
    *
    * Checks all achievement thresholds and awards new achievements.
@@ -287,77 +334,33 @@ export class AnalyticsTracker {
   private async checkAchievements(): Promise<void> {
     const analytics = await this.analyticsRepository.getAnalytics();
 
-    // First Pomodoro
-    if (
-      analytics.totalSessions === 1 &&
-      !(await this.analyticsRepository.hasAchievement('first-pomodoro'))
-    ) {
-      await this.awardAchievement({
-        id: 'first-pomodoro',
-        name: 'First Pomodoro',
-        description: 'Complete your first Pomodoro session',
-        category: 'sessions',
-        icon: '🍅',
-        unlockedAt: new Date().toISOString() as unknown as Date,
-      });
+    // Check each achievement definition
+    for (const achievement of AnalyticsTracker.ACHIEVEMENTS) {
+      await this.checkAndAwardAchievement(analytics, achievement);
     }
+  }
 
-    // Century Club (100 Pomodoros)
-    if (
-      analytics.totalSessions >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.CENTURY_CLUB &&
-      !(await this.analyticsRepository.hasAchievement('century-club'))
-    ) {
-      await this.awardAchievement({
-        id: 'century-club',
-        name: 'Century Club',
-        description: 'Complete 100 Pomodoro sessions',
-        category: 'sessions',
-        icon: '💯',
-        unlockedAt: new Date().toISOString() as unknown as Date,
-      });
-    }
+  /**
+   * Check and award a single achievement if conditions are met
+   *
+   * @param analytics - Current analytics data
+   * @param config - Achievement configuration
+   * @private
+   */
+  private async checkAndAwardAchievement(
+    analytics: any,
+    config: typeof AnalyticsTracker.ACHIEVEMENTS[number]
+  ): Promise<void> {
+    const alreadyHas = await this.analyticsRepository.hasAchievement(config.id);
+    const meetsCondition = config.check(analytics);
 
-    // Streak Warrior (7-day streak)
-    if (
-      analytics.streak.currentStreak >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.STREAK_WARRIOR &&
-      !(await this.analyticsRepository.hasAchievement('streak-warrior'))
-    ) {
+    if (meetsCondition && !alreadyHas) {
       await this.awardAchievement({
-        id: 'streak-warrior',
-        name: 'Streak Warrior',
-        description: 'Maintain a 7-day streak',
-        category: 'streak',
-        icon: '🔥',
-        unlockedAt: new Date().toISOString() as unknown as Date,
-      });
-    }
-
-    // Marathon Runner (30-day streak)
-    if (
-      analytics.streak.currentStreak >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.MARATHON_RUNNER &&
-      !(await this.analyticsRepository.hasAchievement('marathon-runner'))
-    ) {
-      await this.awardAchievement({
-        id: 'marathon-runner',
-        name: 'Marathon Runner',
-        description: 'Maintain a 30-day streak',
-        category: 'streak',
-        icon: '🏃',
-        unlockedAt: new Date().toISOString() as unknown as Date,
-      });
-    }
-
-    // Focus Beast (1000+ minutes)
-    if (
-      analytics.totalFocusTimeMinutes >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.FOCUS_BEAST &&
-      !(await this.analyticsRepository.hasAchievement('focus-beast'))
-    ) {
-      await this.awardAchievement({
-        id: 'focus-beast',
-        name: 'Focus Beast',
-        description: 'Accumulate 1000 minutes of focus time',
-        category: 'focus-time',
-        icon: '🦁',
+        id: config.id,
+        name: config.name,
+        description: config.description,
+        category: config.category,
+        icon: config.icon,
         unlockedAt: new Date().toISOString() as unknown as Date,
       });
     }
