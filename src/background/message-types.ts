@@ -5,7 +5,7 @@
  * Strict typing for background service worker messages.
  */
 
-import type { PomodoroSession, UserSettings, BlockRule, Schedule } from '../types/index';
+import type { UserSettings, BlockRule, Schedule } from '../types/index';
 
 /**
  * Timer Messages
@@ -55,6 +55,22 @@ export interface BlockerSyncMessage {
 
 export interface BlockerTrackMessage {
   type: 'BLOCKER_TRACK_ATTEMPT';
+  domain: string;
+}
+
+export interface BlockerCheckAllowanceMessage {
+  type: 'BLOCKER_CHECK_ALLOWANCE';
+  domain: string;
+}
+
+export interface BlockerGrantAccessMessage {
+  type: 'BLOCKER_GRANT_ACCESS';
+  domain: string;
+  durationMinutes: number;
+}
+
+export interface BlockerGetTempAccessMessage {
+  type: 'BLOCKER_GET_TEMP_ACCESS';
   domain: string;
 }
 
@@ -140,6 +156,9 @@ export type BackgroundMessage =
   | StreakMessage
   | BlockerSyncMessage
   | BlockerTrackMessage
+  | BlockerCheckAllowanceMessage
+  | BlockerGrantAccessMessage
+  | BlockerGetTempAccessMessage
   | BlockListGetMessage
   | BlockListAddMessage
   | BlockListUpdateMessage

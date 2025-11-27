@@ -52,6 +52,7 @@ describe('NuclearModeManager', () => {
       autoStartNextSession: false,
       enableSounds: true,
       enableNotifications: true,
+      blockingMode: 'blacklist',
       theme: 'system',
       youtubeControls: {
         enabled: false,

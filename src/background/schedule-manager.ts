@@ -12,6 +12,7 @@
 import { ScheduleRepository } from '../services/schedule-repository';
 import { BlockRuleRepository } from '../services/block-rule-repository';
 import type { Schedule } from '../types';
+import type { TimerEngine } from './timer-engine';
 
 /**
  * Alarm name for schedule checks
@@ -38,14 +39,19 @@ const CHECK_INTERVAL_MINUTES = 1; // Check every minute for responsiveness
 export class ScheduleManager {
   private scheduleRepository: ScheduleRepository;
   private blockRuleRepository: BlockRuleRepository;
+  private timerEngine?: TimerEngine;
   private currentActiveScheduleIds: Set<string> = new Set();
 
   constructor(
     scheduleRepository: ScheduleRepository,
-    blockRuleRepository: BlockRuleRepository
+    blockRuleRepository: BlockRuleRepository,
+    timerEngine?: TimerEngine
   ) {
     this.scheduleRepository = scheduleRepository;
     this.blockRuleRepository = blockRuleRepository;
+    if (timerEngine) {
+      this.timerEngine = timerEngine;
+    }
   }
 
   /**
@@ -142,6 +148,19 @@ export class ScheduleManager {
       // Enable all block rules associated with this schedule
       for (const ruleId of schedule.blockRuleIds) {
         await this.blockRuleRepository.updateRule(ruleId, { enabled: true });
+      }
+
+      // Auto-start timer if configured and not already running
+      if (schedule.autoStartTimer && this.timerEngine) {
+        const status = await this.timerEngine.getStatus();
+
+        // Only auto-start if no timer is currently active
+        if (status.state === 'idle') {
+          // Calculate duration from schedule (use default work duration of 25 minutes)
+          const defaultDuration = 25;
+          await this.timerEngine.start('work', defaultDuration);
+          console.log(`[ScheduleManager] Auto-started timer for schedule: ${schedule.name}`);
+        }
       }
 
       // Send notification

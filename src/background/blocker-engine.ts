@@ -7,6 +7,7 @@
  */
 
 import { BlockRuleRepository } from '../services/block-rule-repository';
+import { SettingsRepository } from '../services/settings-repository';
 import { AnalyticsTracker } from './analytics-tracker';
 import { BlockRule } from '../types/index';
 
@@ -42,6 +43,7 @@ interface DomainAllowance {
  */
 export class BlockerEngine {
   private blockRuleRepository: BlockRuleRepository;
+  private settingsRepository: SettingsRepository;
   private analyticsTracker: AnalyticsTracker;
   private isBlocking: boolean = false;
 
@@ -49,14 +51,19 @@ export class BlockerEngine {
   private static readonly RULE_ID_START = 1000;
   private static readonly RULE_ID_MAX = 9999;
 
+  // Special rule ID for whitelist mode block-all rule
+  private static readonly WHITELIST_BLOCK_ALL_ID = 999;
+
   // Storage key for allowance tracking
   private static readonly ALLOWANCE_KEY = 'domain_allowances';
 
   constructor(
     blockRuleRepository?: BlockRuleRepository,
+    settingsRepository?: SettingsRepository,
     analyticsTracker?: AnalyticsTracker
   ) {
     this.blockRuleRepository = blockRuleRepository ?? new BlockRuleRepository();
+    this.settingsRepository = settingsRepository ?? new SettingsRepository();
     this.analyticsTracker = analyticsTracker ?? new AnalyticsTracker();
   }
 
@@ -69,11 +76,43 @@ export class BlockerEngine {
   async syncRules(): Promise<void> {
     try {
       const rules = await this.blockRuleRepository.getActiveRules();
+      const settings = await this.settingsRepository.getSettings();
+      const isWhitelistMode = settings.blockingMode === 'whitelist';
 
-      // Convert to declarativeNetRequest rules
-      const chromeRules = rules.map((rule, index) =>
-        this.convertToDeclarativeRule(rule, index)
-      );
+      let chromeRules: chrome.declarativeNetRequest.Rule[];
+
+      if (isWhitelistMode) {
+        // Whitelist mode: Block everything, then allow specific sites
+        chromeRules = [];
+
+        // Add block-all rule (lowest priority)
+        chromeRules.push({
+          id: BlockerEngine.WHITELIST_BLOCK_ALL_ID,
+          priority: 1,
+          action: {
+            type: 'redirect' as chrome.declarativeNetRequest.RuleActionType,
+            redirect: {
+              url: chrome.runtime?.getURL
+                ? chrome.runtime.getURL('/blocked.html?mode=whitelist')
+                : '/blocked.html?mode=whitelist',
+            },
+          },
+          condition: {
+            urlFilter: '*://*/*',
+            resourceTypes: ['main_frame' as chrome.declarativeNetRequest.ResourceType],
+          },
+        });
+
+        // Add allow rules for each site in the list (higher priority)
+        chromeRules.push(
+          ...rules.map((rule, index) => this.convertToWhitelistRule(rule, index))
+        );
+      } else {
+        // Blacklist mode: Block specific sites
+        chromeRules = rules.map((rule, index) =>
+          this.convertToDeclarativeRule(rule, index)
+        );
+      }
 
       // Update dynamic rules
       if (chrome?.declarativeNetRequest) {
@@ -86,7 +125,9 @@ export class BlockerEngine {
           addRules: chromeRules,
         });
 
-        console.info(`✅ Synced ${chromeRules.length} block rules`);
+        console.info(
+          `✅ Synced ${chromeRules.length} rules (mode: ${isWhitelistMode ? 'whitelist' : 'blacklist'})`
+        );
       }
     } catch (error) {
       // Re-throw BlockerErrors as-is
@@ -300,6 +341,55 @@ export class BlockerEngine {
   }
 
   /**
+   * Convert BlockRule to whitelist allow rule
+   *
+   * In whitelist mode, rules specify sites that should be ALLOWED.
+   * These rules have higher priority than the block-all rule.
+   *
+   * @param rule - Block rule to convert
+   * @param index - Index for rule ID generation
+   * @returns Chrome declarative allow rule
+   * @private
+   */
+  private convertToWhitelistRule(
+    rule: BlockRule,
+    index: number
+  ): chrome.declarativeNetRequest.Rule {
+    const ruleId = BlockerEngine.RULE_ID_START + index;
+
+    if (ruleId > BlockerEngine.RULE_ID_MAX) {
+      throw new BlockerError(
+        `Exceeded maximum number of rules (${BlockerEngine.RULE_ID_MAX - BlockerEngine.RULE_ID_START})`
+      );
+    }
+
+    // Determine URL filter based on rule type
+    let urlFilter: string;
+    if (rule.type === 'domain') {
+      urlFilter = `*://*.${rule.pattern}/*`;
+    } else if (rule.type === 'url') {
+      urlFilter = rule.pattern;
+    } else {
+      // Keyword type - use pattern directly
+      urlFilter = rule.pattern;
+    }
+
+    return {
+      id: ruleId,
+      priority: 2, // Higher priority than block-all rule (which is priority 1)
+      action: {
+        type: 'allow' as chrome.declarativeNetRequest.RuleActionType,
+      },
+      condition: {
+        urlFilter,
+        resourceTypes: [
+          'main_frame' as chrome.declarativeNetRequest.ResourceType,
+        ],
+      },
+    };
+  }
+
+  /**
    * Get allowances from storage
    *
    * @returns Array of domain allowances
@@ -355,5 +445,220 @@ export class BlockerEngine {
       isBlocking: this.isBlocking,
       allowances: allowanceStats,
     };
+  }
+
+  /**
+   * Grant temporary access to a domain using allowance
+   *
+   * @param domain - Domain to grant access to
+   * @param durationMinutes - Duration in minutes (max: remaining allowance)
+   * @returns Object with success status and expiration time
+   */
+  async grantTemporaryAccess(
+    domain: string,
+    durationMinutes: number
+  ): Promise<{
+    success: boolean;
+    expiresAt?: Date;
+    remaining?: number;
+    error?: string;
+  }> {
+    // Check if domain has allowance available
+    const allowanceCheck = await this.checkAllowance(domain);
+
+    if (!allowanceCheck.allowed || allowanceCheck.remaining <= 0) {
+      return {
+        success: false,
+        error: 'No allowance remaining for this domain',
+      };
+    }
+
+    // Cap duration to available allowance
+    const grantedMinutes = Math.min(durationMinutes, allowanceCheck.remaining);
+
+    // Remove the rule temporarily by syncing without this domain
+    const rules = await this.blockRuleRepository.getActiveRules();
+    const filteredRules = rules.filter(r => r.pattern !== domain);
+
+    // Convert to declarativeNetRequest rules
+    const chromeRules = filteredRules.map((rule, index) =>
+      this.convertToDeclarativeRule(rule, index)
+    );
+
+    // Update dynamic rules (temporarily remove this domain)
+    if (chrome?.declarativeNetRequest) {
+      const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
+      const ruleIdsToRemove = existingRules.map(r => r.id);
+
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: ruleIdsToRemove,
+        addRules: chromeRules,
+      });
+    }
+
+    // Calculate expiration
+    const expiresAt = new Date(Date.now() + grantedMinutes * 60 * 1000);
+
+    // Set up re-block alarm
+    if (chrome?.alarms) {
+      const alarmName = `reblock-${domain}`;
+      await chrome.alarms.create(alarmName, {
+        when: expiresAt.getTime(),
+      });
+
+      // Store temporary access info
+      await this.saveTemporaryAccess({
+        domain,
+        startTime: new Date(),
+        expiresAt,
+        grantedMinutes,
+      });
+    }
+
+    console.info(
+      `✅ Granted ${grantedMinutes}min temporary access to ${domain}`
+    );
+
+    return {
+      success: true,
+      expiresAt,
+      remaining: allowanceCheck.remaining - grantedMinutes,
+    };
+  }
+
+  /**
+   * Handle re-blocking when temporary access expires
+   *
+   * @param domain - Domain to re-block
+   */
+  async handleTemporaryAccessExpired(domain: string): Promise<void> {
+    // Get temporary access info
+    const tempAccess = await this.getTemporaryAccess(domain);
+
+    if (!tempAccess) {
+      return; // No temp access for this domain
+    }
+
+    // Calculate actual time used
+    const startTime = new Date(tempAccess.startTime);
+    const now = new Date();
+    const actualMinutes = Math.ceil((now.getTime() - startTime.getTime()) / (60 * 1000));
+
+    // Track the time used
+    await this.trackTimeUsed(domain, actualMinutes * 60);
+
+    // Remove temporary access record
+    await this.removeTemporaryAccess(domain);
+
+    // Re-sync rules to re-enable blocking for this domain
+    await this.syncRules();
+
+    console.info(`🚫 Re-blocked ${domain} after ${actualMinutes}min of access`);
+  }
+
+  /**
+   * Get active temporary access for a domain
+   *
+   * @param domain - Domain to check
+   * @returns Temporary access info if active
+   */
+  async getActiveTemporaryAccess(domain: string): Promise<{
+    domain: string;
+    expiresAt: Date;
+    remainingSeconds: number;
+  } | null> {
+    const tempAccess = await this.getTemporaryAccess(domain);
+
+    if (!tempAccess) {
+      return null;
+    }
+
+    const expiresAt = new Date(tempAccess.expiresAt);
+    const now = new Date();
+    const remainingSeconds = Math.max(
+      0,
+      Math.floor((expiresAt.getTime() - now.getTime()) / 1000)
+    );
+
+    if (remainingSeconds <= 0) {
+      // Expired - clean up
+      await this.removeTemporaryAccess(domain);
+      return null;
+    }
+
+    return {
+      domain,
+      expiresAt,
+      remainingSeconds,
+    };
+  }
+
+  // Storage key for temporary access tracking
+  private static readonly TEMP_ACCESS_KEY = 'temporary_access';
+
+  /**
+   * Save temporary access info
+   * @private
+   */
+  private async saveTemporaryAccess(info: {
+    domain: string;
+    startTime: Date;
+    expiresAt: Date;
+    grantedMinutes: number;
+  }): Promise<void> {
+    if (chrome?.storage) {
+      const result = await chrome.storage.local.get(
+        BlockerEngine.TEMP_ACCESS_KEY
+      );
+      const tempAccesses = result[BlockerEngine.TEMP_ACCESS_KEY] ?? {};
+
+      tempAccesses[info.domain] = {
+        startTime: info.startTime.toISOString(),
+        expiresAt: info.expiresAt.toISOString(),
+        grantedMinutes: info.grantedMinutes,
+      };
+
+      await chrome.storage.local.set({
+        [BlockerEngine.TEMP_ACCESS_KEY]: tempAccesses,
+      });
+    }
+  }
+
+  /**
+   * Get temporary access info for domain
+   * @private
+   */
+  private async getTemporaryAccess(domain: string): Promise<{
+    startTime: string;
+    expiresAt: string;
+    grantedMinutes: number;
+  } | null> {
+    if (chrome?.storage) {
+      const result = await chrome.storage.local.get(
+        BlockerEngine.TEMP_ACCESS_KEY
+      );
+      const tempAccesses = result[BlockerEngine.TEMP_ACCESS_KEY] ?? {};
+      return tempAccesses[domain] ?? null;
+    }
+    return null;
+  }
+
+  /**
+   * Remove temporary access info for domain
+   * @private
+   */
+  private async removeTemporaryAccess(domain: string): Promise<void> {
+    if (chrome?.storage) {
+      const result = await chrome.storage.local.get(
+        BlockerEngine.TEMP_ACCESS_KEY
+      );
+      const tempAccesses = result[BlockerEngine.TEMP_ACCESS_KEY] ?? {};
+
+      delete tempAccesses[domain];
+
+      await chrome.storage.local.set({
+        [BlockerEngine.TEMP_ACCESS_KEY]: tempAccesses,
+      });
+    }
   }
 }

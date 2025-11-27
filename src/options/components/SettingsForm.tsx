@@ -33,6 +33,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
   const [autoStartNextSession, setAutoStartNextSession] = useState(settings.autoStartNextSession);
   const [enableSounds, setEnableSounds] = useState(settings.enableSounds);
   const [enableNotifications, setEnableNotifications] = useState(settings.enableNotifications);
+  const [blockingMode, setBlockingMode] = useState(settings.blockingMode || 'blacklist');
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -47,6 +48,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
     setAutoStartNextSession(settings.autoStartNextSession);
     setEnableSounds(settings.enableSounds);
     setEnableNotifications(settings.enableNotifications);
+    setBlockingMode(settings.blockingMode || 'blacklist');
   }, [settings]);
 
   /**
@@ -96,6 +98,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
         autoStartNextSession,
         enableSounds,
         enableNotifications,
+        blockingMode,
       });
 
       setSaveSuccess(true);
@@ -227,7 +230,57 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
         </div>
       </section>
 
+      {/* Blocking Mode */}
+      <section>
+        <h3 className="text-md font-semibold text-text-primary mb-2">
+          Blocking Mode
+        </h3>
+        <p className="text-sm text-text-tertiary mb-4">
+          Choose how site blocking works during focus sessions
+        </p>
 
+        <div className="space-y-3">
+          <label className="flex items-start space-x-3 cursor-pointer p-3 bg-bg-tertiary rounded-lg hover:bg-bg-secondary transition-colors border border-border-light">
+            <input
+              type="radio"
+              name="blockingMode"
+              value="blacklist"
+              checked={blockingMode === 'blacklist'}
+              onChange={() => setBlockingMode('blacklist')}
+              disabled={disabled || isSaving}
+              className="mt-1 w-4 h-4 text-accent border-border focus:ring-2 focus:ring-accent focus:ring-offset-2"
+            />
+            <div className="flex-1">
+              <div className="text-sm font-medium text-text-primary">
+                Blacklist Mode (Default)
+              </div>
+              <div className="text-xs text-text-tertiary mt-0.5">
+                Block specific sites you add to your block list. All other sites remain accessible.
+              </div>
+            </div>
+          </label>
+
+          <label className="flex items-start space-x-3 cursor-pointer p-3 bg-bg-tertiary rounded-lg hover:bg-bg-secondary transition-colors border border-border-light">
+            <input
+              type="radio"
+              name="blockingMode"
+              value="whitelist"
+              checked={blockingMode === 'whitelist'}
+              onChange={() => setBlockingMode('whitelist')}
+              disabled={disabled || isSaving}
+              className="mt-1 w-4 h-4 text-accent border-border focus:ring-2 focus:ring-accent focus:ring-offset-2"
+            />
+            <div className="flex-1">
+              <div className="text-sm font-medium text-text-primary">
+                Whitelist Mode (Ultra Focus)
+              </div>
+              <div className="text-xs text-text-tertiary mt-0.5">
+                Block ALL sites except those you add to your allow list. Maximum focus mode.
+              </div>
+            </div>
+          </label>
+        </div>
+      </section>
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-border-light">

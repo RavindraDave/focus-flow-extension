@@ -21,68 +21,11 @@ import { TimerMessageHandler } from './handlers/timer-handler';
 import { BlockListMessageHandler } from './handlers/blocklist-handler';
 import { ScheduleMessageHandler } from './handlers/schedule-handler';
 import type { BackgroundMessage, BackgroundResponse } from './message-types';
-import { z } from 'zod';
 
 /**
- * Message validation schemas for type safety and security
+ * Note: Message validation schemas are defined but not currently used.
+ * They can be enabled in the future for additional runtime validation.
  */
-const MessageSchemas = {
-  TIMER_START: z.object({
-    type: z.literal('TIMER_START'),
-    sessionType: z.enum(['work', 'short-break', 'long-break']),
-    taskName: z.string().optional(),
-  }),
-
-  NUCLEAR_MODE_ACTIVATE: z.object({
-    type: z.literal('NUCLEAR_MODE_ACTIVATE'),
-    durationHours: z.number().int().min(1).max(8),
-  }),
-
-  SETTINGS_UPDATE: z.object({
-    type: z.literal('SETTINGS_UPDATE'),
-    settings: z.record(z.unknown()),
-  }),
-
-  BLOCK_RULE_ADD: z.object({
-    type: z.literal('BLOCK_RULE_ADD'),
-    rule: z.object({
-      id: z.string(),
-      pattern: z.string().min(1),
-      type: z.enum(['domain', 'url', 'keyword']),
-      enabled: z.boolean(),
-      category: z.string().optional(),
-      createdAt: z.union([z.string(), z.date()]),
-      updatedAt: z.union([z.string(), z.date()]),
-    }),
-  }),
-
-  BLOCK_RULE_UPDATE: z.object({
-    type: z.literal('BLOCK_RULE_UPDATE'),
-    id: z.string(),
-    updates: z.record(z.unknown()),
-  }),
-
-  BLOCK_RULE_DELETE: z.object({
-    type: z.literal('BLOCK_RULE_DELETE'),
-    id: z.string(),
-  }),
-};
-
-/**
- * Validate message against schema
- *
- * @param message - Message to validate
- * @param schema - Zod schema to validate against
- * @returns Validated message or null if invalid
- */
-function validateMessage<T>(message: unknown, schema: z.ZodType<T>): T | null {
-  const result = schema.safeParse(message);
-  if (result.success) {
-    return result.data;
-  }
-  console.warn('Message validation failed:', result.error.format());
-  return null;
-}
 
 /**
  * Error class for background service worker errors
@@ -134,7 +77,10 @@ class BackgroundServiceWorker {
     this.scheduleRepository = new ScheduleRepository();
 
     // Initialize engines
-    this.blockerEngine = new BlockerEngine(this.blockRuleRepository);
+    this.blockerEngine = new BlockerEngine(
+      this.blockRuleRepository,
+      this.settingsRepository
+    );
     this.streakTracker = new StreakTracker(
       this.analyticsRepository,
       this.sessionRepository
@@ -144,16 +90,18 @@ class BackgroundServiceWorker {
       this.sessionRepository
     );
     this.nuclearModeManager = new NuclearModeManager(this.settingsRepository);
-    this.scheduleManager = new ScheduleManager(
-      this.scheduleRepository,
-      this.blockRuleRepository
-    );
     this.timerEngine = new TimerEngine(
       this.sessionRepository,
       this.analyticsTracker,
       this.streakTracker,
       this.settingsRepository,
       this.blockerEngine
+    );
+    // Initialize schedule manager after timer engine so it can auto-start timer
+    this.scheduleManager = new ScheduleManager(
+      this.scheduleRepository,
+      this.blockRuleRepository,
+      this.timerEngine
     );
 
     // Initialize message handlers
@@ -291,6 +239,8 @@ class BackgroundServiceWorker {
       case 'TIMER_STOP':
       case 'TIMER_GET_STATUS':
         return await this.timerHandler.handleControl(message);
+      default:
+        throw new BackgroundError(`Unknown timer message type: ${message.type}`);
     }
   }
 
@@ -306,6 +256,8 @@ class BackgroundServiceWorker {
           isActive: await this.nuclearModeManager.isActive(),
           remainingTime: await this.nuclearModeManager.getRemainingTime(),
         };
+      default:
+        throw new BackgroundError(`Unknown nuclear mode message type: ${message.type}`);
     }
   }
 
@@ -320,6 +272,8 @@ class BackgroundServiceWorker {
         return await this.analyticsTracker.getWeeklySummary();
       case 'ANALYTICS_GET_MONTHLY_SUMMARY':
         return await this.analyticsTracker.getMonthlySummary();
+      default:
+        throw new BackgroundError(`Unknown analytics message type: ${message.type}`);
     }
   }
 
@@ -334,6 +288,8 @@ class BackgroundServiceWorker {
           settings.premiumLicenseKey !== undefined
         );
       }
+      default:
+        throw new BackgroundError(`Unknown streak message type: ${message.type}`);
     }
   }
 
@@ -346,6 +302,17 @@ class BackgroundServiceWorker {
         return await this.blockerEngine.getStats();
       case 'BLOCKER_TRACK_ATTEMPT':
         return await this.blockerEngine.handleBlockedAttempt(message.domain);
+      case 'BLOCKER_CHECK_ALLOWANCE':
+        return await this.blockerEngine.checkAllowance(message.domain);
+      case 'BLOCKER_GRANT_ACCESS':
+        return await this.blockerEngine.grantTemporaryAccess(
+          message.domain,
+          message.durationMinutes
+        );
+      case 'BLOCKER_GET_TEMP_ACCESS':
+        return await this.blockerEngine.getActiveTemporaryAccess(message.domain);
+      default:
+        throw new BackgroundError(`Unknown blocker message type: ${message.type}`);
     }
   }
 
@@ -360,6 +327,8 @@ class BackgroundServiceWorker {
         return await this.blockListHandler.handleUpdate(message);
       case 'BLOCKLIST_DELETE':
         return await this.blockListHandler.handleDelete(message);
+      default:
+        throw new BackgroundError(`Unknown blocklist message type: ${message.type}`);
     }
   }
 
@@ -370,6 +339,8 @@ class BackgroundServiceWorker {
         return await this.sessionRepository.getSessionHistory(message.limit);
       case 'SESSION_GET_TODAY':
         return await this.sessionRepository.getTodaySessions();
+      default:
+        throw new BackgroundError(`Unknown session message type: ${message.type}`);
     }
   }
 
@@ -380,6 +351,8 @@ class BackgroundServiceWorker {
         return await this.settingsRepository.getSettings();
       case 'SETTINGS_UPDATE':
         return await this.settingsRepository.updateSettings(message.updates);
+      default:
+        throw new BackgroundError(`Unknown settings message type: ${message.type}`);
     }
   }
 
@@ -395,6 +368,8 @@ class BackgroundServiceWorker {
         return await this.scheduleHandler.handleUpdate(message);
       case 'SCHEDULE_DELETE':
         return await this.scheduleHandler.handleDelete(message);
+      default:
+        throw new BackgroundError(`Unknown schedule message type: ${message.type}`);
     }
   }
 
@@ -434,6 +409,13 @@ class BackgroundServiceWorker {
             break;
 
           default:
+            // Handle re-block alarms for temporary access expiry
+            if (alarm.name.startsWith('reblock-')) {
+              const domain = alarm.name.replace('reblock-', '');
+              await this.blockerEngine.handleTemporaryAccessExpired(domain);
+              break;
+            }
+
             // Delegate to schedule manager for schedule-related alarms
             await this.scheduleManager.handleAlarm(alarm);
         }
