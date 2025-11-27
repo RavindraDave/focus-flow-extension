@@ -10,6 +10,9 @@ export { ScheduleList } from './ScheduleList';
 export { ScheduleForm } from './ScheduleForm';
 export { YouTubeSettings } from './YouTubeSettings';
 export { SuggestedSites } from './SuggestedSites';
+export { VirtualGarden } from './VirtualGarden';
+export { FocusMainframe } from './FocusMainframe';
+export { ProductivityHeatmap } from './ProductivityHeatmap';
 
 export type { SettingsFormProps } from './SettingsForm';
 export type { BlockRuleFormProps } from './BlockRuleForm';
