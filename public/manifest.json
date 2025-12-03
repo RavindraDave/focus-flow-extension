@@ -4,18 +4,18 @@
   "version": "1.0.0",
   "description": "Productivity and website blocking extension with Pomodoro timer",
   "icons": {
-    "16": "icons/icon_v7_16.png",
-    "32": "icons/icon_v7_32.png",
-    "48": "icons/icon_v7_48.png",
-    "128": "icons/icon_v7_128.png"
+    "16": "icons/icon_v10_16.png",
+    "32": "icons/icon_v10_32.png",
+    "48": "icons/icon_v10_48.png",
+    "128": "icons/icon_v10_128.png"
   },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icons/icon_v7_16.png",
-      "32": "icons/icon_v7_32.png",
-      "48": "icons/icon_v7_48.png",
-      "128": "icons/icon_v7_128.png"
+      "16": "icons/icon_v10_16.png",
+      "32": "icons/icon_v10_32.png",
+      "48": "icons/icon_v10_48.png",
+      "128": "icons/icon_v10_128.png"
     }
   },
   "background": {

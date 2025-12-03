@@ -497,7 +497,7 @@ class BackgroundServiceWorker {
           // Show welcome notification
           await chrome.notifications.create({
             type: 'basic',
-            iconUrl: chrome.runtime.getURL('/icons/icon_v7_128.png'),
+            iconUrl: chrome.runtime.getURL('/icons/icon_v10_128.png'),
             title: 'Focus Flow Installed!',
             message: 'Welcome! Let\'s get you started with Focus Flow.',
           });
