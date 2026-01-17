@@ -62,9 +62,11 @@ export class SettingsRepository {
 
     // Check if nuclear mode is active
     if (currentSettings.nuclearMode.active) {
-      // Cannot modify certain settings during nuclear mode
+      // Cannot modify certain settings during nuclear mode to prevent circumvention
       const protectedKeys: Array<keyof UserSettings> = [
-        'nuclearMode',
+        'nuclearMode',          // Core protection - cannot deactivate early
+        'autoStartNextSession', // Prevents skipping enforced work/break cycles
+        'youtubeControls',      // Prevents changing blocking behavior
       ];
 
       const isModifyingProtected = protectedKeys.some(
@@ -73,7 +75,7 @@ export class SettingsRepository {
 
       if (isModifyingProtected) {
         throw new StorageError(
-          'Cannot modify nuclear mode settings while it is active',
+          'Cannot modify protected settings while nuclear mode is active. Settings locked: nuclearMode, autoStartNextSession, youtubeControls',
           'VALIDATION_FAILED' as any
         );
       }

@@ -50,6 +50,7 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onClose, i
   const [endTime, setEndTime] = useState('17:00');
   const [daysOfWeek, setDaysOfWeek] = useState<DayOfWeek[]>([]);
   const [blockRuleIds, setBlockRuleIds] = useState<string[]>([]);
+  const [autoStartTimer, setAutoStartTimer] = useState(false);
   const [exceptions, setExceptions] = useState<Date[]>([]);
 
   // UI state
@@ -67,6 +68,7 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onClose, i
       setEndTime(schedule.endTime);
       setDaysOfWeek(schedule.daysOfWeek);
       setBlockRuleIds(schedule.blockRuleIds);
+      setAutoStartTimer(schedule.autoStartTimer ?? false);
       setExceptions(schedule.exceptions);
     }
   }, [schedule]);
@@ -125,6 +127,7 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onClose, i
         startTime,
         endTime,
         blockRuleIds,
+        autoStartTimer,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         exceptions,
       };
@@ -347,6 +350,26 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onClose, i
             {validationErrors.blockRuleIds && (
               <p className="text-sm text-error-600 mt-1">{validationErrors.blockRuleIds}</p>
             )}
+          </div>
+
+          {/* Auto-Start Timer */}
+          <div>
+            <label className="flex items-center space-x-2 cursor-pointer p-3 bg-neutral-50 rounded-md hover:bg-neutral-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={autoStartTimer}
+                onChange={e => setAutoStartTimer(e.target.checked)}
+                className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
+              />
+              <div>
+                <span className="text-sm font-medium text-neutral-900">
+                  Auto-start timer when schedule activates
+                </span>
+                <p className="text-xs text-neutral-600 mt-0.5">
+                  Automatically start a work session when this schedule begins
+                </p>
+              </div>
+            </label>
           </div>
 
           {/* Submit Error */}

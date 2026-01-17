@@ -106,6 +106,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   autoStartNextSession: false,
   enableSounds: true,
   enableNotifications: true,
+  blockingMode: 'blacklist',
 
   // Appearance
   theme: 'system',

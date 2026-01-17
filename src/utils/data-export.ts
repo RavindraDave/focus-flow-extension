@@ -30,7 +30,7 @@ function formatDuration(seconds: number): string {
  * Complexity: 3 (multiple escape rules)
  */
 function escapeCSVField(field: string | number | undefined): string {
-  if (field === undefined || field === null) return '';
+  if (field === undefined || field === null) {return '';}
 
   const str = String(field);
 

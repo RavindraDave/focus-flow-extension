@@ -74,11 +74,11 @@ export class TimerEngine {
     settingsRepository?: SettingsRepository,
     blockerEngine?: BlockerEngine
   ) {
-    this.sessionRepository = sessionRepository || new SessionRepository();
-    this.analyticsTracker = analyticsTracker || new AnalyticsTracker();
-    this.streakTracker = streakTracker || new StreakTracker();
-    this.settingsRepository = settingsRepository || new SettingsRepository();
-    this.blockerEngine = blockerEngine || new BlockerEngine();
+    this.sessionRepository = sessionRepository ?? new SessionRepository();
+    this.analyticsTracker = analyticsTracker ?? new AnalyticsTracker();
+    this.streakTracker = streakTracker ?? new StreakTracker();
+    this.settingsRepository = settingsRepository ?? new SettingsRepository();
+    this.blockerEngine = blockerEngine ?? new BlockerEngine();
   }
 
   /**
@@ -109,7 +109,7 @@ export class TimerEngine {
       duration: minutes * 60, // Convert minutes to seconds for schema validation
       startTime: this.startTime.toISOString() as unknown as Date, // Schema expects ISO string, transforms to Date
       endTime: undefined,
-      taskName: taskName || 'Focus Session',
+      taskName: taskName ?? 'Focus Session',
       category: 'general',
       status: 'active',
       actualDuration: undefined,
@@ -199,12 +199,16 @@ export class TimerEngine {
         (endTime.getTime() - session.startTime.getTime()) / 1000
       );
 
+      // Clamp actualDuration to max allowed value to prevent validation errors
+      // This handles edge cases where sessions run abnormally long
+      const clampedDuration = Math.min(elapsed, 7200); // Max 2 hours
+
       const completedSession: PomodoroSession = {
         ...session,
         startTime: (session.startTime instanceof Date ? session.startTime.toISOString() : session.startTime) as unknown as Date,
         status: 'abandoned',
         endTime: endTime.toISOString() as unknown as Date,
-        actualDuration: elapsed, // in seconds
+        actualDuration: clampedDuration, // in seconds, clamped to prevent validation errors
       };
 
       await this.sessionRepository.addToHistory(completedSession);
@@ -251,16 +255,20 @@ export class TimerEngine {
     }
 
     const endTime = new Date();
-    const actualDuration = Math.floor(
+    const elapsed = Math.floor(
       (endTime.getTime() - session.startTime.getTime()) / 1000
     );
+
+    // Clamp actualDuration to max allowed value to prevent validation errors
+    // This handles edge cases where sessions run abnormally long
+    const actualDuration = Math.min(elapsed, 7200); // Max 2 hours
 
     const completedSession: PomodoroSession = {
       ...session,
       startTime: (session.startTime instanceof Date ? session.startTime.toISOString() : session.startTime) as unknown as Date,
       status: 'completed',
       endTime: endTime.toISOString() as unknown as Date,
-      actualDuration, // in seconds
+      actualDuration, // in seconds, clamped to prevent validation errors
     };
 
     // Save to history
@@ -353,7 +361,7 @@ export class TimerEngine {
    * @private
    */
   private async createAlarm(): Promise<void> {
-    if (typeof chrome !== 'undefined' && chrome.alarms) {
+    if (chrome?.alarms) {
       await chrome.alarms.create(TimerEngine.ALARM_NAME, {
         periodInMinutes: 1 / 60, // Every second (minimum is 1/60 = 1 second)
       });
@@ -366,7 +374,7 @@ export class TimerEngine {
    * @private
    */
   private async clearAlarm(): Promise<void> {
-    if (typeof chrome !== 'undefined' && chrome.alarms) {
+    if (chrome?.alarms) {
       await chrome.alarms.clear(TimerEngine.ALARM_NAME);
     }
   }
@@ -377,7 +385,7 @@ export class TimerEngine {
    * @private
    */
   private async updateBadge(): Promise<void> {
-    if (typeof chrome !== 'undefined' && chrome.action) {
+    if (chrome?.action) {
       if (this.state === 'idle') {
         await chrome.action.setBadgeText({ text: '' });
         return;
@@ -411,7 +419,7 @@ export class TimerEngine {
       return;
     }
 
-    if (typeof chrome !== 'undefined' && chrome.notifications) {
+    if (chrome?.notifications) {
       const title =
         completedType === 'work'
           ? '✅ Work Session Complete!'

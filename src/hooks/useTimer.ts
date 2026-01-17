@@ -78,18 +78,32 @@ export function useTimer(): UseTimerReturn {
   }, []);
 
   /**
-   * Poll timer status every second when active
-   * Complexity: 2 (conditional + cleanup)
+   * Poll timer status every second when active and tab is visible
+   * Uses Page Visibility API to reduce CPU usage when tab is hidden
    */
   useEffect(() => {
     fetchStatus();
 
-    // Poll every second if timer is active
+    // Track document visibility
+    const handleVisibilityChange = (): void => {
+      if (!document.hidden) {
+        fetchStatus();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Poll every second only if tab is visible
     const interval = setInterval(() => {
-      fetchStatus();
+      if (!document.hidden) {
+        fetchStatus();
+      }
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [fetchStatus]);
 
   /**

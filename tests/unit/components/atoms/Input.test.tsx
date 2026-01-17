@@ -103,10 +103,10 @@ describe('Input', () => {
       const user = userEvent.setup();
 
       render(<Input />);
-      const input = screen.getByRole('textbox') as HTMLInputElement;
+      const input = screen.getByRole('textbox');
 
       await user.type(input, 'Hello World');
-      expect(input.value).toBe('Hello World');
+      expect((input as HTMLInputElement).value).toBe('Hello World');
     });
 
     it('should call onFocus when focused', async () => {
@@ -308,10 +308,10 @@ describe('Input', () => {
       const user = userEvent.setup();
       render(<TestComponent />);
 
-      const input = screen.getByRole('textbox') as HTMLInputElement;
+      const input = screen.getByRole('textbox');
       await user.type(input, 'controlled');
 
-      expect(input.value).toBe('controlled');
+      expect((input as HTMLInputElement).value).toBe('controlled');
     });
   });
 });

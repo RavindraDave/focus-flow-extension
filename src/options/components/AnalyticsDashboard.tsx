@@ -24,13 +24,13 @@ import type { PomodoroSession, DailyStats } from '../../types';
  * Complexity: 3 (calculation + conditional formatting)
  */
 function formatDuration(minutes: number): string {
-  if (minutes === 0) return '0min';
-  if (minutes < 60) return `${minutes}min`;
+  if (minutes === 0) {return '0min';}
+  if (minutes < 60) {return `${minutes}min`;}
 
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
 
-  if (mins === 0) return `${hours}h`;
+  if (mins === 0) {return `${hours}h`;}
   return `${hours}h ${mins}min`;
 }
 
@@ -166,7 +166,7 @@ export const AnalyticsDashboard: React.FC = () => {
    * Complexity: 4 (async + error handling + state updates)
    */
   const handleExportCSV = async (): Promise<void> => {
-    if (isExporting || sessions.length === 0) return;
+    if (isExporting || sessions.length === 0) {return;}
 
     try {
       setIsExporting(true);
@@ -184,7 +184,7 @@ export const AnalyticsDashboard: React.FC = () => {
    * Complexity: 4 (async + error handling + state updates)
    */
   const handleExportJSON = async (): Promise<void> => {
-    if (isExporting || !analyticsData) return;
+    if (isExporting || !analyticsData) {return;}
 
     try {
       setIsExporting(true);

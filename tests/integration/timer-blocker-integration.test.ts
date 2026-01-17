@@ -143,7 +143,7 @@ describe('Timer + Blocker Integration', () => {
     }
 
     // Create engines with real dependencies
-    blocker = new BlockerEngine(blockRuleRepo, analyticsTracker);
+    blocker = new BlockerEngine(blockRuleRepo, settingsRepo, analyticsTracker);
     timer = new TimerEngine(
       sessionRepo,
       analyticsTracker,

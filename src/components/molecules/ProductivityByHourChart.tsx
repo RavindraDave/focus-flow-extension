@@ -27,9 +27,9 @@ export interface ProductivityByHourChartProps {
  * Complexity: 3 (calculation + formatting)
  */
 function formatHour(hour: number): string {
-  if (hour === 0) return '12 AM';
-  if (hour === 12) return '12 PM';
-  if (hour < 12) return `${hour} AM`;
+  if (hour === 0) {return '12 AM';}
+  if (hour === 12) {return '12 PM';}
+  if (hour < 12) {return `${hour} AM`;}
   return `${hour - 12} PM`;
 }
 
@@ -38,12 +38,12 @@ function formatHour(hour: number): string {
  * Complexity: 3 (conditional logic)
  */
 function getBarColor(sessionCount: number, maxSessions: number): string {
-  if (sessionCount === 0) return chartColors.neutral.light;
-  if (maxSessions === 0) return chartColors.primary.main;
+  if (sessionCount === 0) {return chartColors.neutral.light;}
+  if (maxSessions === 0) {return chartColors.primary.main;}
 
   const ratio = sessionCount / maxSessions;
-  if (ratio >= 0.7) return chartColors.success.main;
-  if (ratio >= 0.4) return chartColors.primary.main;
+  if (ratio >= 0.7) {return chartColors.success.main;}
+  if (ratio >= 0.4) {return chartColors.primary.main;}
   return chartColors.warning.main;
 }
 

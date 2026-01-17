@@ -34,8 +34,8 @@ export interface FocusTimeChartProps {
  * Complexity: 3 (calculation + conditional formatting)
  */
 function formatMinutesForTooltip(minutes: number): string {
-  if (minutes === 0) return '0 minutes';
-  if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+  if (minutes === 0) {return '0 minutes';}
+  if (minutes < 60) {return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;}
 
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;

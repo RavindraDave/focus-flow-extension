@@ -205,7 +205,7 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
    */
   const handleMathSubmit = (): void => {
     const currentProblem = mathProblems[currentMathIndex];
-    if (!currentProblem) return;
+    if (!currentProblem) {return;}
 
     const userAnswer = parseInt(mathAnswer, 10);
 
@@ -261,7 +261,7 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return (
     <div

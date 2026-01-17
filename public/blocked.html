@@ -201,6 +201,35 @@
       padding: 2rem;
     }
 
+    .use-allowance-btn {
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--accent-primary);
+      color: var(--bg-primary);
+      border: none;
+      border-radius: var(--radius-lg);
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      box-shadow: var(--shadow-md);
+    }
+
+    .use-allowance-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .use-allowance-btn:active {
+      transform: translateY(0);
+    }
+
+    .use-allowance-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     /* Cyber theme specific: scanline effect */
     [data-theme='cyber'] body::before {
       content: '';
@@ -283,6 +312,9 @@
           <p style="font-size: 0.875rem; margin-top: 0.5rem;" id="allowance-message">
             You've used your daily allowance for this site.
           </p>
+          <button id="use-allowance-btn" class="use-allowance-btn" style="display: none;">
+            Use Remaining Time
+          </button>
         </div>
       </div>
 
