@@ -654,36 +654,7 @@ const TimerTab: React.FC<{
           </div>
         </div>
 
-        {/* Installation Note */}
-        <div className="mt-4 p-4 bg-warning/10 border border-warning/20 rounded-lg">
-          <p className="text-sm text-text-primary mb-2">
-            <strong>⚠️ Sound Files Not Included:</strong> Due to licensing, sound files must be added manually.
-          </p>
-          <details className="text-sm text-text-secondary">
-            <summary className="cursor-pointer hover:text-text-primary font-medium mb-2">
-              📖 Click to view installation instructions
-            </summary>
-            <div className="mt-2 space-y-2 pl-4 border-l-2 border-warning/30">
-              <p><strong>Required Files:</strong></p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                <li><code className="bg-bg-secondary px-1 rounded">modern.mp3</code> - Clean professional ping</li>
-                <li><code className="bg-bg-secondary px-1 rounded">zen.mp3</code> - Calming singing bowl</li>
-                <li><code className="bg-bg-secondary px-1 rounded">cyber.mp3</code> - Futuristic synthetic beep</li>
-              </ul>
-              <p className="mt-3"><strong>Installation Steps:</strong></p>
-              <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>Find or create sound files (MP3 format, ~1-2 seconds each)</li>
-                <li>Navigate to extension folder: <code className="bg-bg-secondary px-1 rounded">chrome://extensions</code></li>
-                <li>Click "Details" on Focus Flow extension</li>
-                <li>Note the extension ID in the URL</li>
-                <li>Place files in: <code className="bg-bg-secondary px-1 rounded">public/assets/sounds/</code></li>
-              </ol>
-              <p className="mt-3 text-xs text-text-muted">
-                💡 Tip: You can use any royalty-free sound files or create your own
-              </p>
-            </div>
-          </details>
-        </div>
+
       </div>
 
       {/* Timer Configuration */}
