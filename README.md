@@ -21,9 +21,9 @@ A powerful Chrome Extension for productivity and focus management with Pomodoro 
 3. **Get started**:
    - The onboarding guide will automatically open
    - Click the Focus Flow icon in your toolbar to start your first Pomodoro session
-   - For detailed instructions, see the [Complete User Guide](USER_GUIDE.md)
+   - For detailed instructions, see the [Complete User Guide](docs/USER_GUIDE.md)
 
-**Need help?** Check out the [User Guide](USER_GUIDE.md) for comprehensive documentation.
+**Need help?** Check out the [User Guide](docs/USER_GUIDE.md) for comprehensive documentation.
 
 ## Table of Contents
 
