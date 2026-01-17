@@ -325,7 +325,7 @@ describe('OptionsLayout', () => {
         </OptionsLayout>
       );
 
-      const firstButton = screen.getByText('First') as HTMLButtonElement;
+      const firstButton = screen.getByText('First');
 
       await user.click(firstButton);
       expect(handleClick).toHaveBeenCalled();

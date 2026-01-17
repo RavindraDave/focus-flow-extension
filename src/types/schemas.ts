@@ -226,6 +226,7 @@ export const ScheduleSchema = z.object({
   startTime: TimeFormatSchema,
   endTime: TimeFormatSchema,
   blockRuleIds: z.array(UUIDSchema),
+  autoStartTimer: z.boolean().optional(),
   timezone: TimezoneSchema,
   exceptions: z.array(DateSchema).default([]),
   createdAt: DateSchema,
@@ -271,7 +272,7 @@ export const PomodoroSessionSchema = z.object({
   taskName: createSanitizedTextSchema(200).optional(),
   category: createSanitizedTextSchema(50).optional(),
   status: SessionStatusSchema,
-  actualDuration: z.number().int().min(0).max(3600).optional(),
+  actualDuration: z.number().int().min(0).max(7200).optional(), // Allow up to 2 hours for edge cases
 });
 
 /**
@@ -324,6 +325,7 @@ export const UserSettingsSchema = z.object({
   autoStartNextSession: z.boolean().default(false),
   enableSounds: z.boolean().default(true),
   enableNotifications: z.boolean().default(true),
+  blockingMode: z.enum(['blacklist', 'whitelist']).default('blacklist'),
   theme: z.enum(['light', 'dark', 'system']).default('system'),
   youtubeControls: YouTubeConfigSchema,
   nuclearMode: NuclearConfigSchema,

@@ -206,6 +206,7 @@ function showAllowanceInfo(rule) {
   const fill = document.getElementById('allowance-fill');
   const text = document.getElementById('allowance-text');
   const message = document.getElementById('allowance-message');
+  const btn = document.getElementById('use-allowance-btn');
 
   section.style.display = 'block';
 
@@ -218,9 +219,68 @@ function showAllowanceInfo(rule) {
 
   if (used >= total) {
     message.textContent = "You've used your daily allowance for this site. Come back tomorrow!";
+    btn.style.display = 'none';
   } else {
     const remaining = total - used;
     message.textContent = `You have ${remaining} minutes remaining today for this site.`;
+
+    // Show button to use allowance
+    btn.style.display = 'block';
+    btn.textContent = `Use ${remaining} Min${remaining === 1 ? '' : 's'}`;
+
+    // Set up click handler (remove previous listeners)
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener('click', async () => {
+      await handleUseAllowance(rule.pattern, remaining);
+    });
+  }
+}
+
+/**
+ * Handle use allowance button click
+ */
+async function handleUseAllowance(domain, durationMinutes) {
+  const btn = document.getElementById('use-allowance-btn');
+  const message = document.getElementById('allowance-message');
+
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Granting access...';
+
+    const response = await chrome.runtime.sendMessage({
+      type: 'BLOCKER_GRANT_ACCESS',
+      domain: domain,
+      durationMinutes: durationMinutes
+    });
+
+    if (response.success && response.data.success) {
+      message.textContent = `Access granted for ${durationMinutes} minute${durationMinutes === 1 ? '' : 's'}! Redirecting...`;
+
+      // Wait a moment then redirect
+      setTimeout(() => {
+        // Redirect to the original URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const originalUrl = urlParams.get('url');
+
+        if (originalUrl) {
+          window.location.href = originalUrl;
+        } else {
+          // If no URL param, try to construct from domain
+          window.location.href = `https://${domain}`;
+        }
+      }, 1000);
+    } else {
+      message.textContent = response.data.error || 'Failed to grant access. Please try again.';
+      btn.disabled = false;
+      btn.textContent = `Use ${durationMinutes} Min${durationMinutes === 1 ? '' : 's'}`;
+    }
+  } catch (error) {
+    console.error('Failed to grant access:', error);
+    message.textContent = 'Failed to grant access. Please try again.';
+    btn.disabled = false;
+    btn.textContent = `Use ${durationMinutes} Min${durationMinutes === 1 ? '' : 's'}`;
   }
 }
 

@@ -15,6 +15,9 @@ import {
   BlockRuleList,
   ScheduleList,
   SuggestedSites,
+  VirtualGarden,
+  FocusMainframe,
+  ProductivityHeatmap,
 } from './components';
 import { Spinner } from '../components/atoms/Spinner';
 
@@ -307,15 +310,15 @@ const DashboardTab: React.FC<{ settings: any; setActiveTab: (tab: Tab) => void }
   const formatFocusTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    if (hours === 0) return `${mins}m`;
+    if (hours === 0) {return `${mins}m`;}
     return `${hours}h ${mins}m`;
   };
 
   // Calculate focus score (simple formula based on pomodoros completed)
   const calculateFocusScore = (): number => {
-    if (!todayStats) return 0;
+    if (!todayStats) {return 0;}
     const total = todayStats.pomodorosCompleted + todayStats.pomodorosAbandoned;
-    if (total === 0) return 0;
+    if (total === 0) {return 0;}
     return Math.round((todayStats.pomodorosCompleted / total) * 100);
   };
 
@@ -805,47 +808,9 @@ const GamificationTab: React.FC<{ theme: string }> = ({ theme }) => {
       </div>
 
       <div className="bg-surface p-6 rounded-xl shadow-md border border-border">
-        {theme === 'modern' && (
-          <div>
-            <h3 className="text-xl font-bold text-text-primary mb-4">
-              📈 Streak Heatmap
-            </h3>
-            <p className="text-sm text-text-tertiary mb-4">
-              GitHub-style contribution graph showing your consistency
-            </p>
-            <div className="text-center py-12 text-text-muted">
-              Heatmap visualization coming soon...
-            </div>
-          </div>
-        )}
-
-        {theme === 'zen' && (
-          <div>
-            <h3 className="text-xl font-bold text-text-primary mb-4">
-              🌱 The Garden
-            </h3>
-            <p className="text-sm text-text-tertiary mb-4">
-              Every 25m session plants a tree. Breaking early withers it.
-            </p>
-            <div className="text-center py-12 text-text-muted">
-              Garden visualization coming soon...
-            </div>
-          </div>
-        )}
-
-        {theme === 'cyber' && (
-          <div>
-            <h3 className="text-xl font-bold text-text-primary mb-4">
-              💻 The Mainframe
-            </h3>
-            <p className="text-sm text-text-tertiary mb-4">
-              XP decrypts data nodes. Rank: Script Kiddie → 10x Engineer
-            </p>
-            <div className="text-center py-12 text-text-muted">
-              Mainframe visualization coming soon...
-            </div>
-          </div>
-        )}
+        {theme === 'modern' && <ProductivityHeatmap />}
+        {theme === 'zen' && <VirtualGarden />}
+        {theme === 'cyber' && <FocusMainframe />}
       </div>
     </div>
   );
@@ -911,7 +876,7 @@ const DataConfigTab: React.FC = () => {
 
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {return;}
 
     setIsImporting(true);
     try {

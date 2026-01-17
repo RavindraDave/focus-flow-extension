@@ -98,6 +98,11 @@ export interface Schedule {
   blockRuleIds: string[];
 
   /**
+   * Whether to automatically start a timer when schedule activates
+   */
+  autoStartTimer?: boolean;
+
+  /**
    * Timezone (IANA timezone identifier)
    */
   timezone: string;
@@ -262,6 +267,14 @@ export interface UserSettings {
    * @default true
    */
   enableNotifications: boolean;
+
+  /**
+   * Blocking mode
+   * blacklist: Block specified sites (default)
+   * whitelist: Allow only specified sites
+   * @default 'blacklist'
+   */
+  blockingMode: 'blacklist' | 'whitelist';
 
   /**
    * Whether dark mode is enabled

@@ -164,7 +164,11 @@ export function isSettingsUpdateMessage(
 /**
  * Message Sender Helper
  *
- * Type-safe wrapper for sending messages to background service worker.
+ * Type-safe wrapper for sending messages to background service worker with timeout.
+ *
+ * @param message - Message to send
+ * @param timeoutMs - Timeout in milliseconds (default: 5000ms)
+ * @returns Promise that resolves with response or rejects on timeout/error
  *
  * @example
  * ```typescript
@@ -175,17 +179,25 @@ export function isSettingsUpdateMessage(
  * ```
  */
 export async function sendBackgroundMessage<T = any>(
-  message: BackgroundMessage
+  message: BackgroundMessage,
+  timeoutMs = 5000
 ): Promise<BackgroundResponse<T>> {
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(message, (response: BackgroundResponse<T>) => {
-      if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError.message));
-      } else {
-        resolve(response);
-      }
-    });
-  });
+  return Promise.race([
+    // Actual message promise
+    new Promise<BackgroundResponse<T>>((resolve, reject) => {
+      chrome.runtime.sendMessage(message, (response: BackgroundResponse<T>) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(response);
+        }
+      });
+    }),
+    // Timeout promise
+    new Promise<BackgroundResponse<T>>((_, reject) =>
+      setTimeout(() => reject(new Error(`Message timeout after ${timeoutMs}ms: ${message.type}`)), timeoutMs)
+    )
+  ]);
 }
 
 /**
