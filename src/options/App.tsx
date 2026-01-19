@@ -18,10 +18,12 @@ import {
   VirtualGarden,
   FocusMainframe,
   ProductivityHeatmap,
+  UserGuide,
 } from './components';
 import { Spinner } from '../components/atoms/Spinner';
+import { IS_PREMIUM_COMING_SOON, FEATURE_FLAGS, SUPPORT_EMAIL } from '../utils/constants';
 
-type Tab = 'dashboard' | 'timer' | 'blocking' | 'integrations' | 'gamification' | 'data';
+type Tab = 'dashboard' | 'timer' | 'blocking' | 'integrations' | 'gamification' | 'data' | 'help';
 
 /**
  * Main Options App component with 6-tab navigation
@@ -153,21 +155,38 @@ const App: React.FC = () => {
             label="Data & Config"
             description="Export, import, and manage data"
           />
+          <NavItem
+            tab="help"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            label="Help & Guide"
+            description="Documentation & Tips"
+          />
         </nav>
 
         {/* Footer - Pro Plan Upsell */}
         <div className="p-4 border-t border-border">
           <div className="bg-accent/10 rounded-xl p-4 border border-accent/20">
-            <h4 className="text-sm font-bold text-accent mb-2">✨ Pro Plan</h4>
+            <h4 className="text-sm font-bold text-accent mb-2">
+              {IS_PREMIUM_COMING_SOON ? '✨ Pro Plan Coming Soon' : '✨ Pro Plan'}
+            </h4>
             <p className="text-xs text-text-tertiary mb-3">
-              Unlock unlimited schedules, advanced analytics, and cloud sync.
+              {IS_PREMIUM_COMING_SOON
+                ? 'Unlock unlimited schedules, advanced analytics, and cloud sync soon.'
+                : 'Unlock unlimited schedules, advanced analytics, and cloud sync.'
+              }
             </p>
-            <button className="w-full bg-accent hover:bg-accent-hover text-text-inverse text-xs font-medium py-2 rounded-lg transition">
-              Upgrade Now
-            </button>
+            {!IS_PREMIUM_COMING_SOON ? (
+              <button className="w-full bg-accent hover:bg-accent-hover text-text-inverse text-xs font-medium py-2 rounded-lg transition">
+                Upgrade Now
+              </button>
+            ) : (
+              <div className="text-xs text-accent font-medium text-center py-2 border border-accent/20 rounded-lg">
+                Stay Tuned!
+              </div>
+            )}
           </div>
           <button
-            onClick={() => window.open('mailto:your-email@example.com?subject=Focus%20Flow%20Feedback', '_blank')}
+            onClick={() => window.open(`mailto:${SUPPORT_EMAIL}?subject=Focus%20Flow%20Feedback`, '_blank')}
             className="text-xs text-text-tertiary hover:text-accent mt-3 w-full text-center transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded py-1"
             aria-label="Send feedback or report an issue"
           >
@@ -239,6 +258,9 @@ const App: React.FC = () => {
 
           {/* Data & Config Tab */}
           {activeTab === 'data' && <DataConfigTab />}
+
+          {/* User Guide Tab */}
+          {activeTab === 'help' && <UserGuide />}
         </div>
       </main>
     </div>
@@ -310,15 +332,15 @@ const DashboardTab: React.FC<{ settings: any; setActiveTab: (tab: Tab) => void }
   const formatFocusTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    if (hours === 0) {return `${mins}m`;}
+    if (hours === 0) { return `${mins}m`; }
     return `${hours}h ${mins}m`;
   };
 
   // Calculate focus score (simple formula based on pomodoros completed)
   const calculateFocusScore = (): number => {
-    if (!todayStats) {return 0;}
+    if (!todayStats) { return 0; }
     const total = todayStats.pomodorosCompleted + todayStats.pomodorosAbandoned;
-    if (total === 0) {return 0;}
+    if (total === 0) { return 0; }
     return Math.round((todayStats.pomodorosCompleted / total) * 100);
   };
 
@@ -406,71 +428,103 @@ const DashboardTab: React.FC<{ settings: any; setActiveTab: (tab: Tab) => void }
       <div className="bg-surface p-6 rounded-xl shadow-md border border-border mb-8">
         <h3 className="text-lg font-bold text-text-primary mb-4">Quick Toggles</h3>
         <div className="space-y-4">
-          {/* Nuclear Mode Toggle */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center text-error">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <div className="space-y-4">
+            {/* Nuclear Mode Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center text-error">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-text-primary text-sm">Nuclear Mode</h4>
+                    {!FEATURE_FLAGS.FREE.nuclearMode && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded">
+                        Premium
+                      </span>
+                    )}
+                  </div>
+                  {!FEATURE_FLAGS.FREE.nuclearMode && (
+                    <p className="text-xs text-text-tertiary mt-0.5">
+                      {IS_PREMIUM_COMING_SOON ? 'Coming Soon to Pro' : 'Upgrade to unlock'}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold text-text-primary text-sm">Nuclear Mode</h4>
-              </div>
+
+              {!FEATURE_FLAGS.FREE.nuclearMode ? (
+                <div className="relative group">
+                  <button
+                    disabled
+                    className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-neutral-200 cursor-not-allowed opacity-60"
+                    aria-label="Toggle Nuclear Mode (Locked)"
+                  >
+                    <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-1" />
+                  </button>
+                  {/* Tooltip */}
+                  <div className="absolute right-0 bottom-full mb-2 w-48 p-2 bg-neutral-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                    <p className="font-semibold mb-1">Premium Feature</p>
+                    <p>Nuclear Mode overrides all rules for absolute focus.</p>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleNuclearModeToggle}
+                  disabled={isLoading}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${nuclearMode ? 'bg-accent' : 'bg-bg-secondary'
+                    }`}
+                  aria-pressed={nuclearMode}
+                  aria-label="Toggle Nuclear Mode"
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${nuclearMode ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                  />
+                </button>
+              )}
             </div>
-            <button
-              onClick={handleNuclearModeToggle}
-              disabled={isLoading}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${nuclearMode ? 'bg-accent' : 'bg-bg-secondary'
-                }`}
-              aria-pressed={nuclearMode}
-              aria-label="Toggle Nuclear Mode"
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${nuclearMode ? 'translate-x-6' : 'translate-x-1'
+
+            {/* Strict Blocking Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-info/10 flex items-center justify-center text-info">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-text-primary text-sm">Strict Blocking</h4>
+                </div>
+              </div>
+              <button
+                onClick={handleStrictBlockingToggle}
+                disabled={isLoading}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${strictBlocking ? 'bg-accent' : 'bg-bg-secondary'
                   }`}
-              />
-            </button>
+                aria-pressed={strictBlocking}
+                aria-label="Toggle Strict Blocking"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${strictBlocking ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                />
+              </button>
+            </div>
           </div>
 
-          {/* Strict Blocking Toggle */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-info/10 flex items-center justify-center text-info">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-              </div>
-              <div>
-                <h4 className="font-semibold text-text-primary text-sm">Strict Blocking</h4>
-              </div>
-            </div>
+          <div className="mt-6 pt-6 border-t border-border">
             <button
-              onClick={handleStrictBlockingToggle}
-              disabled={isLoading}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${strictBlocking ? 'bg-accent' : 'bg-bg-secondary'
-                }`}
-              aria-pressed={strictBlocking}
-              aria-label="Toggle Strict Blocking"
+              onClick={() => setActiveTab('blocking')}
+              className="w-full py-2 px-4 border border-border rounded-lg text-sm font-medium text-text-secondary hover:bg-bg-secondary transition"
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${strictBlocking ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-              />
+              Manage Block List
             </button>
           </div>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-border">
-          <button
-            onClick={() => setActiveTab('blocking')}
-            className="w-full py-2 px-4 border border-border rounded-lg text-sm font-medium text-text-secondary hover:bg-bg-secondary transition"
-          >
-            Manage Block List
-          </button>
+        {/* Activity Chart Placeholder */}
+        <div className="bg-surface p-6 rounded-xl shadow-md border border-border">
+          <h3 className="text-lg font-bold text-text-primary mb-4">Activity (Last 7 Days)</h3>
+          <AnalyticsDashboard />
         </div>
-      </div>
-
-      {/* Activity Chart Placeholder */}
-      <div className="bg-surface p-6 rounded-xl shadow-md border border-border">
-        <h3 className="text-lg font-bold text-text-primary mb-4">Activity (Last 7 Days)</h3>
-        <AnalyticsDashboard />
       </div>
     </div>
   );
@@ -876,7 +930,7 @@ const DataConfigTab: React.FC = () => {
 
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) {return;}
+    if (!file) { return; }
 
     setIsImporting(true);
     try {

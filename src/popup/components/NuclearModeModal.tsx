@@ -6,11 +6,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../components/atoms/Button';
+import { IS_PREMIUM_COMING_SOON } from '../../utils/constants';
 
 export interface NuclearModeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onActivate: (durationHours: number) => Promise<void>;
+  isPremium: boolean;
 }
 
 type ChallengeStep = 'duration' | 'typing' | 'math' | 'cooldown' | 'confirm';
@@ -49,14 +51,11 @@ function generateMathProblem(): { question: string; answer: number } {
 
 const COMMITMENT_TEXT = `I commit to staying focused for the duration I have chosen. I understand that I cannot disable this mode until the timer expires. I will use this time productively and resist all distractions. This is my commitment to deep, meaningful work.`;
 
-/**
- * NuclearModeModal Component
- * Complexity: 10 (multiple steps + validation + state management)
- */
 export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
   isOpen,
   onClose,
   onActivate,
+  isPremium,
 }) => {
   // Step management
   const [currentStep, setCurrentStep] = useState<ChallengeStep>('duration');
@@ -126,7 +125,6 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
 
   /**
    * Handle duration selection
-   * Complexity: 2 (validation + step change)
    */
   const handleDurationNext = (): void => {
     if (durationHours < 1 || durationHours > 8) {
@@ -140,7 +138,6 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
 
   /**
    * Handle typing challenge
-   * Complexity: 5 (text comparison + word count + timing validation)
    */
   const handleTypingNext = (): void => {
     const trimmedText = typedText.trim();
@@ -177,7 +174,6 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
 
   /**
    * Calculate text similarity (simple Jaccard similarity)
-   * Complexity: 4 (set operations + calculation)
    */
   const calculateSimilarity = (text1: string, text2: string): number => {
     const words1 = new Set(text1.split(/\s+/));
@@ -191,7 +187,6 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
 
   /**
    * Handle paste detection
-   * Complexity: 2 (event handling + state update)
    */
   const handlePaste = (e: React.ClipboardEvent): void => {
     e.preventDefault();
@@ -201,11 +196,10 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
 
   /**
    * Handle math answer submission
-   * Complexity: 5 (validation + progression logic)
    */
   const handleMathSubmit = (): void => {
     const currentProblem = mathProblems[currentMathIndex];
-    if (!currentProblem) {return;}
+    if (!currentProblem) { return; }
 
     const userAnswer = parseInt(mathAnswer, 10);
 
@@ -246,7 +240,6 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
 
   /**
    * Handle final activation
-   * Complexity: 4 (async + error handling)
    */
   const handleActivate = async (): Promise<void> => {
     try {
@@ -261,7 +254,7 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
     }
   };
 
-  if (!isOpen) {return null;}
+  if (!isOpen) { return null; }
 
   return (
     <div
@@ -273,208 +266,259 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="border-b border-neutral-200 px-6 py-4">
-          <h2 id="nuclear-mode-title" className="text-xl font-bold text-neutral-900">
-            🚀 Nuclear Mode Activation
-          </h2>
-          <p className="text-sm text-neutral-600 mt-1">
-            Complete all challenges to activate unbreakable focus mode
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 id="nuclear-mode-title" className="text-xl font-bold text-neutral-900 flex items-center gap-2">
+                🚀 Nuclear Mode
+                {!isPremium && <span className="text-xs bg-accent text-white px-2 py-0.5 rounded-full">PREMIUM</span>}
+              </h2>
+              <p className="text-sm text-neutral-600 mt-1">
+                {isPremium ? 'Complete all challenges to activate unbreakable focus mode' : 'The ultimate distraction blocker'}
+              </p>
+            </div>
+            {!isPremium && (
+              <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+                <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Content */}
         <div className="px-6 py-6">
-          {/* Error message */}
-          {error && (
-            <div
-              role="alert"
-              className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-md text-sm mb-4"
-            >
-              {error}
-            </div>
-          )}
-
-          {/* Step 1: Duration Selection */}
-          {currentStep === 'duration' && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                  Step 1: Choose Duration
-                </h3>
-                <p className="text-sm text-neutral-600 mb-4">
-                  How long do you want to activate Nuclear Mode? You won't be able to disable it until the timer expires.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="duration-hours" className="block text-sm font-medium text-neutral-700">
-                  Duration (hours)
-                </label>
-                <input
-                  id="duration-hours"
-                  type="number"
-                  min="1"
-                  max="8"
-                  value={durationHours}
-                  onChange={(e) => setDurationHours(parseInt(e.target.value, 10) || 1)}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-                <p className="text-xs text-neutral-500">
-                  Choose between 1-8 hours. Recommended: 2-4 hours for deep work sessions.
-                </p>
-              </div>
-
-              <Button variant="primary" size="md" onClick={handleDurationNext} className="w-full">
-                Continue to Challenges
-              </Button>
-            </div>
-          )}
-
-          {/* Step 2: Typing Challenge */}
-          {currentStep === 'typing' && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                  Step 2: Commitment Challenge
-                </h3>
-                <p className="text-sm text-neutral-600 mb-4">
-                  Type the following commitment text to prove your dedication (no copy-paste):
-                </p>
-              </div>
-
-              <div className="bg-neutral-50 border border-neutral-200 rounded-md p-4 mb-4">
-                <p className="text-sm text-neutral-700 leading-relaxed">{COMMITMENT_TEXT}</p>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="commitment-text" className="block text-sm font-medium text-neutral-700">
-                  Type the commitment:
-                </label>
-                <textarea
-                  id="commitment-text"
-                  ref={typingInputRef}
-                  value={typedText}
-                  onChange={(e) => setTypedText(e.target.value)}
-                  onPaste={handlePaste}
-                  rows={6}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Start typing..."
-                />
-                <p className="text-xs text-neutral-500">
-                  Words typed: {typedText.trim().split(/\s+/).filter(w => w.length > 0).length} / 80 minimum
-                </p>
-              </div>
-
-              <div className="flex space-x-3">
-                <Button variant="secondary" size="md" onClick={() => setCurrentStep('duration')} className="flex-1">
-                  Back
-                </Button>
-                <Button variant="primary" size="md" onClick={handleTypingNext} className="flex-1">
-                  Continue
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Math Challenge */}
-          {currentStep === 'math' && mathProblems[currentMathIndex] && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                  Step 3: Focus Challenge
-                </h3>
-                <p className="text-sm text-neutral-600 mb-4">
-                  Solve {mathProblems.length} math problems to prove you're ready to focus (Problem {currentMathIndex + 1}/{mathProblems.length}):
-                </p>
-              </div>
-
-              <div className="bg-neutral-50 border border-neutral-200 rounded-md p-8 text-center">
-                <p className="text-4xl font-bold text-neutral-900 mb-6">
-                  {mathProblems[currentMathIndex]?.question} = ?
-                </p>
-                <input
-                  type="number"
-                  value={mathAnswer}
-                  onChange={(e) => setMathAnswer(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleMathSubmit()}
-                  className="w-32 px-4 py-2 text-center text-2xl border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="?"
-                  autoFocus
-                />
-              </div>
-
-              <p className="text-sm text-neutral-500 text-center">
-                Errors: {mathErrors} / 3 allowed
-              </p>
-
-              <Button variant="primary" size="md" onClick={handleMathSubmit} className="w-full">
-                Submit Answer
-              </Button>
-            </div>
-          )}
-
-          {/* Step 4: Cooldown */}
-          {currentStep === 'cooldown' && (
-            <div className="space-y-4 text-center py-8">
-              <div className="text-6xl mb-4">⏳</div>
-              <h3 className="text-lg font-semibold text-neutral-900">
-                Cooling Off Period
+          {!isPremium ? (
+            <div className="text-center py-8">
+              <div className="text-6xl mb-6">🔒</div>
+              <h3 className="text-xl font-bold text-neutral-900 mb-3">
+                Unlock Nuclear Mode
               </h3>
-              <p className="text-sm text-neutral-600">
-                Take a moment to prepare yourself for deep work...
+              <p className="text-neutral-600 mb-6 max-w-md mx-auto">
+                Need total focus? Nuclear Mode blocks absolutely everything for a set duration. No cancellations. No overrides. Pure productivity.
               </p>
-              <div className="text-5xl font-bold text-primary-600 my-8">
-                {cooldownSeconds}s
+              <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-8 text-left max-w-sm mx-auto">
+                <h4 className="font-semibold text-text-primary mb-2">Focused Flow Pro includes:</h4>
+                <ul className="space-y-2 text-sm text-text-secondary">
+                  <li className="flex items-center gap-2">✅ Nuclear Mode (Unbreakable Block)</li>
+                  <li className="flex items-center gap-2">✅ Unlimited Block Rules</li>
+                  <li className="flex items-center gap-2">✅ Unlimited Schedules</li>
+                  <li className="flex items-center gap-2">✅ Cross-Device Sync</li>
+                </ul>
               </div>
-              <p className="text-xs text-neutral-500">
-                Nuclear Mode will be ready to activate in {cooldownSeconds} seconds
+
+              {!IS_PREMIUM_COMING_SOON ? (
+                <Button variant="primary" size="lg" onClick={() => window.open('https://focusflow.app/pricing', '_blank')}>
+                  Upgrade to Pro
+                </Button>
+              ) : (
+                <div className="flex flex-col items-center">
+                  <div className="px-6 py-3 bg-accent/10 border border-accent/20 rounded-lg text-accent font-medium">
+                    ✨ Pro Plan Coming Soon
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-text-tertiary mt-4">
+                {IS_PREMIUM_COMING_SOON ? 'Join the waitlist for early access!' : '30-day money-back guarantee'}
               </p>
             </div>
-          )}
+          ) : (
+            <>
+              {/* Error message */}
+              {error && (
+                <div
+                  role="alert"
+                  className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-md text-sm mb-4"
+                >
+                  {error}
+                </div>
+              )}
 
-          {/* Step 5: Final Confirmation */}
-          {currentStep === 'confirm' && (
-            <div className="space-y-4">
-              <div className="text-center py-4">
-                <div className="text-6xl mb-4">✅</div>
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                  Ready to Activate
-                </h3>
-                <p className="text-sm text-neutral-600">
-                  You're about to activate Nuclear Mode for <strong>{durationHours} {durationHours === 1 ? 'hour' : 'hours'}</strong>.
-                </p>
-                <div className="bg-warning-50 border border-warning-200 rounded-md p-4 mt-4">
-                  <p className="text-sm text-warning-800 font-medium">
-                    ⚠️ Warning: You cannot disable Nuclear Mode until the timer expires. Settings will be locked.
+              {/* Step 1: Duration Selection */}
+              {currentStep === 'duration' && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                      Step 1: Choose Duration
+                    </h3>
+                    <p className="text-sm text-neutral-600 mb-4">
+                      How long do you want to activate Nuclear Mode? You won't be able to disable it until the timer expires.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="duration-hours" className="block text-sm font-medium text-neutral-700">
+                      Duration (hours)
+                    </label>
+                    <input
+                      id="duration-hours"
+                      type="number"
+                      min="1"
+                      max="8"
+                      value={durationHours}
+                      onChange={(e) => setDurationHours(parseInt(e.target.value, 10) || 1)}
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                    <p className="text-xs text-neutral-500">
+                      Choose between 1-8 hours. Recommended: 2-4 hours for deep work sessions.
+                    </p>
+                  </div>
+
+                  <Button variant="primary" size="md" onClick={handleDurationNext} className="w-full">
+                    Continue to Challenges
+                  </Button>
+                </div>
+              )}
+
+              {/* Step 2: Typing Challenge */}
+              {currentStep === 'typing' && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                      Step 2: Commitment Challenge
+                    </h3>
+                    <p className="text-sm text-neutral-600 mb-4">
+                      Type the following commitment text to prove your dedication (no copy-paste):
+                    </p>
+                  </div>
+
+                  <div className="bg-neutral-50 border border-neutral-200 rounded-md p-4 mb-4">
+                    <p className="text-sm text-neutral-700 leading-relaxed">{COMMITMENT_TEXT}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="commitment-text" className="block text-sm font-medium text-neutral-700">
+                      Type the commitment:
+                    </label>
+                    <textarea
+                      id="commitment-text"
+                      ref={typingInputRef}
+                      value={typedText}
+                      onChange={(e) => setTypedText(e.target.value)}
+                      onPaste={handlePaste}
+                      rows={6}
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="Start typing..."
+                    />
+                    <p className="text-xs text-neutral-500">
+                      Words typed: {typedText.trim().split(/\s+/).filter(w => w.length > 0).length} / 80 minimum
+                    </p>
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <Button variant="secondary" size="md" onClick={() => setCurrentStep('duration')} className="flex-1">
+                      Back
+                    </Button>
+                    <Button variant="primary" size="md" onClick={handleTypingNext} className="flex-1">
+                      Continue
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Math Challenge */}
+              {currentStep === 'math' && mathProblems[currentMathIndex] && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                      Step 3: Focus Challenge
+                    </h3>
+                    <p className="text-sm text-neutral-600 mb-4">
+                      Solve {mathProblems.length} math problems to prove you're ready to focus (Problem {currentMathIndex + 1}/{mathProblems.length}):
+                    </p>
+                  </div>
+
+                  <div className="bg-neutral-50 border border-neutral-200 rounded-md p-8 text-center">
+                    <p className="text-4xl font-bold text-neutral-900 mb-6">
+                      {mathProblems[currentMathIndex]?.question} = ?
+                    </p>
+                    <input
+                      type="number"
+                      value={mathAnswer}
+                      onChange={(e) => setMathAnswer(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleMathSubmit()}
+                      className="w-32 px-4 py-2 text-center text-2xl border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="?"
+                      autoFocus
+                    />
+                  </div>
+
+                  <p className="text-sm text-neutral-500 text-center">
+                    Errors: {mathErrors} / 3 allowed
+                  </p>
+
+                  <Button variant="primary" size="md" onClick={handleMathSubmit} className="w-full">
+                    Submit Answer
+                  </Button>
+                </div>
+              )}
+
+              {/* Step 4: Cooldown */}
+              {currentStep === 'cooldown' && (
+                <div className="space-y-4 text-center py-8">
+                  <div className="text-6xl mb-4">⏳</div>
+                  <h3 className="text-lg font-semibold text-neutral-900">
+                    Cooling Off Period
+                  </h3>
+                  <p className="text-sm text-neutral-600">
+                    Take a moment to prepare yourself for deep work...
+                  </p>
+                  <div className="text-5xl font-bold text-primary-600 my-8">
+                    {cooldownSeconds}s
+                  </div>
+                  <p className="text-xs text-neutral-500">
+                    Nuclear Mode will be ready to activate in {cooldownSeconds} seconds
                   </p>
                 </div>
-              </div>
+              )}
 
-              <div className="flex space-x-3">
-                <Button variant="secondary" size="md" onClick={onClose} disabled={isActivating} className="flex-1">
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={handleActivate}
-                  disabled={isActivating}
-                  className="flex-1"
-                >
-                  {isActivating ? 'Activating...' : `Activate for ${durationHours}h`}
-                </Button>
-              </div>
-            </div>
+              {/* Step 5: Final Confirmation */}
+              {currentStep === 'confirm' && (
+                <div className="space-y-4">
+                  <div className="text-center py-4">
+                    <div className="text-6xl mb-4">✅</div>
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                      Ready to Activate
+                    </h3>
+                    <p className="text-sm text-neutral-600">
+                      You're about to activate Nuclear Mode for <strong>{durationHours} {durationHours === 1 ? 'hour' : 'hours'}</strong>.
+                    </p>
+                    <div className="bg-warning-50 border border-warning-200 rounded-md p-4 mt-4">
+                      <p className="text-sm text-warning-800 font-medium">
+                        ⚠️ Warning: You cannot disable Nuclear Mode until the timer expires. Settings will be locked.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <Button variant="secondary" size="md" onClick={onClose} disabled={isActivating} className="flex-1">
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="md"
+                      onClick={handleActivate}
+                      disabled={isActivating}
+                      className="flex-1"
+                    >
+                      {isActivating ? 'Activating...' : `Activate for ${durationHours}h`}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Footer - Cancel button (not on confirm step) */}
+              {currentStep !== 'confirm' && currentStep !== 'cooldown' && (
+                <div className="border-t border-neutral-200 px-6 py-4">
+                  <Button variant="secondary" size="sm" onClick={onClose} className="w-full">
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
-
-        {/* Footer - Cancel button (not on confirm step) */}
-        {currentStep !== 'confirm' && currentStep !== 'cooldown' && (
-          <div className="border-t border-neutral-200 px-6 py-4">
-            <Button variant="secondary" size="sm" onClick={onClose} className="w-full">
-              Cancel
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

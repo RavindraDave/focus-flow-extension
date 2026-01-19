@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../../components/atoms/Button';
 import type { YouTubeConfig } from '../../types';
+import { IS_PREMIUM_COMING_SOON } from '../../utils/constants';
 
 export interface YouTubeSettingsProps {
   isPremium: boolean;
@@ -126,17 +127,24 @@ export const YouTubeSettings: React.FC<YouTubeSettingsProps> = ({ isPremium }) =
           <div className="flex items-start space-x-3">
             <span className="text-2xl">⭐</span>
             <div>
-              <h3 className="font-semibold text-warning-900 mb-1">Premium Feature</h3>
+              <h3 className="font-semibold text-warning-900 mb-1">
+                {IS_PREMIUM_COMING_SOON ? 'Premium Features Coming Soon' : 'Premium Feature'}
+              </h3>
               <p className="text-sm text-warning-800 mb-3">
-                YouTube controls are available for Premium users. Upgrade to unlock advanced blocking features.
+                {IS_PREMIUM_COMING_SOON
+                  ? 'YouTube controls will be part of our Premium tier. Stay tuned for updates!'
+                  : 'YouTube controls are available for Premium users. Upgrade to unlock advanced blocking features.'
+                }
               </p>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => window.open('https://focusflow.app/premium', '_blank')}
-              >
-                Upgrade to Premium
-              </Button>
+              {!IS_PREMIUM_COMING_SOON && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => window.open('https://focusflow.app/premium', '_blank')}
+                >
+                  Upgrade to Premium
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -258,9 +266,8 @@ export const YouTubeSettings: React.FC<YouTubeSettingsProps> = ({ isPremium }) =
 
         {saveMessage && (
           <div
-            className={`text-sm ${
-              saveMessage.includes('success') ? 'text-success-600' : 'text-error-600'
-            }`}
+            className={`text-sm ${saveMessage.includes('success') ? 'text-success-600' : 'text-error-600'
+              }`}
             role="status"
             aria-live="polite"
           >

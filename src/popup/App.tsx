@@ -230,6 +230,7 @@ const App: React.FC = () => {
         isOpen={isNuclearModalOpen}
         onClose={() => setIsNuclearModalOpen(false)}
         onActivate={activateNuclear}
+        isPremium={!!settings?.premiumLicenseKey}
       />
 
       {/* Onboarding Modal (First Run) */}

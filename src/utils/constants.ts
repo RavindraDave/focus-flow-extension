@@ -24,6 +24,18 @@ export const STORAGE_KEYS = {
 } as const;
 
 /**
+ * Flag to control "Coming Soon" state for premium features
+ * Set to true for initial free release
+ */
+export const IS_PREMIUM_COMING_SOON = true;
+
+/**
+ * Support email for feedback and issues
+ * Update this before building for release
+ */
+export const SUPPORT_EMAIL = 'admin@r2dsolutions.com';
+
+/**
  * Storage key type for type safety
  */
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

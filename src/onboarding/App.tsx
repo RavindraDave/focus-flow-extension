@@ -35,8 +35,8 @@ const ONBOARDING_STEPS: Step[] = [
     icon: '🚫',
   },
   {
-    title: 'Nuclear Mode',
-    description: 'Need extreme focus? Activate Nuclear Mode to block ALL distracting sites for 1-8 hours. This cannot be undone until the time expires!',
+    title: 'Nuclear Mode (Premium)',
+    description: 'Need extreme focus? Activate Nuclear Mode to block ALL distracting sites for 1-8 hours. Upgrade to Pro to unlock this unbreakable focus tool!',
     icon: '🚀',
   },
   {
@@ -69,7 +69,8 @@ const App: React.FC = () => {
 
   const handleGetStarted = () => {
     // Mark onboarding as completed
-    chrome.storage.local.set({ onboardingCompleted: true });
+    // Mark onboarding as completed (sync with popup logic)
+    chrome.storage.sync.set({ has_onboarded: true });
     // Close the onboarding tab
     chrome.tabs.getCurrent((tab) => {
       if (tab?.id) {
@@ -159,9 +160,9 @@ const App: React.FC = () => {
 
           {currentStep === 4 && (
             <div className="mt-8 bg-error/10 border border-error/20 rounded-lg p-6 max-w-2xl mx-auto">
-              <h3 className="font-semibold text-error mb-3">⚠️ Important Warning:</h3>
+              <h3 className="font-semibold text-error mb-3">⚠️ Premium Feature:</h3>
               <p className="text-sm text-error/90">
-                Nuclear Mode CANNOT be deactivated once started. Use this feature only when you need maximum focus and commitment.
+                Nuclear Mode is available for Pro users. It blocks everything and CANNOT be deactivated once started.
               </p>
             </div>
           )}

@@ -10,6 +10,7 @@ import { ScheduleForm } from './ScheduleForm';
 import { useSchedules, useBlockRules } from '../../hooks';
 import { Spinner } from '../../components/atoms/Spinner';
 import type { Schedule } from '../../types';
+import { FEATURE_FLAGS, IS_PREMIUM_COMING_SOON } from '../../utils/constants';
 
 /**
  * Format days of week for display
@@ -63,6 +64,8 @@ export const ScheduleList: React.FC = () => {
   const { rules: blockRules } = useBlockRules();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
+
+  const isLimitReached = schedules.length >= FEATURE_FLAGS.FREE.maxSchedules;
 
   /**
    * Handle edit button click
@@ -164,6 +167,29 @@ export const ScheduleList: React.FC = () => {
             Automatically activate blocking rules at specific times
           </p>
         </div>
+      </div>
+
+      {isLimitReached ? (
+        <div className="relative group">
+          <Button
+            variant="primary"
+            disabled
+            aria-label="Add new schedule (Limit Reached)"
+          >
+            + Add Schedule
+          </Button>
+          <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-neutral-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+            <p className="font-bold mb-1">Free Limit Reached</p>
+            <p>You can add up to {FEATURE_FLAGS.FREE.maxSchedules} schedule on the free plan.</p>
+            {!IS_PREMIUM_COMING_SOON && (
+              <p className="mt-2 text-accent">Upgrade to Premium for unlimited schedules!</p>
+            )}
+            {IS_PREMIUM_COMING_SOON && (
+              <p className="mt-2 text-accent">Premium Coming Soon!</p>
+            )}
+          </div>
+        </div>
+      ) : (
         <Button
           variant="primary"
           onClick={() => setIsFormOpen(true)}
@@ -171,111 +197,115 @@ export const ScheduleList: React.FC = () => {
         >
           + Add Schedule
         </Button>
-      </div>
-
-      {/* Empty State */}
-      {schedules.length === 0 && (
-        <div className="border-2 border-dashed border-border rounded-lg p-12 text-center">
-          <div className="text-4xl mb-4">📅</div>
-          <h3 className="text-lg font-semibold text-text-primary mb-2">
-            No schedules yet
-          </h3>
-          <p className="text-text-secondary mb-4">
-            Create a schedule to automatically activate blocking rules at specific times
-          </p>
-          <Button variant="primary" onClick={() => setIsFormOpen(true)}>
-            Create Your First Schedule
-          </Button>
-        </div>
       )}
 
+      {/* Empty State */}
+      {
+        schedules.length === 0 && (
+          <div className="border-2 border-dashed border-border rounded-lg p-12 text-center">
+            <div className="text-4xl mb-4">📅</div>
+            <h3 className="text-lg font-semibold text-text-primary mb-2">
+              No schedules yet
+            </h3>
+            <p className="text-text-secondary mb-4">
+              Create a schedule to automatically activate blocking rules at specific times
+            </p>
+            <Button variant="primary" onClick={() => setIsFormOpen(true)}>
+              Create Your First Schedule
+            </Button>
+          </div>
+        )
+      }
+
       {/* Schedule List */}
-      {schedules.length > 0 && (
-        <div className="space-y-4">
-          {schedules.map(schedule => (
-            <div
-              key={schedule.id}
-              className="border border-border rounded-lg p-4 hover:border-accent transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                {/* Schedule Info */}
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    {/* Status Badge */}
-                    <button
-                      onClick={() => handleToggle(schedule)}
-                      className={`
+      {
+        schedules.length > 0 && (
+          <div className="space-y-4">
+            {schedules.map(schedule => (
+              <div
+                key={schedule.id}
+                className="border border-border rounded-lg p-4 hover:border-accent transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  {/* Schedule Info */}
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      {/* Status Badge */}
+                      <button
+                        onClick={() => handleToggle(schedule)}
+                        className={`
                         px-2 py-1 text-xs font-medium rounded
                         transition-colors cursor-pointer
                         ${schedule.enabled
-                          ? 'bg-success/10 text-success hover:bg-success/20'
-                          : 'bg-bg-secondary text-text-tertiary hover:bg-bg-tertiary'
-                        }
+                            ? 'bg-success/10 text-success hover:bg-success/20'
+                            : 'bg-bg-secondary text-text-tertiary hover:bg-bg-tertiary'
+                          }
                       `}
-                      aria-label={`Toggle schedule ${schedule.enabled ? 'off' : 'on'}`}
-                    >
-                      {schedule.enabled ? '✓ Active' : '○ Inactive'}
-                    </button>
+                        aria-label={`Toggle schedule ${schedule.enabled ? 'off' : 'on'}`}
+                      >
+                        {schedule.enabled ? '✓ Active' : '○ Inactive'}
+                      </button>
 
-                    {/* Name */}
-                    <h4 className="text-base font-medium text-text-primary">
-                      {schedule.name}
-                    </h4>
-                  </div>
-
-                  {/* Time and Days */}
-                  <div className="flex items-center space-x-4 text-sm text-text-secondary mb-2">
-                    <span className="flex items-center space-x-1">
-                      <span className="text-lg">🕐</span>
-                      <span>
-                        {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
-                      </span>
-                    </span>
-                    <span className="flex items-center space-x-1">
-                      <span className="text-lg">📆</span>
-                      <span>{formatDays(schedule.daysOfWeek)}</span>
-                    </span>
-                  </div>
-
-                  {/* Block Rules */}
-                  <div className="text-sm text-text-secondary">
-                    <span className="font-medium">Blocks:</span>{' '}
-                    {getBlockRuleNames(schedule.blockRuleIds)}
-                  </div>
-
-                  {/* Exceptions */}
-                  {schedule.exceptions.length > 0 && (
-                    <div className="mt-2 text-xs text-text-tertiary">
-                      {schedule.exceptions.length} exception date(s)
+                      {/* Name */}
+                      <h4 className="text-base font-medium text-text-primary">
+                        {schedule.name}
+                      </h4>
                     </div>
-                  )}
-                </div>
 
-                {/* Actions */}
-                <div className="flex items-center space-x-2 ml-4">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleEdit(schedule)}
-                    aria-label={`Edit schedule ${schedule.name}`}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleDelete(schedule)}
-                    className="text-error hover:bg-error/10"
-                    aria-label={`Delete schedule ${schedule.name}`}
-                  >
-                    Delete
-                  </Button>
+                    {/* Time and Days */}
+                    <div className="flex items-center space-x-4 text-sm text-text-secondary mb-2">
+                      <span className="flex items-center space-x-1">
+                        <span className="text-lg">🕐</span>
+                        <span>
+                          {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                        </span>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <span className="text-lg">📆</span>
+                        <span>{formatDays(schedule.daysOfWeek)}</span>
+                      </span>
+                    </div>
+
+                    {/* Block Rules */}
+                    <div className="text-sm text-text-secondary">
+                      <span className="font-medium">Blocks:</span>{' '}
+                      {getBlockRuleNames(schedule.blockRuleIds)}
+                    </div>
+
+                    {/* Exceptions */}
+                    {schedule.exceptions.length > 0 && (
+                      <div className="mt-2 text-xs text-text-tertiary">
+                        {schedule.exceptions.length} exception date(s)
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center space-x-2 ml-4">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleEdit(schedule)}
+                      aria-label={`Edit schedule ${schedule.name}`}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleDelete(schedule)}
+                      className="text-error hover:bg-error/10"
+                      aria-label={`Delete schedule ${schedule.name}`}
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )
+      }
 
       {/* Schedule Form Modal */}
       {isFormOpen && (
@@ -300,6 +330,6 @@ export const ScheduleList: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };

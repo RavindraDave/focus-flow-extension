@@ -12,14 +12,15 @@ import { BlockRuleForm } from './BlockRuleForm';
 import { ConfirmDialog } from '../../components/molecules/ConfirmDialog';
 import { useBlockRules } from '../../hooks/useBlockRules';
 import type { BlockRule } from '../../types';
+import { FEATURE_FLAGS, IS_PREMIUM_COMING_SOON } from '../../utils/constants';
 
 /**
  * Format time used
  * Complexity: 2 (conditional formatting)
  */
 function formatTimeUsed(minutes: number): string {
-  if (minutes === 0) {return '0min';}
-  if (minutes < 60) {return `${minutes}min`;}
+  if (minutes === 0) { return '0min'; }
+  if (minutes < 60) { return `${minutes}min`; }
 
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
@@ -201,7 +202,7 @@ export const BlockRuleList: React.FC = () => {
     input.accept = '.json';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {return;}
+      if (!file) { return; }
 
       try {
         const text = await file.text();
@@ -241,6 +242,7 @@ export const BlockRuleList: React.FC = () => {
 
   const hasSelection = selectedRuleIds.size > 0;
   const allSelected = rules.length > 0 && selectedRuleIds.size === rules.length;
+  const isLimitReached = rules.length >= FEATURE_FLAGS.FREE.maxBlockRules;
 
   return (
     <div className="space-y-4">
@@ -286,9 +288,28 @@ export const BlockRuleList: React.FC = () => {
           >
             Export JSON
           </Button>
-          <Button variant="primary" size="sm" onClick={handleAdd}>
-            + Add Rule
-          </Button>
+          {isLimitReached ? (
+            <div className="relative group">
+              <Button variant="primary" size="sm" disabled>
+                + Add Rule
+              </Button>
+              <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-neutral-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                <p className="font-bold mb-1">Free Limit Reached</p>
+                <p>You can add up to {FEATURE_FLAGS.FREE.maxBlockRules} rules on the free plan.</p>
+                <div className="mt-2 text-neutral-400 border-l-2 border-accent pl-2">
+                  <p className="font-bold text-accent">Pro Tip:</p>
+                  <p>1 Rule can block many sites! Use keywords (e.g. "news") or patterns (e.g. "*.social") to group sites.</p>
+                </div>
+                {IS_PREMIUM_COMING_SOON && (
+                  <p className="mt-2 text-accent border-t border-neutral-700 pt-2">Premium Coming Soon: Unlimited Rules!</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <Button variant="primary" size="sm" onClick={handleAdd}>
+              + Add Rule
+            </Button>
+          )}
         </div>
       </div>
 
