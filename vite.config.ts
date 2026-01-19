@@ -66,55 +66,90 @@ function moveHtmlToRoot(): Plugin {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react(), moveHtmlToRoot()],
-  base: './', // Use relative paths for extension compatibility
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src'),
-      '@/components': resolve(__dirname, './src/components'),
-      '@/hooks': resolve(__dirname, './src/hooks'),
-      '@/utils': resolve(__dirname, './src/utils'),
-      '@/types': resolve(__dirname, './src/types'),
-      '@/store': resolve(__dirname, './src/store'),
-      '@/services': resolve(__dirname, './src/services'),
-      '@/features': resolve(__dirname, './src/features'),
-    },
-  },
-  build: {
-    outDir: 'dist',
-    rollupOptions: {
-      input: {
-        popup: resolve(__dirname, 'src/popup/index.html'),
-        options: resolve(__dirname, 'src/options/index.html'),
-        onboarding: resolve(__dirname, 'src/onboarding/index.html'),
-        background: resolve(__dirname, 'src/background/index.ts'),
-        'content-youtube': resolve(__dirname, 'src/content/youtube.ts'),
+export default defineConfig(({ mode }) => {
+  const isDev = mode === 'development';
+
+  // Plugin to clean up manifest in production
+  function transformManifest(): Plugin {
+    return {
+      name: 'transform-manifest',
+      closeBundle: async () => {
+        if (isDev) return; // Skip in dev mode
+
+        const distDir = resolve(__dirname, 'dist');
+        const manifestPath = resolve(distDir, 'manifest.json');
+
+        try {
+          const content = await readFile(manifestPath, 'utf-8');
+          const manifest = JSON.parse(content);
+
+          if (manifest.content_scripts) {
+            // Filter out content scripts that use content-youtube.js
+            manifest.content_scripts = manifest.content_scripts.filter((script: any) => {
+              return !script.js?.includes('content-youtube.js');
+            });
+
+            await writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+            console.log('[Focus Flow] Removed premium features from manifest for production build');
+          }
+        } catch (e) {
+          console.warn('Could not transform manifest:', e);
+        }
+      }
+    };
+  }
+
+  return {
+    plugins: [react(), moveHtmlToRoot(), transformManifest()],
+    base: './', // Use relative paths for extension compatibility
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, './src'),
+        '@/components': resolve(__dirname, './src/components'),
+        '@/hooks': resolve(__dirname, './src/hooks'),
+        '@/utils': resolve(__dirname, './src/utils'),
+        '@/types': resolve(__dirname, './src/types'),
+        '@/store': resolve(__dirname, './src/store'),
+        '@/services': resolve(__dirname, './src/services'),
+        '@/features': resolve(__dirname, './src/features'),
       },
-      output: {
-        entryFileNames: (chunkInfo) => {
-          // Background and content scripts go to root
-          if (chunkInfo.name === 'background') {
-            return 'background.js';
-          }
-          if (chunkInfo.name === 'content-youtube') {
-            return 'content-youtube.js';
-          }
-          // UI pages go to their own folders
-          return '[name]/[name].js';
+    },
+    build: {
+      outDir: 'dist',
+      rollupOptions: {
+        input: {
+          popup: resolve(__dirname, 'src/popup/index.html'),
+          options: resolve(__dirname, 'src/options/index.html'),
+          onboarding: resolve(__dirname, 'src/onboarding/index.html'),
+          background: resolve(__dirname, 'src/background/index.ts'),
+          // Only include YouTube content script in development
+          ...(isDev ? { 'content-youtube': resolve(__dirname, 'src/content/youtube.ts') } : {}),
         },
-        chunkFileNames: 'chunks/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash][extname]',
+        output: {
+          entryFileNames: (chunkInfo) => {
+            // Background and content scripts go to root
+            if (chunkInfo.name === 'background') {
+              return 'background.js';
+            }
+            if (chunkInfo.name === 'content-youtube') {
+              return 'content-youtube.js';
+            }
+            // UI pages go to their own folders
+            return '[name]/[name].js';
+          },
+          chunkFileNames: 'chunks/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash][extname]',
+        },
+      },
+      sourcemap: isDev,
+      minify: !isDev,
+    },
+    server: {
+      port: 5173,
+      strictPort: true,
+      hmr: {
+        port: 5173,
       },
     },
-    sourcemap: process.env.NODE_ENV === 'development',
-    minify: process.env.NODE_ENV === 'production',
-  },
-  server: {
-    port: 5173,
-    strictPort: true,
-    hmr: {
-      port: 5173,
-    },
-  },
+  };
 });
