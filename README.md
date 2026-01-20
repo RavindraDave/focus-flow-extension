@@ -596,7 +596,7 @@ Focus Flow requires the following Chrome permissions:
 
 ## Privacy
 
-Focus Flow respects your privacy:
+Focus Flow respects your privacy. View our full [Privacy Policy](https://extensions.r2dsolutions.com/privacy).
 
 - **All data stored locally** in your browser (Chrome storage API)
 - **No external servers** - no data sent anywhere

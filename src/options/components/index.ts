@@ -13,7 +13,7 @@ export { SuggestedSites } from './SuggestedSites';
 export { VirtualGarden } from './VirtualGarden';
 export { FocusMainframe } from './FocusMainframe';
 export { ProductivityHeatmap } from './ProductivityHeatmap';
-export { UserGuide } from './UserGuide';
+
 
 export type { SettingsFormProps } from './SettingsForm';
 export type { BlockRuleFormProps } from './BlockRuleForm';

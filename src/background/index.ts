@@ -115,7 +115,8 @@ class BackgroundServiceWorker {
     );
     this.scheduleHandler = new ScheduleMessageHandler(
       this.scheduleRepository,
-      this.scheduleManager
+      this.scheduleManager,
+      this.settingsRepository
     );
 
     console.info('🚀 Focus Flow background service worker initialized');
@@ -556,7 +557,7 @@ class BackgroundServiceWorker {
    * @private
    */
   private async runMigrations(previousVersion?: string): Promise<void> {
-    if (!previousVersion) {return;}
+    if (!previousVersion) { return; }
 
     console.info(`🔄 Running migrations from version ${previousVersion}`);
 

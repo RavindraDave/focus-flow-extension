@@ -141,6 +141,7 @@ Install Focus Flow now and start building unbreakable focus habits today.
 **Version**: 1.0.0  
 **Support**: admin@r2dsolutions.com  
 **Website**: Coming Soon
+**Privacy Policy**: https://extensions.r2dsolutions.com/privacy
 
 ---
 

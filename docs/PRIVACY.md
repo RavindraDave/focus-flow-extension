@@ -1,6 +1,7 @@
 # Privacy Policy for Focus Flow
 
 **Last Updated:** January 19, 2026
+**Online Version:** [https://extensions.r2dsolutions.com/privacy](https://extensions.r2dsolutions.com/privacy)
 
 ## 1. Introduction
 Focus Flow ("we", "our", or "the extension") is committed to protecting your privacy. This Privacy Policy explains how our Chrome extension handles your data.

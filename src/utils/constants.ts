@@ -36,6 +36,16 @@ export const IS_PREMIUM_COMING_SOON = true;
 export const SUPPORT_EMAIL = 'admin@r2dsolutions.com';
 
 /**
+ * Privacy Policy URL
+ */
+export const PRIVACY_POLICY_URL = 'https://extensions.r2dsolutions.com/privacy';
+
+/**
+ * Documentation URL
+ */
+export const DOCS_URL = 'https://extensions.r2dsolutions.com/focus-flow/docs';
+
+/**
  * Storage key type for type safety
  */
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

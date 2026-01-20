@@ -9,7 +9,7 @@
 import { StorageService } from './storage-service';
 import { Schedule } from '../types/index';
 import { ScheduleSchema } from '../types/schemas';
-import { STORAGE_KEYS } from '../utils/constants';
+import { STORAGE_KEYS, STORAGE_LIMITS, ERROR_MESSAGES } from '../utils/constants';
 import { z } from 'zod';
 
 /**
@@ -84,9 +84,21 @@ export class ScheduleRepository {
    * Complexity: 3 (async + validation)
    *
    * @param schedule - Schedule to add
+   * @param isPremium - Whether user has premium tier
+   * @throws Error if limit reached
    */
-  async addSchedule(schedule: Schedule): Promise<void> {
+  async addSchedule(schedule: Schedule, isPremium: boolean = false): Promise<void> {
     const schedules = await this.getAllSchedules();
+
+    // Check tier limits
+    const maxSchedules = isPremium
+      ? STORAGE_LIMITS.MAX_SCHEDULES_PREMIUM
+      : STORAGE_LIMITS.MAX_SCHEDULES_FREE;
+
+    if (schedules.length >= maxSchedules) {
+      throw new Error(ERROR_MESSAGES.MAX_SCHEDULES_REACHED);
+    }
+
     const serialized = this.serializeSchedule(schedule);
     schedules.push(serialized);
 

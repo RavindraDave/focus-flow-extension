@@ -15,11 +15,14 @@ import type {
 } from '../message-types';
 import type { Schedule } from '../../types/index';
 
+import type { SettingsRepository } from '../../services/settings-repository';
+
 export class ScheduleMessageHandler {
   constructor(
     private scheduleRepository: ScheduleRepository,
-    private scheduleManager: ScheduleManager
-  ) {}
+    private scheduleManager: ScheduleManager,
+    private settingsRepository: SettingsRepository
+  ) { }
 
   /**
    * Handle get schedule messages
@@ -44,7 +47,9 @@ export class ScheduleMessageHandler {
       createdAt: now as unknown as Date,
       updatedAt: now as unknown as Date
     };
-    await this.scheduleRepository.addSchedule(newSchedule);
+
+    const isPremium = await this.settingsRepository.isPremium();
+    await this.scheduleRepository.addSchedule(newSchedule, isPremium);
     await this.scheduleManager.checkSchedules();
     return newSchedule;
   }

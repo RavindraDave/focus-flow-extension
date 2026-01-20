@@ -18,12 +18,11 @@ import {
   VirtualGarden,
   FocusMainframe,
   ProductivityHeatmap,
-  UserGuide,
 } from './components';
 import { Spinner } from '../components/atoms/Spinner';
-import { IS_PREMIUM_COMING_SOON, FEATURE_FLAGS, SUPPORT_EMAIL } from '../utils/constants';
+import { IS_PREMIUM_COMING_SOON, FEATURE_FLAGS, SUPPORT_EMAIL, PRIVACY_POLICY_URL, DOCS_URL } from '../utils/constants';
 
-type Tab = 'dashboard' | 'timer' | 'blocking' | 'integrations' | 'gamification' | 'data' | 'help';
+type Tab = 'dashboard' | 'timer' | 'blocking' | 'integrations' | 'gamification' | 'data';
 
 /**
  * Main Options App component with 6-tab navigation
@@ -155,12 +154,22 @@ const App: React.FC = () => {
             label="Data & Config"
             description="Export, import, and manage data"
           />
-          <NavItem
-            tab="help"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-            label="Help & Guide"
-            description="Documentation & Tips"
-          />
+          {/* External Docs Link */}
+          <button
+            type="button"
+            onClick={() => window.open(DOCS_URL, '_blank')}
+            className="w-full text-left px-4 py-3 rounded-lg transition-all text-text-secondary hover:bg-bg-secondary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
+          >
+            <div className="flex items-center space-x-3">
+              <span className="text-slate-500 group-hover:text-indigo-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </span>
+              <div className="flex-1">
+                <div className="font-semibold text-sm">Help & Guide</div>
+                <div className="text-xs mt-0.5 opacity-60">Documentation & Tips <span className="opacity-70">(↗)</span></div>
+              </div>
+            </div>
+          </button>
         </nav>
 
         {/* Footer - Pro Plan Upsell */}
@@ -191,6 +200,13 @@ const App: React.FC = () => {
             aria-label="Send feedback or report an issue"
           >
             📝 Send Feedback
+          </button>
+          <button
+            onClick={() => window.open(PRIVACY_POLICY_URL, '_blank')}
+            className="text-xs text-text-tertiary hover:text-accent mt-1 w-full text-center transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded py-1"
+            aria-label="View Privacy Policy"
+          >
+            🔒 Privacy Policy
           </button>
           <p className="text-xs text-text-muted text-center mt-2">
             Version 1.0.0
@@ -230,6 +246,7 @@ const App: React.FC = () => {
         </div>
 
         <div className="max-w-6xl mx-auto p-4 md:p-8">
+
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
             <DashboardTab settings={settings} setActiveTab={setActiveTab} />
@@ -258,9 +275,6 @@ const App: React.FC = () => {
 
           {/* Data & Config Tab */}
           {activeTab === 'data' && <DataConfigTab />}
-
-          {/* User Guide Tab */}
-          {activeTab === 'help' && <UserGuide />}
         </div>
       </main>
     </div>
