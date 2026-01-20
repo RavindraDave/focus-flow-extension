@@ -157,6 +157,7 @@ export class ScheduleRepository {
     const filtered = schedules.filter(s => s.id !== id);
 
     if (filtered.length === initialLength) {
+      console.warn(`Schedule deletion failed: ID ${id} not found`);
       return false;
     }
 
@@ -169,6 +170,7 @@ export class ScheduleRepository {
       z.array(ScheduleSchema) as unknown as z.ZodType<Schedule[]>
     );
 
+    console.info(`Schedule deleted: ${id}`);
     return true;
   }
 

@@ -200,6 +200,11 @@ export function useSchedules(): UseSchedulesReturn {
           throw new Error(response.error || 'Failed to delete schedule');
         }
 
+        // Check if the delete actually happened (response.data should be true)
+        if (response.data === false) {
+          throw new Error('Schedule not found or could not be deleted');
+        }
+
         // Refresh schedules list
         await fetchSchedules();
         await fetchNextSchedule();

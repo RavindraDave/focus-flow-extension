@@ -265,7 +265,7 @@ const App: React.FC = () => {
           )}
 
           {/* Blocking Rules Tab */}
-          {activeTab === 'blocking' && <BlockingTab />}
+          {activeTab === 'blocking' && <BlockingTab settings={settings} />}
 
           {/* Integrations Tab */}
           {activeTab === 'integrations' && <IntegrationsTab />}
@@ -758,18 +758,23 @@ const TimerTab: React.FC<{
 /**
  * Blocking Rules Tab Component
  */
-const BlockingTab: React.FC = () => {
+const BlockingTab: React.FC<{ settings: any }> = ({ settings }) => {
+  const isWhitelist = settings?.blockingMode === 'whitelist';
+
   return (
     <div>
       <div className="mb-8">
         <h2 className="text-4xl font-bold text-text-primary font-serif mb-2">
-          Blocking Rules
+          {isWhitelist ? 'Allowed Sites' : 'Blocking Rules'}
         </h2>
         <p className="text-text-secondary">
-          Manage what gets blocked and when
+          {isWhitelist
+            ? 'Manage your allowed sites list. All other sites will be blocked.'
+            : 'Manage what gets blocked and when'
+          }
         </p>
       </div>
-      <SuggestedSites />
+      {!isWhitelist && <SuggestedSites />}
       <BlockRuleList />
       <div className="mt-8">
         <h3 className="text-2xl font-bold text-text-primary mb-4">Schedules</h3>

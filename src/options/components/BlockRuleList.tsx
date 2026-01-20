@@ -11,6 +11,7 @@ import { Spinner } from '../../components/atoms/Spinner';
 import { BlockRuleForm } from './BlockRuleForm';
 import { ConfirmDialog } from '../../components/molecules/ConfirmDialog';
 import { useBlockRules } from '../../hooks/useBlockRules';
+import { useSettings } from '../../hooks/useSettings';
 import type { BlockRule } from '../../types';
 import { FEATURE_FLAGS, IS_PREMIUM_COMING_SOON } from '../../utils/constants';
 
@@ -52,6 +53,9 @@ export const BlockRuleList: React.FC = () => {
     toggleRule,
     exportRules,
   } = useBlockRules();
+
+  const { settings } = useSettings();
+  const isWhitelistMode = settings?.blockingMode === 'whitelist';
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<BlockRule | undefined>(undefined);
@@ -227,7 +231,9 @@ export const BlockRuleList: React.FC = () => {
     return (
       <div className="flex items-center justify-center py-12">
         <Spinner size="lg" color="primary" />
-        <span className="ml-3 text-neutral-600">Loading block rules...</span>
+        <span className="ml-3 text-neutral-600">
+          Loading {isWhitelistMode ? 'allowed sites' : 'block rules'}...
+        </span>
       </div>
     );
   }
@@ -291,23 +297,30 @@ export const BlockRuleList: React.FC = () => {
           {isLimitReached ? (
             <div className="relative group">
               <Button variant="primary" size="sm" disabled>
-                + Add Rule
+                {isWhitelistMode ? '+ Add Allowed Site' : '+ Add Rule'}
               </Button>
               <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-neutral-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                 <p className="font-bold mb-1">Free Limit Reached</p>
-                <p>You can add up to {FEATURE_FLAGS.FREE.maxBlockRules} rules on the free plan.</p>
+                <p>You can add up to {FEATURE_FLAGS.FREE.maxBlockRules} {isWhitelistMode ? 'allowed sites' : 'rules'} on the free plan.</p>
                 <div className="mt-2 text-neutral-400 border-l-2 border-accent pl-2">
                   <p className="font-bold text-accent">Pro Tip:</p>
-                  <p>1 Rule can block many sites! Use keywords (e.g. "news") or patterns (e.g. "*.social") to group sites.</p>
+                  <p>
+                    {isWhitelistMode
+                      ? 'Wildcards allowed! E.g. "*.work.com" or "google.com/*".'
+                      : '1 Rule can block many sites! Use keywords (e.g. "news") or patterns (e.g. "*.social") to group sites.'
+                    }
+                  </p>
                 </div>
                 {IS_PREMIUM_COMING_SOON && (
-                  <p className="mt-2 text-accent border-t border-neutral-700 pt-2">Premium Coming Soon: Unlimited Rules!</p>
+                  <p className="mt-2 text-accent border-t border-neutral-700 pt-2">
+                    Premium Coming Soon: Unlimited {isWhitelistMode ? 'Allowed Sites' : 'Rules'}!
+                  </p>
                 )}
               </div>
             </div>
           ) : (
             <Button variant="primary" size="sm" onClick={handleAdd}>
-              + Add Rule
+              {isWhitelistMode ? '+ Add Allowed Site' : '+ Add Rule'}
             </Button>
           )}
         </div>
@@ -317,13 +330,16 @@ export const BlockRuleList: React.FC = () => {
       {rules.length === 0 ? (
         <div className="bg-bg-secondary border border-border rounded-lg p-12 text-center">
           <p className="text-text-primary mb-4 font-medium text-lg">
-            🚫 No block rules yet
+            {isWhitelistMode ? '🔒 No allowed sites yet' : '🚫 No block rules yet'}
           </p>
           <p className="text-sm text-text-secondary mb-6">
-            Add your first rule to start blocking distracting websites
+            {isWhitelistMode
+              ? 'Add sites you want to ACCESS while focusing. All other sites will be blocked.'
+              : 'Add your first rule to start blocking distracting websites'
+            }
           </p>
           <Button variant="primary" size="md" onClick={handleAdd}>
-            Add Your First Rule
+            {isWhitelistMode ? 'Add Your First Site' : 'Add Your First Rule'}
           </Button>
         </div>
       ) : (
@@ -446,6 +462,7 @@ export const BlockRuleList: React.FC = () => {
         onSave={handleSave}
         onCancel={() => setIsFormOpen(false)}
         isOpen={isFormOpen}
+        mode={isWhitelistMode ? 'whitelist' : 'blacklist'}
       />
 
       {/* Confirmation Dialog */}

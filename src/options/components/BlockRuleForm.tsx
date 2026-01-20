@@ -13,6 +13,7 @@ export interface BlockRuleFormProps {
   onSave: (rule: Omit<BlockRule, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   onCancel: () => void;
   isOpen: boolean;
+  mode?: 'blacklist' | 'whitelist'; // Default: 'blacklist'
 }
 
 /**
@@ -24,7 +25,9 @@ export const BlockRuleForm: React.FC<BlockRuleFormProps> = ({
   onSave,
   onCancel,
   isOpen,
+  mode = 'blacklist',
 }) => {
+  const isWhitelist = mode === 'whitelist';
   const [name, setName] = useState('');
   const [pattern, setPattern] = useState('');
   const [type, setType] = useState<'domain' | 'keyword' | 'url'>('domain');
@@ -135,14 +138,17 @@ export const BlockRuleForm: React.FC<BlockRuleFormProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="modal-title" className="text-2xl font-bold text-neutral-900 mb-6">
-          {rule ? 'Edit Block Rule' : 'Add Block Rule'}
+          {rule
+            ? (isWhitelist ? 'Edit Allowed Site' : 'Edit Block Rule')
+            : (isWhitelist ? 'Add Allowed Site' : 'Add Block Rule')
+          }
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <Input
             id="rule-name"
-            label="Rule Name"
+            label={isWhitelist ? "Site Name" : "Rule Name"}
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -162,8 +168,9 @@ export const BlockRuleForm: React.FC<BlockRuleFormProps> = ({
             onChange={(e) => setPattern(e.target.value)}
             error={validationErrors.pattern}
             disabled={isSaving}
-            placeholder="e.g., youtube.com, twitter.com"
-            helperText="Domain, URL, or keyword to block"
+            title={isWhitelist ? "Pattern to Allow" : "Pattern to Block"}
+            placeholder={isWhitelist ? "e.g., work-related-site.com" : "e.g., youtube.com, twitter.com"}
+            helperText={isWhitelist ? "Domain or URL to allow access to" : "Domain, URL, or keyword to block"}
             maxLength={500}
             required
           />
@@ -186,36 +193,38 @@ export const BlockRuleForm: React.FC<BlockRuleFormProps> = ({
             </select>
           </div>
 
-          {/* Daily Allowance */}
-          <div>
-            <label className="flex items-center space-x-2 cursor-pointer mb-2">
-              <input
-                type="checkbox"
-                checked={useAllowance}
-                onChange={(e) => setUseAllowance(e.target.checked)}
-                disabled={isSaving}
-                className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-2 focus:ring-primary-500"
-              />
-              <span className="text-sm font-medium text-neutral-700">
-                Set daily time allowance
-              </span>
-            </label>
+          {/* Daily Allowance - Only show in Blacklist mode */}
+          {!isWhitelist && (
+            <div>
+              <label className="flex items-center space-x-2 cursor-pointer mb-2">
+                <input
+                  type="checkbox"
+                  checked={useAllowance}
+                  onChange={(e) => setUseAllowance(e.target.checked)}
+                  disabled={isSaving}
+                  className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-2 focus:ring-primary-500"
+                />
+                <span className="text-sm font-medium text-neutral-700">
+                  Set daily time allowance
+                </span>
+              </label>
 
-            {useAllowance && (
-              <Input
-                id="rule-allowance"
-                label="Minutes per day"
-                type="number"
-                min={1}
-                max={1440}
-                value={allowance || ''}
-                onChange={(e) => setAllowance(Number(e.target.value))}
-                error={validationErrors.allowance}
-                disabled={isSaving}
-                helperText="Allow limited access (1-1440 minutes)"
-              />
-            )}
-          </div>
+              {useAllowance && (
+                <Input
+                  id="rule-allowance"
+                  label="Minutes per day"
+                  type="number"
+                  min={1}
+                  max={1440}
+                  value={allowance || ''}
+                  onChange={(e) => setAllowance(Number(e.target.value))}
+                  error={validationErrors.allowance}
+                  disabled={isSaving}
+                  helperText="Allow limited access (1-1440 minutes)"
+                />
+              )}
+            </div>
+          )}
 
           {/* Enabled */}
           <label className="flex items-center space-x-2 cursor-pointer">
@@ -227,7 +236,10 @@ export const BlockRuleForm: React.FC<BlockRuleFormProps> = ({
               className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-2 focus:ring-primary-500"
             />
             <span className="text-sm text-neutral-700">
-              Enable this rule immediately
+              {isWhitelist
+                ? "Enable this allowance immediately"
+                : "Enable this rule immediately"
+              }
             </span>
           </label>
 
@@ -248,7 +260,12 @@ export const BlockRuleForm: React.FC<BlockRuleFormProps> = ({
               size="md"
               disabled={isSaving}
             >
-              {isSaving ? 'Saving...' : rule ? 'Update Rule' : 'Add Rule'}
+              {isSaving
+                ? 'Saving...'
+                : rule
+                  ? (isWhitelist ? 'Update Site' : 'Update Rule')
+                  : (isWhitelist ? 'Add Site' : 'Add Rule')
+              }
             </Button>
           </div>
         </form>
