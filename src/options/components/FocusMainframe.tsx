@@ -38,9 +38,12 @@ export const FocusMainframe: React.FC = () => {
   const [decryptedNodes, setDecryptedNodes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = async (): Promise<void> => {
       try {
-        const response = await chrome.runtime.sendMessage({ type: 'ANALYTICS_GET' });
+        const response = (await chrome.runtime.sendMessage({
+          type: 'ANALYTICS_GET',
+        })) as unknown as { success: boolean; data?: AnalyticsData };
+
         if (response.success && response.data) {
           setAnalytics(response.data);
         }
@@ -51,7 +54,7 @@ export const FocusMainframe: React.FC = () => {
       }
     };
 
-    fetchAnalytics();
+    void fetchAnalytics();
   }, []);
 
   const calculateXP = (): number => {

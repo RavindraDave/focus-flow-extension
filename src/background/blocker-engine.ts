@@ -307,7 +307,13 @@ export class BlockerEngine {
     // Determine URL filter based on rule type
     let urlFilter: string;
     if (rule.type === 'domain') {
-      urlFilter = `*://*.${rule.pattern}/*`;
+      // Use AdBlock-style filter for domains: matches http/https and subdomains
+      if (rule.pattern.includes('.')) {
+        urlFilter = `||${rule.pattern}^`;
+      } else {
+        // Partial domain (e.g. "youtube") - allow matching any TLD
+        urlFilter = `||${rule.pattern}`;
+      }
     } else if (rule.type === 'url') {
       urlFilter = rule.pattern;
     } else {
@@ -318,8 +324,8 @@ export class BlockerEngine {
     // Build redirect URL with context
     const redirectUrl = chrome.runtime
       ? chrome.runtime.getURL(
-          `/blocked.html?domain=${encodeURIComponent(rule.pattern)}&name=${encodeURIComponent(rule.name)}`
-        )
+        `/blocked.html?domain=${encodeURIComponent(rule.pattern)}&name=${encodeURIComponent(rule.name)}`
+      )
       : `/blocked.html?domain=${encodeURIComponent(rule.pattern)}&name=${encodeURIComponent(rule.name)}`;
 
     return {
@@ -366,7 +372,13 @@ export class BlockerEngine {
     // Determine URL filter based on rule type
     let urlFilter: string;
     if (rule.type === 'domain') {
-      urlFilter = `*://*.${rule.pattern}/*`;
+      // Use AdBlock-style filter for domains
+      if (rule.pattern.includes('.')) {
+        urlFilter = `||${rule.pattern}^`;
+      } else {
+        // Partial domain (e.g. "youtube") - allow matching any TLD
+        urlFilter = `||${rule.pattern}`;
+      }
     } else if (rule.type === 'url') {
       urlFilter = rule.pattern;
     } else {
@@ -400,7 +412,7 @@ export class BlockerEngine {
       const result = await chrome.storage.local.get(
         BlockerEngine.ALLOWANCE_KEY
       );
-      return result[BlockerEngine.ALLOWANCE_KEY] ?? [];
+      return (result[BlockerEngine.ALLOWANCE_KEY] as DomainAllowance[]) ?? [];
     }
     return [];
   }

@@ -33,6 +33,7 @@ global.chrome = mockChrome as any;
 describe('BlockerEngine', () => {
   let engine: BlockerEngine;
   let mockBlockRuleRepository: any;
+  let mockSettingsRepository: any;
   let mockAnalyticsTracker: any;
 
   const createMockRule = (overrides?: Partial<BlockRule>): BlockRule => {
@@ -60,7 +61,15 @@ describe('BlockerEngine', () => {
       trackBlockedAttempt: vi.fn(),
     };
 
-    engine = new BlockerEngine(mockBlockRuleRepository, mockAnalyticsTracker);
+    mockSettingsRepository = {
+      getSettings: vi.fn().mockResolvedValue({ blockingMode: 'blacklist' }),
+    };
+
+    engine = new BlockerEngine(
+      mockBlockRuleRepository,
+      mockSettingsRepository,
+      mockAnalyticsTracker
+    );
 
     // Reset Chrome API mocks
     mockChrome.declarativeNetRequest.getDynamicRules.mockResolvedValue([]);
@@ -88,7 +97,7 @@ describe('BlockerEngine', () => {
           expect.objectContaining({
             id: 1000,
             condition: {
-              urlFilter: '*://*.youtube.com/*',
+              urlFilter: '||youtube.com^',
               resourceTypes: ['main_frame'],
             },
             action: {
@@ -101,7 +110,7 @@ describe('BlockerEngine', () => {
           expect.objectContaining({
             id: 1001,
             condition: {
-              urlFilter: '*://*.facebook.com/*',
+              urlFilter: '||facebook.com^',
               resourceTypes: ['main_frame'],
             },
           }),

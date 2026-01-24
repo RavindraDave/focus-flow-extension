@@ -33,7 +33,7 @@ const App: React.FC = () => {
 
   // Check for first run and detect OS theme preference
   useEffect(() => {
-    async function checkFirstRun() {
+    async function checkFirstRun(): Promise<void> {
       const result = await chrome.storage.sync.get(['has_onboarded']);
 
       if (!result.has_onboarded) {
@@ -46,14 +46,17 @@ const App: React.FC = () => {
       }
     }
 
-    checkFirstRun();
+    void checkFirstRun();
   }, []);
 
   // Load user settings
   useEffect(() => {
-    async function loadSettings() {
+    async function loadSettings(): Promise<void> {
       try {
-        const response = await chrome.runtime.sendMessage({ type: 'SETTINGS_GET' });
+        const response = (await chrome.runtime.sendMessage({
+          type: 'SETTINGS_GET',
+        })) as unknown as { success: boolean; data: UserSettings };
+
         if (response.success) {
           setSettings(response.data);
         }
@@ -62,7 +65,7 @@ const App: React.FC = () => {
       }
     }
 
-    loadSettings();
+    void loadSettings();
   }, []);
 
   // Handle onboarding completion

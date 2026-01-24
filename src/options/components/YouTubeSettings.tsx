@@ -36,7 +36,9 @@ export const YouTubeSettings: React.FC<YouTubeSettingsProps> = ({ isPremium }) =
   useEffect(() => {
     const loadSettings = async (): Promise<void> => {
       try {
-        const result = await chrome.storage.sync.get('youtubeControls');
+        const result = (await chrome.storage.sync.get(
+          'youtubeControls'
+        )) as { youtubeControls?: YouTubeConfig };
 
         if (result.youtubeControls) {
           setConfig(result.youtubeControls);
@@ -48,7 +50,7 @@ export const YouTubeSettings: React.FC<YouTubeSettingsProps> = ({ isPremium }) =
       }
     };
 
-    loadSettings();
+    void loadSettings();
   }, []);
 
   /**
@@ -257,7 +259,7 @@ export const YouTubeSettings: React.FC<YouTubeSettingsProps> = ({ isPremium }) =
       <div className="flex items-center justify-between">
         <Button
           variant="primary"
-          onClick={handleSave}
+          onClick={() => void handleSave()}
           disabled={!isPremium || isSaving}
           aria-label="Save YouTube settings"
         >

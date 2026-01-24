@@ -8,7 +8,7 @@
 
 import { AnalyticsRepository } from '../services/analytics-repository';
 import { SessionRepository } from '../services/session-repository';
-import { PomodoroSession, Achievement } from '../types/index';
+import { PomodoroSession, Achievement, AnalyticsData } from '../types/index';
 
 /**
  * Error class for analytics tracking violations
@@ -288,7 +288,7 @@ export class AnalyticsTracker {
       description: 'Complete your first Pomodoro session',
       category: 'sessions' as const,
       icon: '🍅',
-      check: (analytics: any) => analytics.totalSessions === 1,
+      check: (analytics: AnalyticsData) => analytics.totalSessions === 1,
     },
     {
       id: 'century-club',
@@ -296,7 +296,7 @@ export class AnalyticsTracker {
       description: 'Complete 100 Pomodoro sessions',
       category: 'sessions' as const,
       icon: '💯',
-      check: (analytics: any) => analytics.totalSessions >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.CENTURY_CLUB,
+      check: (analytics: AnalyticsData) => analytics.totalSessions >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.CENTURY_CLUB,
     },
     {
       id: 'streak-warrior',
@@ -304,7 +304,7 @@ export class AnalyticsTracker {
       description: 'Maintain a 7-day streak',
       category: 'streak' as const,
       icon: '🔥',
-      check: (analytics: any) => analytics.streak.currentStreak >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.STREAK_WARRIOR,
+      check: (analytics: AnalyticsData) => analytics.streak.currentStreak >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.STREAK_WARRIOR,
     },
     {
       id: 'marathon-runner',
@@ -312,7 +312,7 @@ export class AnalyticsTracker {
       description: 'Maintain a 30-day streak',
       category: 'streak' as const,
       icon: '🏃',
-      check: (analytics: any) => analytics.streak.currentStreak >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.MARATHON_RUNNER,
+      check: (analytics: AnalyticsData) => analytics.streak.currentStreak >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.MARATHON_RUNNER,
     },
     {
       id: 'focus-beast',
@@ -320,7 +320,7 @@ export class AnalyticsTracker {
       description: 'Accumulate 1000 minutes of focus time',
       category: 'focus-time' as const,
       icon: '🦁',
-      check: (analytics: any) => analytics.totalFocusTimeMinutes >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.FOCUS_BEAST,
+      check: (analytics: AnalyticsData) => analytics.totalFocusTimeMinutes >= AnalyticsTracker.ACHIEVEMENT_THRESHOLDS.FOCUS_BEAST,
     },
   ];
 
@@ -348,7 +348,7 @@ export class AnalyticsTracker {
    * @private
    */
   private async checkAndAwardAchievement(
-    analytics: any,
+    analytics: AnalyticsData,
     config: typeof AnalyticsTracker.ACHIEVEMENTS[number]
   ): Promise<void> {
     const alreadyHas = await this.analyticsRepository.hasAchievement(config.id);
