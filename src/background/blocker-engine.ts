@@ -90,12 +90,7 @@ export class BlockerEngine {
           id: BlockerEngine.WHITELIST_BLOCK_ALL_ID,
           priority: 1,
           action: {
-            type: 'redirect' as chrome.declarativeNetRequest.RuleActionType,
-            redirect: {
-              url: chrome.runtime?.getURL
-                ? chrome.runtime.getURL('/blocked.html?mode=whitelist')
-                : '/blocked.html?mode=whitelist',
-            },
+            type: 'block' as chrome.declarativeNetRequest.RuleActionType,
           },
           condition: {
             urlFilter: '*://*/*',
@@ -321,21 +316,11 @@ export class BlockerEngine {
       urlFilter = rule.pattern;
     }
 
-    // Build redirect URL with context
-    const redirectUrl = chrome.runtime
-      ? chrome.runtime.getURL(
-        `/blocked.html?domain=${encodeURIComponent(rule.pattern)}&name=${encodeURIComponent(rule.name)}`
-      )
-      : `/blocked.html?domain=${encodeURIComponent(rule.pattern)}&name=${encodeURIComponent(rule.name)}`;
-
     return {
       id: ruleId,
       priority: 1, // Fixed priority for all rules
       action: {
-        type: 'redirect' as chrome.declarativeNetRequest.RuleActionType,
-        redirect: {
-          url: redirectUrl,
-        },
+        type: 'block' as chrome.declarativeNetRequest.RuleActionType,
       },
       condition: {
         urlFilter,

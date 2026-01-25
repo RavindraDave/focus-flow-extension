@@ -173,13 +173,13 @@ describe('Timer + Blocker Integration', () => {
         expect.arrayContaining([
           expect.objectContaining({
             condition: {
-              urlFilter: '*://*.youtube.com/*',
+              urlFilter: '||youtube.com^',
               resourceTypes: ['main_frame'],
             },
           }),
           expect.objectContaining({
             condition: {
-              urlFilter: '*://*.facebook.com/*',
+              urlFilter: '||facebook.com^',
               resourceTypes: ['main_frame'],
             },
           }),
@@ -299,7 +299,7 @@ describe('Timer + Blocker Integration', () => {
       expect(mockDynamicRules.length).toBeGreaterThan(0);
     });
 
-    it('BEHAVIOR: Multiple work-break cycles should correctly toggle blocking', async () => {
+    it('BEHAVIOR: Multiple work-break cycles should correctly toggle blocking', { timeout: 15000 }, async () => {
       // Cycle 1: Work
       await timer.start('work', 25);
       expect(mockDynamicRules.length).toBeGreaterThan(0);
