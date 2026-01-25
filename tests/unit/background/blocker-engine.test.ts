@@ -101,7 +101,10 @@ describe('BlockerEngine', () => {
               resourceTypes: ['main_frame'],
             },
             action: {
-              type: 'block',
+              type: 'redirect',
+              redirect: {
+                url: expect.stringContaining('blocked.html'),
+              },
             },
           }),
           expect.objectContaining({
@@ -111,7 +114,10 @@ describe('BlockerEngine', () => {
               resourceTypes: ['main_frame'],
             },
             action: {
-              type: 'block',
+              type: 'redirect',
+              redirect: {
+                url: expect.stringContaining('blocked.html'),
+              },
             },
           }),
         ]),
@@ -426,7 +432,7 @@ describe('BlockerEngine', () => {
   });
 
   describe('Rule Conversion', () => {
-    it('should create block action for domain rules', async () => {
+    it('should include domain in redirect URL', async () => {
       const rules = [
         createMockRule({
           pattern: 'youtube.com',
@@ -439,9 +445,11 @@ describe('BlockerEngine', () => {
       await engine.syncRules();
 
       const call = mockChrome.declarativeNetRequest.updateDynamicRules.mock.calls[0][0];
-      const action = call.addRules[0].action;
+      const redirectUrl = call.addRules[0].action.redirect.url;
 
-      expect(action.type).toBe('block');
+      expect(redirectUrl).toContain('blocked.html');
+      expect(redirectUrl).toContain('domain=youtube.com');
+      expect(redirectUrl).toContain('name=YouTube%20Block');
     });
 
   });
