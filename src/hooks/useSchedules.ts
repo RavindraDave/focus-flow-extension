@@ -9,6 +9,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Schedule } from '../types';
 
+/**
+ * Raw schedule from storage (dates as strings)
+ */
+interface RawSchedule extends Omit<Schedule, 'exceptions' | 'createdAt' | 'updatedAt'> {
+  exceptions: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UseSchedulesReturn {
   /**
    * All schedules
@@ -87,9 +96,9 @@ export function useSchedules(): UseSchedulesReturn {
 
       if (response.success && response.data) {
         // Convert date strings back to Date objects
-        const schedulesWithDates = response.data.map((schedule: any) => ({
+        const schedulesWithDates = (response.data as RawSchedule[]).map((schedule) => ({
           ...schedule,
-          exceptions: schedule.exceptions.map((d: string) => new Date(d)),
+          exceptions: schedule.exceptions.map((d) => new Date(d)),
           createdAt: new Date(schedule.createdAt),
           updatedAt: new Date(schedule.updatedAt),
         }));

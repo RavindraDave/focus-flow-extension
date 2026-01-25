@@ -260,12 +260,41 @@ async function handleUseAllowance(domain, durationMinutes) {
 
       // Wait a moment then redirect
       setTimeout(() => {
-        // Redirect to the original URL
+        // Redirect to the original URL with security validation
         const urlParams = new URLSearchParams(window.location.search);
         const originalUrl = urlParams.get('url');
 
+        // SECURITY: Validate URL before redirect to prevent open redirect attacks
         if (originalUrl) {
-          window.location.href = originalUrl;
+          try {
+            const url = new URL(originalUrl);
+            // Only allow http/https protocols
+            if (!['http:', 'https:'].includes(url.protocol)) {
+              console.error('Invalid URL protocol for redirect');
+              window.location.href = `https://${domain}`;
+              return;
+            }
+            // Block redirects to private/internal IPs
+            const hostname = url.hostname.toLowerCase();
+            const privatePatterns = [
+              /^localhost$/,
+              /^127\./,
+              /^192\.168\./,
+              /^10\./,
+              /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+              /^0\./,
+              /^\[::1\]$/,
+            ];
+            if (privatePatterns.some(p => p.test(hostname))) {
+              console.error('Redirect to private IP blocked');
+              window.location.href = `https://${domain}`;
+              return;
+            }
+            window.location.href = url.toString();
+          } catch (e) {
+            console.error('Invalid URL for redirect:', e);
+            window.location.href = `https://${domain}`;
+          }
         } else {
           // If no URL param, try to construct from domain
           window.location.href = `https://${domain}`;

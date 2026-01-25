@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import { z } from 'zod';
 import { Button } from '../../components/atoms/Button';
 import { Badge } from '../../components/atoms/Badge';
 import { Spinner } from '../../components/atoms/Spinner';
@@ -13,6 +14,7 @@ import { ConfirmDialog } from '../../components/molecules/ConfirmDialog';
 import { useBlockRules } from '../../hooks/useBlockRules';
 import { useSettings } from '../../hooks/useSettings';
 import type { BlockRule } from '../../types';
+import { BlockRuleSchema } from '../../types/schemas';
 import { FEATURE_FLAGS, IS_PREMIUM_COMING_SOON } from '../../utils/constants';
 
 /**
@@ -199,6 +201,7 @@ export const BlockRuleList: React.FC = () => {
 
   /**
    * Handle import from JSON file
+   * SECURITY: Validates imported rules against schema
    */
   const handleImport = (): void => {
     const input = document.createElement('input');
@@ -210,17 +213,37 @@ export const BlockRuleList: React.FC = () => {
 
       try {
         const text = await file.text();
-        const importedRules = JSON.parse(text) as BlockRule[];
 
-        if (!Array.isArray(importedRules)) {
-          throw new Error('Invalid file format');
+        // SECURITY: Parse JSON safely
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          throw new Error('Invalid JSON format');
         }
 
-        // TODO: Implement importRules
+        // SECURITY: Validate structure
+        if (!Array.isArray(parsed)) {
+          throw new Error('Invalid file format: expected an array of rules');
+        }
+
+        // SECURITY: Validate each rule against schema
+        const ImportedRulesSchema = z.array(BlockRuleSchema);
+        const validationResult = ImportedRulesSchema.safeParse(parsed);
+
+        if (!validationResult.success) {
+          const firstError = validationResult.error.errors[0];
+          throw new Error(`Invalid rule data: ${firstError?.path.join('.')} - ${firstError?.message}`);
+        }
+
+        const importedRules = validationResult.data as BlockRule[];
+
+        // TODO: Implement importRules - for now just log
         console.log('Import rules:', importedRules);
-        alert(`Successfully imported ${importedRules.length} rules`);
+        alert(`Successfully validated ${importedRules.length} rules. Import feature coming soon.`);
       } catch (err) {
-        alert('Failed to import rules. Please check the file format.');
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        alert(`Failed to import rules: ${message}`);
         console.error('Import error:', err);
       }
     };
