@@ -11,6 +11,9 @@
 import { AnalyticsRepository } from '../services/analytics-repository';
 import { SessionRepository } from '../services/session-repository';
 import { StreakData } from '../types/index';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('StreakTracker');
 
 /**
  * Error class for streak tracking violations
@@ -197,7 +200,7 @@ export class StreakTracker {
   ): Promise<Partial<StreakData>> {
     if (isPremium && streak.freezesAvailable > 0) {
       // Use a freeze to maintain streak
-      console.info('Using streak freeze to maintain streak');
+      log.info('Using streak freeze to maintain streak');
       return {
         // Streak maintained
         lastSessionDate: now,
@@ -205,7 +208,7 @@ export class StreakTracker {
       };
     } else {
       // Break streak
-      console.warn('Streak broken: no activity and no freezes available');
+      log.warn('Streak broken: no activity and no freezes available');
       return {
         currentStreak: 0,
         lastSessionDate: now,
@@ -233,16 +236,14 @@ export class StreakTracker {
 
     if (isPremium && streak.freezesAvailable >= daysToRecover) {
       // Use freezes to recover streak
-      console.info(`Using ${daysToRecover} freezes to maintain streak`);
+      log.info('Using freezes to maintain streak', { daysToRecover });
       return {
         lastSessionDate: now,
         freezesAvailable: streak.freezesAvailable - daysToRecover,
       };
     } else {
       // Cannot recover - break streak
-      console.warn(
-        `Streak broken: missed ${daysMissed} days, insufficient freezes`
-      );
+      log.warn('Streak broken: insufficient freezes', { daysMissed });
       return {
         currentStreak: 0,
         lastSessionDate: now,

@@ -14,6 +14,9 @@
 import { generateHMAC, verifyHMAC } from '../utils/crypto';
 import { SettingsRepository } from '../services/settings-repository';
 import { NuclearConfig } from '../types/index';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('NuclearModeManager');
 
 /**
  * Error class for nuclear mode violations
@@ -188,7 +191,7 @@ export class NuclearModeManager {
 
       return isValid;
     } catch (error) {
-      console.error('Nuclear mode integrity verification failed:', error);
+      log.error('Nuclear mode integrity verification failed', error as Error);
       return false;
     }
   }
@@ -210,9 +213,9 @@ export class NuclearModeManager {
     const MANIPULATION_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
     if (timeDiff < -MANIPULATION_THRESHOLD_MS) {
-      console.warn(
-        `Time manipulation detected: clock moved backward by ${Math.abs(timeDiff / 1000 / 60)} minutes`
-      );
+      log.warn('Time manipulation detected', {
+        minutesBackward: Math.abs(timeDiff / 1000 / 60)
+      });
       return true;
     }
 
@@ -278,7 +281,7 @@ export class NuclearModeManager {
    * @private
    */
   private async forceDeactivate(reason: string): Promise<void> {
-    console.error(`Force deactivating nuclear mode: ${reason}`);
+    log.error('Force deactivating nuclear mode', new Error(reason), { reason });
 
     const settings = await this.settingsRepository.getSettings();
 

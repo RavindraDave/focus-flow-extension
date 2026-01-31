@@ -10,6 +10,9 @@ import { BlockRuleRepository } from '../services/block-rule-repository';
 import { SettingsRepository } from '../services/settings-repository';
 import { AnalyticsTracker } from './analytics-tracker';
 import { BlockRule } from '../types/index';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('BlockerEngine');
 
 /**
  * Error class for blocker engine violations
@@ -85,12 +88,10 @@ export class BlockerEngine {
 
       await this.updateDynamicRules(chromeRules);
 
-      // Log success (development only)
-      if (process.env.NODE_ENV === 'development') {
-        console.info(
-          `✅ Synced ${chromeRules.length} rules (mode: ${isWhitelistMode ? 'whitelist' : 'blacklist'})`
-        );
-      }
+      log.info('Rules synced', {
+        count: chromeRules.length,
+        mode: isWhitelistMode ? 'whitelist' : 'blacklist',
+      });
     } catch (error) {
       // Re-throw BlockerErrors as-is
       if (error instanceof BlockerError) {
@@ -178,9 +179,7 @@ export class BlockerEngine {
     // Sync rules to Chrome declarativeNetRequest
     await this.syncRules();
 
-    if (process.env.NODE_ENV === 'development') {
-      console.info('🚫 Blocking enabled');
-    }
+    log.info('Blocking enabled');
   }
 
   /**
@@ -204,9 +203,7 @@ export class BlockerEngine {
       }
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.info('✅ Blocking disabled (break time)');
-    }
+    log.info('Blocking disabled (break time)');
   }
 
   /**
@@ -297,9 +294,7 @@ export class BlockerEngine {
     }
 
     await this.saveAllowances(allowances);
-    if (process.env.NODE_ENV === 'development') {
-      console.info('🔄 Daily allowances reset');
-    }
+    log.info('Daily allowances reset');
   }
 
   /**
@@ -315,9 +310,7 @@ export class BlockerEngine {
     }
 
     await this.analyticsTracker.trackBlockedAttempt();
-    if (process.env.NODE_ENV === 'development') {
-      console.info(`🚫 Blocked attempt: ${domain}`);
-    }
+    log.info('Blocked attempt', { domain });
   }
 
   /**
@@ -531,11 +524,11 @@ export class BlockerEngine {
     const expiresAt = new Date(Date.now() + grantedMinutes * 60 * 1000);
     await this.scheduleReblock(domain, expiresAt, grantedMinutes);
 
-    if (process.env.NODE_ENV === 'development') {
-      console.info(
-        `✅ Granted ${grantedMinutes}min temporary access to ${domain}`
-      );
-    }
+    log.info('Granted temporary access', {
+      domain,
+      durationMinutes: grantedMinutes,
+      expiresAt: expiresAt.toISOString(),
+    });
 
     return {
       success: true,
@@ -615,9 +608,10 @@ export class BlockerEngine {
     // Re-sync rules to re-enable blocking for this domain
     await this.syncRules();
 
-    if (process.env.NODE_ENV === 'development') {
-      console.info(`🚫 Re-blocked ${domain} after ${actualMinutes}min of access`);
-    }
+    log.info('Re-blocked domain after temporary access', {
+      domain,
+      actualMinutes,
+    });
   }
 
   /**

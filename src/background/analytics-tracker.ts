@@ -9,6 +9,9 @@
 import { AnalyticsRepository } from '../services/analytics-repository';
 import { SessionRepository } from '../services/session-repository';
 import { PomodoroSession, Achievement, AnalyticsData } from '../types/index';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('AnalyticsTracker');
 
 /**
  * Error class for analytics tracking violations
@@ -123,8 +126,7 @@ export class AnalyticsTracker {
     // This functionality may need to be tracked separately or added to the type
     // For now, we'll skip this update to maintain type safety
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log('Blocked attempt tracked (not yet part of DailyStats type)');
+      log.debug('Blocked attempt tracked (not yet part of DailyStats type)');
     }
   }
 
@@ -377,10 +379,7 @@ export class AnalyticsTracker {
    */
   private async awardAchievement(achievement: Achievement): Promise<void> {
     await this.analyticsRepository.addAchievement(achievement);
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.info(`🎉 Achievement unlocked: ${achievement.name}`);
-    }
+    log.info('Achievement unlocked', { achievementName: achievement.name });
   }
 
   /**

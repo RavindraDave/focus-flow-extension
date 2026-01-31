@@ -12,6 +12,9 @@ import { StreakTracker } from './streak-tracker';
 import { SettingsRepository } from '../services/settings-repository';
 import { BlockerEngine } from './blocker-engine';
 import { PomodoroSession } from '../types/index';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('TimerEngine');
 
 /**
  * Error class for timer engine violations
@@ -128,7 +131,7 @@ export class TimerEngine {
     await this.createAlarm();
     await this.updateBadge();
 
-    console.info(`⏱️  Timer started: ${type} (${minutes}m)`);
+    log.info('Timer started', { type, minutes });
   }
 
   /**
@@ -154,7 +157,7 @@ export class TimerEngine {
     }
 
     await this.updateBadge();
-    console.info('⏸️  Timer paused');
+    log.info('Timer paused');
   }
 
   /**
@@ -179,7 +182,7 @@ export class TimerEngine {
     await this.createAlarm();
     await this.updateBadge();
 
-    console.info('▶️  Timer resumed');
+    log.info('Timer resumed');
   }
 
   /**
@@ -219,7 +222,7 @@ export class TimerEngine {
     // Reset state
     await this.reset();
 
-    console.info('🛑 Timer stopped (abandoned)');
+    log.info('Timer stopped (abandoned)');
   }
 
   /**
@@ -297,7 +300,7 @@ export class TimerEngine {
       await this.reset();
     }
 
-    console.info(`✅ Session completed: ${session.type}`);
+    log.info('Session completed', { type: session.type });
   }
 
   /**

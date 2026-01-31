@@ -13,6 +13,9 @@ import { ScheduleRepository } from '../services/schedule-repository';
 import { BlockRuleRepository } from '../services/block-rule-repository';
 import type { Schedule, DayOfWeek } from '../types';
 import type { TimerEngine } from './timer-engine';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('ScheduleManager');
 
 /**
  * Alarm name for schedule checks
@@ -85,9 +88,9 @@ export class ScheduleManager {
       // Perform initial check
       await this.checkSchedules();
 
-      console.log('[ScheduleManager] Initialized successfully');
+      log.info('Initialized successfully');
     } catch (error) {
-      console.error('[ScheduleManager] Failed to initialize:', error);
+      log.error('Failed to initialize', error as Error);
       throw error;
     }
   }
@@ -128,12 +131,13 @@ export class ScheduleManager {
       this.currentActiveScheduleIds = newActiveScheduleIds;
 
       if (justActivated.length > 0 || justDeactivated.length > 0) {
-        console.log(
-          `[ScheduleManager] Activated: ${justActivated.length}, Deactivated: ${justDeactivated.length}`
-        );
+        log.info('Schedule state changed', {
+          activated: justActivated.length,
+          deactivated: justDeactivated.length,
+        });
       }
     } catch (error) {
-      console.error('[ScheduleManager] Error checking schedules:', error);
+      log.error('Error checking schedules', error as Error);
     }
   }
 
@@ -159,16 +163,16 @@ export class ScheduleManager {
           // Calculate duration from schedule (use default work duration of 25 minutes)
           const defaultDuration = 25;
           await this.timerEngine.start('work', defaultDuration);
-          console.log(`[ScheduleManager] Auto-started timer for schedule: ${schedule.name}`);
+          log.info('Auto-started timer for schedule', { scheduleName: schedule.name });
         }
       }
 
       // Send notification
       await this.sendScheduleNotification(schedule, true);
 
-      console.log(`[ScheduleManager] Activated schedule: ${schedule.name}`);
+      log.info('Activated schedule', { scheduleName: schedule.name });
     } catch (error) {
-      console.error(`[ScheduleManager] Failed to activate schedule ${schedule.id}:`, error);
+      log.error('Failed to activate schedule', error as Error, { scheduleId: schedule.id });
     }
   }
 
@@ -183,7 +187,7 @@ export class ScheduleManager {
       const schedule = await this.scheduleRepository.findById(scheduleId);
 
       if (!schedule) {
-        console.warn(`[ScheduleManager] Schedule not found: ${scheduleId}`);
+        log.warn('Schedule not found', { scheduleId });
         return;
       }
 
@@ -206,9 +210,9 @@ export class ScheduleManager {
       // Send notification
       await this.sendScheduleNotification(schedule, false);
 
-      console.log(`[ScheduleManager] Deactivated schedule: ${schedule.name}`);
+      log.info('Deactivated schedule', { name: schedule.name });
     } catch (error) {
-      console.error(`[ScheduleManager] Failed to deactivate schedule ${scheduleId}:`, error);
+      log.error('Failed to deactivate schedule', error as Error, { scheduleId });
     }
   }
 
@@ -237,7 +241,7 @@ export class ScheduleManager {
         priority: 1,
       });
     } catch (error) {
-      console.error('[ScheduleManager] Failed to send notification:', error);
+      log.error('Failed to send notification', error as Error);
     }
   }
 
@@ -273,7 +277,7 @@ export class ScheduleManager {
         minutesUntilStart: minMinutesUntilStart === Infinity ? -1 : minMinutesUntilStart,
       };
     } catch (error) {
-      console.error('[ScheduleManager] Error getting next schedule:', error);
+      log.error('Error getting next schedule', error as Error);
       return { schedule: null, minutesUntilStart: -1 };
     }
   }

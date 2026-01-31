@@ -22,6 +22,9 @@ import { BlockListMessageHandler } from './handlers/blocklist-handler';
 import { ScheduleMessageHandler } from './handlers/schedule-handler';
 import { validateBackgroundMessage } from './message-types';
 import type { BackgroundMessage, BackgroundResponse } from './message-types';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('BackgroundServiceWorker');
 
 /**
  * Error class for background service worker errors
@@ -116,7 +119,7 @@ class BackgroundServiceWorker {
     );
 
     if (process.env.NODE_ENV === 'development') {
-      console.info('🚀 Focus Flow background service worker initialized');
+      log.info('Background service worker initialized');
     }
   }
 
@@ -142,7 +145,7 @@ class BackgroundServiceWorker {
     await this.restoreTimerState();
 
     if (process.env.NODE_ENV === 'development') {
-      console.info('✅ Background service worker ready');
+      log.info('Background service worker ready');
     }
   }
 
@@ -163,7 +166,7 @@ class BackgroundServiceWorker {
         const validation = validateBackgroundMessage(message);
         if (!validation.valid) {
           if (process.env.NODE_ENV === 'development') {
-            console.warn('Invalid message rejected:', validation.error);
+            log.warn('Invalid message rejected', { error: validation.error });
           }
           sendResponse({
             success: false,
@@ -177,7 +180,7 @@ class BackgroundServiceWorker {
           .then(response => sendResponse({ success: true, data: response }))
           .catch((error: unknown) => {
             if (process.env.NODE_ENV === 'development') {
-              console.error('Message handler error:', error);
+              log.error('Message handler error', error as Error);
             }
             sendResponse({
               success: false,
@@ -450,7 +453,7 @@ class BackgroundServiceWorker {
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.error(`Alarm handler error (${alarm.name}):`, error);
+        log.error(`Alarm handler error (${alarm.name})`, error as Error);
       }
     }
   }
@@ -465,7 +468,7 @@ class BackgroundServiceWorker {
     if (chrome.runtime?.onSuspend) {
       chrome.runtime.onSuspend.addListener(() => {
         if (process.env.NODE_ENV === 'development') {
-          console.info('🔄 Service worker suspending - performing cleanup');
+          log.info('Service worker suspending - performing cleanup');
         }
         // Note: Can't use async operations here as they may not complete
         // Storage writes are already debounced and will flush automatically
@@ -493,7 +496,7 @@ class BackgroundServiceWorker {
     try {
       if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
         if (process.env.NODE_ENV === 'development') {
-          console.info('🎉 Extension installed');
+          log.info('Extension installed');
         }
 
         // Initialize default settings
@@ -526,7 +529,7 @@ class BackgroundServiceWorker {
         });
       } else if (details.reason === chrome.runtime.OnInstalledReason.UPDATE) {
         if (process.env.NODE_ENV === 'development') {
-          console.info(`📦 Extension updated to version ${chrome.runtime.getManifest().version}`);
+          log.info('Extension updated', { version: chrome.runtime.getManifest().version });
         }
 
         // Run migrations if needed
@@ -534,7 +537,7 @@ class BackgroundServiceWorker {
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('Install handler error:', error);
+        log.error('Install handler error', error as Error);
       }
     }
   }
@@ -563,7 +566,7 @@ class BackgroundServiceWorker {
     });
 
     if (process.env.NODE_ENV === 'development') {
-      console.info(`⏰ Midnight check scheduled in ${Math.round(minutesUntilMidnight)} minutes`);
+      log.info('Midnight check scheduled', { minutesUntilMidnight: Math.round(minutesUntilMidnight) });
     }
   }
 
@@ -578,7 +581,7 @@ class BackgroundServiceWorker {
 
     if (currentSession?.status === 'active') {
       if (process.env.NODE_ENV === 'development') {
-        console.info('🔄 Restoring timer state from session:', currentSession.id);
+        log.info('Restoring timer state from session', { sessionId: currentSession.id });
       }
 
       // Calculate remaining time
@@ -594,7 +597,7 @@ class BackgroundServiceWorker {
       } else {
         // Session expired while browser was closed
         if (process.env.NODE_ENV === 'development') {
-          console.info('⏱️ Session expired, marking as abandoned');
+          log.info('Session expired, marking as abandoned');
         }
         await this.timerEngine.stop();
       }
@@ -613,7 +616,7 @@ class BackgroundServiceWorker {
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.info(`🔄 Running migrations from version ${previousVersion}`);
+      log.info('Running migrations', { fromVersion: previousVersion });
     }
 
     // Add migration logic here as needed for future updates
@@ -627,7 +630,7 @@ class BackgroundServiceWorker {
 // Initialize the background service worker
 const backgroundService = new BackgroundServiceWorker();
 backgroundService.initialize().catch(error => {
-  console.error('Failed to initialize background service worker:', error);
+  log.error('Failed to initialize background service worker', error as Error);
 });
 
 // Export for testing
