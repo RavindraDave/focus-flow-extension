@@ -3,7 +3,7 @@
  * Debug UI for viewing application logs
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { logger, LogLevel, type LogEntry } from '../../utils/logger';
@@ -15,9 +15,9 @@ const LOG_LEVEL_LABELS: Record<LogLevel, string> = {
   [LogLevel.ERROR]: 'ERROR',
 };
 
-const LOG_LEVEL_COLORS: Record<LogLevel, 'neutral' | 'primary' | 'warning' | 'error'> = {
-  [LogLevel.DEBUG]: 'neutral',
-  [LogLevel.INFO]: 'primary',
+const LOG_LEVEL_VARIANTS: Record<LogLevel, 'info' | 'success' | 'warning' | 'error'> = {
+  [LogLevel.DEBUG]: 'info',
+  [LogLevel.INFO]: 'success',
   [LogLevel.WARN]: 'warning',
   [LogLevel.ERROR]: 'error',
 };
@@ -42,6 +42,7 @@ export function LogViewer(): JSX.Element {
       const interval = setInterval(loadLogs, 1000);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [autoRefresh]);
 
   // Filter logs
@@ -103,13 +104,13 @@ export function LogViewer(): JSX.Element {
             />
             Auto-refresh
           </label>
-          <Button size="sm" variant="outline" onClick={loadLogs}>
+          <Button size="sm" variant="secondary" onClick={loadLogs}>
             Refresh
           </Button>
-          <Button size="sm" variant="outline" onClick={handleExport}>
+          <Button size="sm" variant="secondary" onClick={handleExport}>
             Export
           </Button>
-          <Button size="sm" variant="danger" onClick={handleClear}>
+          <Button size="sm" variant="destructive" onClick={handleClear}>
             Clear
           </Button>
         </div>
@@ -195,9 +196,9 @@ export function LogViewer(): JSX.Element {
                 <span className="flex-1">{log.message}</span>
 
                 {/* Data */}
-                {log.data && (
+                {log.data !== undefined && (
                   <span className="text-purple-400 text-xs">
-                    {JSON.stringify(log.data)}
+                    {String(JSON.stringify(log.data))}
                   </span>
                 )}
 
@@ -216,16 +217,16 @@ export function LogViewer(): JSX.Element {
       {/* Stats */}
       <div className="flex gap-4">
         <div className="flex items-center gap-2">
-          <Badge color={LOG_LEVEL_COLORS[LogLevel.DEBUG]}>
+          <Badge variant={LOG_LEVEL_VARIANTS[LogLevel.DEBUG]}>
             {logs.filter(l => l.level === LogLevel.DEBUG).length} Debug
           </Badge>
-          <Badge color={LOG_LEVEL_COLORS[LogLevel.INFO]}>
+          <Badge variant={LOG_LEVEL_VARIANTS[LogLevel.INFO]}>
             {logs.filter(l => l.level === LogLevel.INFO).length} Info
           </Badge>
-          <Badge color={LOG_LEVEL_COLORS[LogLevel.WARN]}>
+          <Badge variant={LOG_LEVEL_VARIANTS[LogLevel.WARN]}>
             {logs.filter(l => l.level === LogLevel.WARN).length} Warn
           </Badge>
-          <Badge color={LOG_LEVEL_COLORS[LogLevel.ERROR]}>
+          <Badge variant={LOG_LEVEL_VARIANTS[LogLevel.ERROR]}>
             {logs.filter(l => l.level === LogLevel.ERROR).length} Error
           </Badge>
         </div>

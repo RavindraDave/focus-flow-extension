@@ -24,7 +24,7 @@ export interface LogEntry {
   component: string;
   message: string;
   data?: unknown;
-  error?: Error;
+  error?: Error | undefined;
 }
 
 class Logger {

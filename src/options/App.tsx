@@ -20,9 +20,13 @@ import {
   ProductivityHeatmap,
 } from './components';
 import { Spinner } from '../components/atoms/Spinner';
+import { LogViewer } from '../components/organisms/LogViewer';
+import { createLogger } from '../utils/logger';
 import { IS_PREMIUM_COMING_SOON, FEATURE_FLAGS, SUPPORT_EMAIL, PRIVACY_POLICY_URL, DOCS_URL } from '../utils/constants';
 
-type Tab = 'dashboard' | 'timer' | 'blocking' | 'integrations' | 'gamification' | 'data';
+const log = createLogger('OptionsApp');
+
+type Tab = 'dashboard' | 'timer' | 'blocking' | 'integrations' | 'gamification' | 'data' | 'debug';
 
 /**
  * Main Options App component with 6-tab navigation
@@ -37,6 +41,7 @@ const App: React.FC = () => {
    * Handle tab navigation and close sidebar on mobile
    */
   const handleTabChange = (tab: Tab) => {
+    log.info('Tab changed', { from: activeTab, to: tab });
     setActiveTab(tab);
     setSidebarOpen(false); // Close sidebar on mobile after selection
   };
@@ -154,6 +159,14 @@ const App: React.FC = () => {
             label="Data & Config"
             description="Export, import, and manage data"
           />
+          {process.env.NODE_ENV === 'development' && (
+            <NavItem
+              tab="debug"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>}
+              label="Debug Logs"
+              description="View application logs"
+            />
+          )}
           {/* External Docs Link */}
           <button
             type="button"
@@ -275,6 +288,19 @@ const App: React.FC = () => {
 
           {/* Data & Config Tab */}
           {activeTab === 'data' && <DataConfigTab />}
+
+          {/* Debug Tab (Development Only) */}
+          {activeTab === 'debug' && process.env.NODE_ENV === 'development' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-text-primary mb-2">Debug Logs</h2>
+                <p className="text-text-secondary">
+                  View and export application logs for debugging purposes.
+                </p>
+              </div>
+              <LogViewer />
+            </div>
+          )}
         </div>
       </main>
     </div>

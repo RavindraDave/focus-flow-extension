@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logger Test</title>
+    <script type="module">
+        // Simulate the logger
+        class Logger {
+            logs = [];
+
+            log(level, component, message, data) {
+                const entry = {
+                    timestamp: new Date().toISOString(),
+                    level,
+                    component,
+                    message,
+                    data
+                };
+                this.logs.push(entry);
+                console.log(`[${component}] ${message}`, data || '');
+            }
+
+            getLogs() {
+                return this.logs;
+            }
+        }
+
+        const logger = new Logger();
+
+        class ComponentLogger {
+            constructor(name) {
+                this.name = name;
+            }
+
+            debug(msg, data) { logger.log(0, this.name, msg, data); }
+            info(msg, data) { logger.log(1, this.name, msg, data); }
+            warn(msg, data) { logger.log(2, this.name, msg, data); }
+            error(msg, err, data) { logger.log(3, this.name, msg, data); }
+        }
+
+        function createLogger(name) {
+            return new ComponentLogger(name);
+        }
+
+        // Test the logger
+        window.onload = () => {
+            const log = createLogger('TestComponent');
+
+            log.debug('Debug message', { test: 123 });
+            log.info('Application started');
+            log.info('Tab changed', { from: 'dashboard', to: 'settings' });
+            log.warn('Warning message');
+            log.error('Error occurred', new Error('Test error'));
+
+            // Display logs
+            const output = document.getElementById('output');
+            const logs = logger.getLogs();
+            output.innerHTML = `
+                <h2>Logged ${logs.length} messages:</h2>
+                <pre>${JSON.stringify(logs, null, 2)}</pre>
+            `;
+        };
+    </script>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        pre {
+            background: #000;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        h2 {
+            color: #00ffff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Logger Test Page</h1>
+    <p>Open the browser console to see logs, and check below for logged entries:</p>
+    <div id="output"></div>
+</body>
+</html>
