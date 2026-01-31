@@ -7,7 +7,7 @@
  */
 
 import { StorageService } from './storage-service';
-import { Schedule } from '../types/index';
+import { Schedule, DayOfWeek } from '../types/index';
 import { ScheduleSchema } from '../types/schemas';
 import { STORAGE_KEYS, STORAGE_LIMITS, ERROR_MESSAGES } from '../utils/constants';
 import { z } from 'zod';
@@ -193,8 +193,8 @@ export class ScheduleRepository {
    * @returns Lowercase day name matching DayOfWeekSchema
    * @private
    */
-  private getDayName(dayNumber: number): string {
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  private getDayName(dayNumber: number): DayOfWeek {
+    const days: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     return days[dayNumber] || 'monday';
   }
 
@@ -221,7 +221,7 @@ export class ScheduleRepository {
 
       // Check day of week (locale-independent using getDay())
       const dayOfWeek = this.getDayName(dateTime.getDay());
-      if (!schedule.daysOfWeek.includes(dayOfWeek as any)) {
+      if (!schedule.daysOfWeek.includes(dayOfWeek)) {
         return false;
       }
 

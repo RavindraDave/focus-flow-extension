@@ -324,8 +324,8 @@ export class BlockerEngine {
     // Build redirect URL with context
     const redirectUrl = chrome.runtime
       ? chrome.runtime.getURL(
-        `/blocked.html?domain=${encodeURIComponent(rule.pattern)}&name=${encodeURIComponent(rule.name)}`
-      )
+          `/blocked.html?domain=${encodeURIComponent(rule.pattern)}&name=${encodeURIComponent(rule.name)}`
+        )
       : `/blocked.html?domain=${encodeURIComponent(rule.pattern)}&name=${encodeURIComponent(rule.name)}`;
 
     return {

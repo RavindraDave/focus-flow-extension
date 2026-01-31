@@ -954,12 +954,28 @@ const DataConfigTab: React.FC = () => {
     setIsImporting(true);
     try {
       const text = await file.text();
-      const importData = JSON.parse(text);
 
-      // Validate import data structure
-      if (!importData.version || !importData.sync) {
+      // SECURITY: Parse JSON in try-catch to handle malformed input
+      let importData: unknown;
+      try {
+        importData = JSON.parse(text);
+      } catch {
+        throw new Error('Invalid JSON format. Please check the file.');
+      }
+
+      // SECURITY: Validate import data structure
+      if (
+        typeof importData !== 'object' ||
+        importData === null ||
+        !('version' in importData) ||
+        !('sync' in importData) ||
+        typeof (importData as Record<string, unknown>).version !== 'string' ||
+        typeof (importData as Record<string, unknown>).sync !== 'object'
+      ) {
         throw new Error('Invalid configuration file format');
       }
+
+      const validatedData = importData as { version: string; sync: Record<string, unknown>; local?: Record<string, unknown> };
 
       // Confirm before overwriting
       if (!confirm('This will replace your current settings. Continue?')) {
@@ -968,18 +984,19 @@ const DataConfigTab: React.FC = () => {
       }
 
       // Import sync data
-      await chrome.storage.sync.set(importData.sync);
+      await chrome.storage.sync.set(validatedData.sync);
 
       // Import local data (if available)
-      if (importData.local) {
-        await chrome.storage.local.set(importData.local);
+      if (validatedData.local && typeof validatedData.local === 'object') {
+        await chrome.storage.local.set(validatedData.local);
       }
 
       alert('Configuration imported successfully! Reloading page...');
       window.location.reload();
     } catch (error) {
       console.error('Failed to import configuration:', error);
-      alert('Failed to import configuration. Please check the file and try again.');
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to import configuration: ${message}`);
     } finally {
       setIsImporting(false);
       // Reset file input

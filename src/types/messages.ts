@@ -56,7 +56,7 @@ export type BackgroundMessage =
  * Generic wrapper for background service worker responses.
  * Includes success/failure discrimination for error handling.
  */
-export type BackgroundResponse<T = any> =
+export type BackgroundResponse<T = unknown> =
   | { success: true; data: T }
   | { success: false; error: string };
 
@@ -178,7 +178,7 @@ export function isSettingsUpdateMessage(
  * }
  * ```
  */
-export async function sendBackgroundMessage<T = any>(
+export async function sendBackgroundMessage<T = unknown>(
   message: BackgroundMessage,
   timeoutMs = 5000
 ): Promise<BackgroundResponse<T>> {

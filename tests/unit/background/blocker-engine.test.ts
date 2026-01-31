@@ -113,6 +113,12 @@ describe('BlockerEngine', () => {
               urlFilter: '||facebook.com^',
               resourceTypes: ['main_frame'],
             },
+            action: {
+              type: 'redirect',
+              redirect: {
+                url: expect.stringContaining('blocked.html'),
+              },
+            },
           }),
         ]),
       });

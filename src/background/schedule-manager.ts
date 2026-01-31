@@ -11,7 +11,7 @@
 
 import { ScheduleRepository } from '../services/schedule-repository';
 import { BlockRuleRepository } from '../services/block-rule-repository';
-import type { Schedule } from '../types';
+import type { Schedule, DayOfWeek } from '../types';
 import type { TimerEngine } from './timer-engine';
 
 /**
@@ -61,8 +61,8 @@ export class ScheduleManager {
    * @returns Lowercase day name matching DayOfWeekSchema
    * @private
    */
-  private getDayName(dayNumber: number): string {
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  private getDayName(dayNumber: number): DayOfWeek {
+    const days: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     return days[dayNumber] || 'monday';
   }
 
@@ -299,7 +299,7 @@ export class ScheduleManager {
 
       // Check if this day is included in the schedule (locale-independent)
       const dayOfWeek = this.getDayName(checkDate.getDay());
-      if (!schedule.daysOfWeek.includes(dayOfWeek as any)) {
+      if (!schedule.daysOfWeek.includes(dayOfWeek)) {
         continue;
       }
 

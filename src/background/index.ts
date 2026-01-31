@@ -20,12 +20,8 @@ import { ScheduleRepository } from '../services/schedule-repository';
 import { TimerMessageHandler } from './handlers/timer-handler';
 import { BlockListMessageHandler } from './handlers/blocklist-handler';
 import { ScheduleMessageHandler } from './handlers/schedule-handler';
+import { validateBackgroundMessage } from './message-types';
 import type { BackgroundMessage, BackgroundResponse } from './message-types';
-
-/**
- * Note: Message validation schemas are defined but not currently used.
- * They can be enabled in the future for additional runtime validation.
- */
 
 /**
  * Error class for background service worker errors
@@ -159,6 +155,17 @@ class BackgroundServiceWorker {
         sender: chrome.runtime.MessageSender,
         sendResponse: (response: BackgroundResponse) => void
       ) => {
+        // SECURITY: Validate message at runtime before processing
+        const validation = validateBackgroundMessage(message);
+        if (!validation.valid) {
+          console.warn('Invalid message rejected:', validation.error);
+          sendResponse({
+            success: false,
+            error: validation.error || 'Invalid message format',
+          });
+          return true;
+        }
+
         // Handle message asynchronously
         this.handleMessage(message, sender)
           .then(response => sendResponse({ success: true, data: response }))

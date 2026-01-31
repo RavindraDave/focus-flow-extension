@@ -243,15 +243,8 @@ export class SettingsRepository {
         .join('');
     } else {
       // Node.js (for tests): Use crypto module
-      try {
-        return nodeCrypto.randomBytes(32).toString('hex');
-      } catch {
-        // Fallback: This should never happen in production
-        console.error('crypto.getRandomValues not available, using fallback');
-        return Array.from({ length: 64 }, () =>
-          Math.floor(Math.random() * 16).toString(16)
-        ).join('');
-      }
+      // SECURITY: No fallback to Math.random() - crypto must be available
+      return nodeCrypto.randomBytes(32).toString('hex');
     }
   }
 
