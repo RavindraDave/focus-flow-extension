@@ -115,7 +115,9 @@ class BackgroundServiceWorker {
       this.settingsRepository
     );
 
-    console.info('🚀 Focus Flow background service worker initialized');
+    if (process.env.NODE_ENV === 'development') {
+      console.info('🚀 Focus Flow background service worker initialized');
+    }
   }
 
   /**
@@ -139,7 +141,9 @@ class BackgroundServiceWorker {
     // Restore timer state if browser was restarted
     await this.restoreTimerState();
 
-    console.info('✅ Background service worker ready');
+    if (process.env.NODE_ENV === 'development') {
+      console.info('✅ Background service worker ready');
+    }
   }
 
   /**
@@ -158,19 +162,23 @@ class BackgroundServiceWorker {
         // SECURITY: Validate message at runtime before processing
         const validation = validateBackgroundMessage(message);
         if (!validation.valid) {
-          console.warn('Invalid message rejected:', validation.error);
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Invalid message rejected:', validation.error);
+          }
           sendResponse({
             success: false,
-            error: validation.error || 'Invalid message format',
+            error: validation.error ?? 'Invalid message format',
           });
           return true;
         }
 
         // Handle message asynchronously
-        this.handleMessage(message, sender)
+        void this.handleMessage(message, sender)
           .then(response => sendResponse({ success: true, data: response }))
           .catch((error: unknown) => {
-            console.error('Message handler error:', error);
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Message handler error:', error);
+            }
             sendResponse({
               success: false,
               error: error instanceof Error ? error.message : 'Unknown error',
@@ -388,49 +396,63 @@ class BackgroundServiceWorker {
    * @private
    */
   private setupAlarmListener(): void {
-    chrome.alarms.onAlarm.addListener(async (alarm: chrome.alarms.Alarm) => {
-      try {
-        switch (alarm.name) {
-          case BackgroundServiceWorker.ALARM_TIMER_TICK:
-            // Timer engine handles its own ticks
-            await this.timerEngine.tick();
-            break;
+    chrome.alarms.onAlarm.addListener((alarm: chrome.alarms.Alarm) => {
+      void this.handleAlarm(alarm);
+    });
+  }
 
-          case BackgroundServiceWorker.ALARM_MIDNIGHT_CHECK:
-            // Check daily streak at midnight
-            const settings = await this.settingsRepository.getSettings();
-            await this.streakTracker.checkDailyStreak(
-              settings.premiumLicenseKey !== undefined
-            );
-
-            // Clean up old data
-            await this.sessionRepository.cleanupOldSessions();
-            await this.analyticsRepository.cleanupOldStats();
-
-            // Schedule next midnight check
-            await this.scheduleMidnightCheck();
-            break;
-
-          case BackgroundServiceWorker.ALARM_ALLOWANCE_RESET:
-            // Reset daily allowances at midnight
-            await this.blockerEngine.resetDailyAllowances();
-            break;
-
-          default:
-            // Handle re-block alarms for temporary access expiry
-            if (alarm.name.startsWith('reblock-')) {
-              const domain = alarm.name.replace('reblock-', '');
-              await this.blockerEngine.handleTemporaryAccessExpired(domain);
-              break;
-            }
-
-            // Delegate to schedule manager for schedule-related alarms
-            await this.scheduleManager.handleAlarm(alarm);
+  /**
+   * Handle alarm events
+   * @private
+   */
+  private async handleAlarm(alarm: chrome.alarms.Alarm): Promise<void> {
+    try {
+      switch (alarm.name) {
+        case BackgroundServiceWorker.ALARM_TIMER_TICK: {
+          // Timer engine handles its own ticks
+          await this.timerEngine.tick();
+          break;
         }
-      } catch (error) {
+
+        case BackgroundServiceWorker.ALARM_MIDNIGHT_CHECK: {
+          // Check daily streak at midnight
+          const settings = await this.settingsRepository.getSettings();
+          await this.streakTracker.checkDailyStreak(
+            settings.premiumLicenseKey !== undefined
+          );
+
+          // Clean up old data
+          await this.sessionRepository.cleanupOldSessions();
+          await this.analyticsRepository.cleanupOldStats();
+
+          // Schedule next midnight check
+          await this.scheduleMidnightCheck();
+          break;
+        }
+
+        case BackgroundServiceWorker.ALARM_ALLOWANCE_RESET: {
+          // Reset daily allowances at midnight
+          await this.blockerEngine.resetDailyAllowances();
+          break;
+        }
+
+        default: {
+          // Handle re-block alarms for temporary access expiry
+          if (alarm.name.startsWith('reblock-')) {
+            const domain = alarm.name.replace('reblock-', '');
+            await this.blockerEngine.handleTemporaryAccessExpired(domain);
+            break;
+          }
+
+          // Delegate to schedule manager for schedule-related alarms
+          await this.scheduleManager.handleAlarm(alarm);
+        }
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
         console.error(`Alarm handler error (${alarm.name}):`, error);
       }
-    });
+    }
   }
 
   /**
@@ -440,9 +462,11 @@ class BackgroundServiceWorker {
    * @private
    */
   private setupSuspendListener(): void {
-    if (typeof chrome !== 'undefined' && chrome.runtime?.onSuspend) {
+    if (chrome.runtime?.onSuspend) {
       chrome.runtime.onSuspend.addListener(() => {
-        console.info('🔄 Service worker suspending - performing cleanup');
+        if (process.env.NODE_ENV === 'development') {
+          console.info('🔄 Service worker suspending - performing cleanup');
+        }
         // Note: Can't use async operations here as they may not complete
         // Storage writes are already debounced and will flush automatically
       });
@@ -456,49 +480,63 @@ class BackgroundServiceWorker {
    * @private
    */
   private setupInstallListener(): void {
-    chrome.runtime.onInstalled.addListener(async (details: chrome.runtime.InstalledDetails) => {
-      try {
-        if (details.reason === 'install') {
+    chrome.runtime.onInstalled.addListener((details: chrome.runtime.InstalledDetails) => {
+      void this.handleInstall(details);
+    });
+  }
+
+  /**
+   * Handle extension installation and updates
+   * @private
+   */
+  private async handleInstall(details: chrome.runtime.InstalledDetails): Promise<void> {
+    try {
+      if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
+        if (process.env.NODE_ENV === 'development') {
           console.info('🎉 Extension installed');
-
-          // Initialize default settings
-          const settings = await this.settingsRepository.getSettings();
-          if (!settings) {
-            await this.settingsRepository.updateSettings({
-              workDuration: 25,
-              shortBreakDuration: 5,
-              longBreakDuration: 15,
-              sessionsUntilLongBreak: 4,
-              autoStartNextSession: false,
-              enableNotifications: true,
-            });
-          }
-
-          // Schedule midnight check
-          await this.scheduleMidnightCheck();
-
-          // Open onboarding page on first install
-          await chrome.tabs.create({
-            url: chrome.runtime.getURL('onboarding.html'),
-          });
-
-          // Show welcome notification
-          await chrome.notifications.create({
-            type: 'basic',
-            iconUrl: chrome.runtime.getURL('/icons/icon_v10_128.png'),
-            title: 'Focus Flow Installed!',
-            message: 'Welcome! Let\'s get you started with Focus Flow.',
-          });
-        } else if (details.reason === 'update') {
-          console.info(`📦 Extension updated to version ${chrome.runtime.getManifest().version}`);
-
-          // Run migrations if needed
-          await this.runMigrations(details.previousVersion);
         }
-      } catch (error) {
+
+        // Initialize default settings
+        const settings = await this.settingsRepository.getSettings();
+        if (!settings) {
+          await this.settingsRepository.updateSettings({
+            workDuration: 25,
+            shortBreakDuration: 5,
+            longBreakDuration: 15,
+            sessionsUntilLongBreak: 4,
+            autoStartNextSession: false,
+            enableNotifications: true,
+          });
+        }
+
+        // Schedule midnight check
+        await this.scheduleMidnightCheck();
+
+        // Open onboarding page on first install
+        await chrome.tabs.create({
+          url: chrome.runtime.getURL('onboarding.html'),
+        });
+
+        // Show welcome notification
+        await chrome.notifications.create({
+          type: 'basic',
+          iconUrl: chrome.runtime.getURL('/icons/icon_v10_128.png'),
+          title: 'Focus Flow Installed!',
+          message: "Welcome! Let's get you started with Focus Flow.",
+        });
+      } else if (details.reason === chrome.runtime.OnInstalledReason.UPDATE) {
+        if (process.env.NODE_ENV === 'development') {
+          console.info(`📦 Extension updated to version ${chrome.runtime.getManifest().version}`);
+        }
+
+        // Run migrations if needed
+        await this.runMigrations(details.previousVersion);
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
         console.error('Install handler error:', error);
       }
-    });
+    }
   }
 
   /**
@@ -524,7 +562,9 @@ class BackgroundServiceWorker {
       delayInMinutes: minutesUntilMidnight,
     });
 
-    console.info(`⏰ Midnight check scheduled in ${Math.round(minutesUntilMidnight)} minutes`);
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`⏰ Midnight check scheduled in ${Math.round(minutesUntilMidnight)} minutes`);
+    }
   }
 
   /**
@@ -536,8 +576,10 @@ class BackgroundServiceWorker {
   private async restoreTimerState(): Promise<void> {
     const currentSession = await this.sessionRepository.getCurrentSession();
 
-    if (currentSession && currentSession.status === 'active') {
-      console.info('🔄 Restoring timer state from session:', currentSession.id);
+    if (currentSession?.status === 'active') {
+      if (process.env.NODE_ENV === 'development') {
+        console.info('🔄 Restoring timer state from session:', currentSession.id);
+      }
 
       // Calculate remaining time
       const elapsed = Math.floor(
@@ -551,7 +593,9 @@ class BackgroundServiceWorker {
         await this.timerEngine.start(currentSession.type, currentSession.duration / 60);
       } else {
         // Session expired while browser was closed
-        console.info('⏱️ Session expired, marking as abandoned');
+        if (process.env.NODE_ENV === 'development') {
+          console.info('⏱️ Session expired, marking as abandoned');
+        }
         await this.timerEngine.stop();
       }
     }
@@ -564,9 +608,13 @@ class BackgroundServiceWorker {
    * @private
    */
   private async runMigrations(previousVersion?: string): Promise<void> {
-    if (!previousVersion) { return; }
+    if (!previousVersion) {
+      return;
+    }
 
-    console.info(`🔄 Running migrations from version ${previousVersion}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`🔄 Running migrations from version ${previousVersion}`);
+    }
 
     // Add migration logic here as needed for future updates
     // Example:

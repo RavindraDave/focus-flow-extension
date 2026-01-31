@@ -238,13 +238,32 @@ export const BlockRuleList: React.FC = () => {
 
         const importedRules = validationResult.data as BlockRule[];
 
-        // TODO: Implement importRules - for now just log
-        console.log('Import rules:', importedRules);
-        alert(`Successfully validated ${importedRules.length} rules. Import feature coming soon.`);
+        // Import each rule into the system
+        try {
+          for (const rule of importedRules) {
+            // Generate new ID for imported rule
+            const newRule: Omit<BlockRule, 'id'> = {
+              name: rule.name,
+              pattern: rule.pattern,
+              type: rule.type,
+              enabled: rule.enabled,
+              allowance: rule.allowance,
+              timeUsedToday: 0,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+            await addRule(newRule);
+          }
+          alert(`Successfully imported ${importedRules.length} block rules.`);
+        } catch (importErr) {
+          throw new Error(`Failed to save rules: ${importErr instanceof Error ? importErr.message : 'Unknown error'}`);
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
         alert(`Failed to import rules: ${message}`);
-        console.error('Import error:', err);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Import error:', err);
+        }
       }
     };
     input.click();

@@ -79,52 +79,14 @@ export class BlockerEngine {
       const settings = await this.settingsRepository.getSettings();
       const isWhitelistMode = settings.blockingMode === 'whitelist';
 
-      let chromeRules: chrome.declarativeNetRequest.Rule[];
+      const chromeRules = isWhitelistMode
+        ? this.buildWhitelistRules(rules)
+        : this.buildBlacklistRules(rules);
 
-      if (isWhitelistMode) {
-        // Whitelist mode: Block everything, then allow specific sites
-        chromeRules = [];
+      await this.updateDynamicRules(chromeRules);
 
-        // Add block-all rule (lowest priority)
-        chromeRules.push({
-          id: BlockerEngine.WHITELIST_BLOCK_ALL_ID,
-          priority: 1,
-          action: {
-            type: 'redirect' as chrome.declarativeNetRequest.RuleActionType,
-            redirect: {
-              url: chrome.runtime?.getURL
-                ? chrome.runtime.getURL('/blocked.html?mode=whitelist')
-                : '/blocked.html?mode=whitelist',
-            },
-          },
-          condition: {
-            urlFilter: '*://*/*',
-            resourceTypes: ['main_frame' as chrome.declarativeNetRequest.ResourceType],
-          },
-        });
-
-        // Add allow rules for each site in the list (higher priority)
-        chromeRules.push(
-          ...rules.map((rule, index) => this.convertToWhitelistRule(rule, index))
-        );
-      } else {
-        // Blacklist mode: Block specific sites
-        chromeRules = rules.map((rule, index) =>
-          this.convertToDeclarativeRule(rule, index)
-        );
-      }
-
-      // Update dynamic rules
-      if (chrome?.declarativeNetRequest) {
-        // Remove all existing dynamic rules
-        const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
-        const ruleIdsToRemove = existingRules.map(r => r.id);
-
-        await chrome.declarativeNetRequest.updateDynamicRules({
-          removeRuleIds: ruleIdsToRemove,
-          addRules: chromeRules,
-        });
-
+      // Log success (development only)
+      if (process.env.NODE_ENV === 'development') {
         console.info(
           `✅ Synced ${chromeRules.length} rules (mode: ${isWhitelistMode ? 'whitelist' : 'blacklist'})`
         );
@@ -134,9 +96,75 @@ export class BlockerEngine {
       if (error instanceof BlockerError) {
         throw error;
       }
-      console.error('Failed to sync block rules:', error);
       throw new BlockerError('Failed to sync block rules');
     }
+  }
+
+  /**
+   * Build whitelist mode rules
+   * @private
+   */
+  private buildWhitelistRules(
+    rules: BlockRule[]
+  ): chrome.declarativeNetRequest.Rule[] {
+    const chromeRules: chrome.declarativeNetRequest.Rule[] = [];
+
+    // Add block-all rule (lowest priority)
+    const blockAllUrl = chrome.runtime?.getURL
+      ? chrome.runtime.getURL('/blocked.html?mode=whitelist')
+      : '/blocked.html?mode=whitelist';
+
+    chromeRules.push({
+      id: BlockerEngine.WHITELIST_BLOCK_ALL_ID,
+      priority: 1,
+      action: {
+        type: 'redirect' as chrome.declarativeNetRequest.RuleActionType,
+        redirect: { url: blockAllUrl },
+      },
+      condition: {
+        urlFilter: '*://*/*',
+        resourceTypes: ['main_frame' as chrome.declarativeNetRequest.ResourceType],
+      },
+    });
+
+    // Add allow rules for each site
+    chromeRules.push(
+      ...rules.map((rule, index) => this.convertToWhitelistRule(rule, index))
+    );
+
+    return chromeRules;
+  }
+
+  /**
+   * Build blacklist mode rules
+   * @private
+   */
+  private buildBlacklistRules(
+    rules: BlockRule[]
+  ): chrome.declarativeNetRequest.Rule[] {
+    return rules.map((rule, index) =>
+      this.convertToDeclarativeRule(rule, index)
+    );
+  }
+
+  /**
+   * Update Chrome dynamic rules
+   * @private
+   */
+  private async updateDynamicRules(
+    chromeRules: chrome.declarativeNetRequest.Rule[]
+  ): Promise<void> {
+    if (!chrome?.declarativeNetRequest) {
+      return;
+    }
+
+    const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
+    const ruleIdsToRemove = existingRules.map(r => r.id);
+
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: ruleIdsToRemove,
+      addRules: chromeRules,
+    });
   }
 
   /**
@@ -150,7 +178,9 @@ export class BlockerEngine {
     // Sync rules to Chrome declarativeNetRequest
     await this.syncRules();
 
-    console.info('🚫 Blocking enabled');
+    if (process.env.NODE_ENV === 'development') {
+      console.info('🚫 Blocking enabled');
+    }
   }
 
   /**
@@ -162,7 +192,7 @@ export class BlockerEngine {
     this.isBlocking = false;
 
     // Remove all dynamic rules from Chrome
-    if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest) {
+    if (chrome?.declarativeNetRequest) {
       const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
       const ruleIdsToRemove = existingRules.map(r => r.id);
 
@@ -174,7 +204,9 @@ export class BlockerEngine {
       }
     }
 
-    console.info('✅ Blocking disabled (break time)');
+    if (process.env.NODE_ENV === 'development') {
+      console.info('✅ Blocking disabled (break time)');
+    }
   }
 
   /**
@@ -265,7 +297,9 @@ export class BlockerEngine {
     }
 
     await this.saveAllowances(allowances);
-    console.info('🔄 Daily allowances reset');
+    if (process.env.NODE_ENV === 'development') {
+      console.info('🔄 Daily allowances reset');
+    }
   }
 
   /**
@@ -281,7 +315,9 @@ export class BlockerEngine {
     }
 
     await this.analyticsTracker.trackBlockedAttempt();
-    console.info(`🚫 Blocked attempt: ${domain}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`🚫 Blocked attempt: ${domain}`);
+    }
   }
 
   /**
@@ -488,7 +524,31 @@ export class BlockerEngine {
     // Cap duration to available allowance
     const grantedMinutes = Math.min(durationMinutes, allowanceCheck.remaining);
 
-    // Remove the rule temporarily by syncing without this domain
+    // Temporarily remove blocking for this domain
+    await this.temporarilyUnblockDomain(domain);
+
+    // Calculate expiration and set up re-block alarm
+    const expiresAt = new Date(Date.now() + grantedMinutes * 60 * 1000);
+    await this.scheduleReblock(domain, expiresAt, grantedMinutes);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.info(
+        `✅ Granted ${grantedMinutes}min temporary access to ${domain}`
+      );
+    }
+
+    return {
+      success: true,
+      expiresAt,
+      remaining: allowanceCheck.remaining - grantedMinutes,
+    };
+  }
+
+  /**
+   * Temporarily unblock a domain
+   * @private
+   */
+  private async temporarilyUnblockDomain(domain: string): Promise<void> {
     const rules = await this.blockRuleRepository.getActiveRules();
     const filteredRules = rules.filter(r => r.pattern !== domain);
 
@@ -498,44 +558,34 @@ export class BlockerEngine {
     );
 
     // Update dynamic rules (temporarily remove this domain)
-    if (chrome?.declarativeNetRequest) {
-      const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
-      const ruleIdsToRemove = existingRules.map(r => r.id);
+    await this.updateDynamicRules(chromeRules);
+  }
 
-      await chrome.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: ruleIdsToRemove,
-        addRules: chromeRules,
-      });
+  /**
+   * Schedule re-blocking of a domain
+   * @private
+   */
+  private async scheduleReblock(
+    domain: string,
+    expiresAt: Date,
+    grantedMinutes: number
+  ): Promise<void> {
+    if (!chrome?.alarms) {
+      return;
     }
 
-    // Calculate expiration
-    const expiresAt = new Date(Date.now() + grantedMinutes * 60 * 1000);
+    const alarmName = `reblock-${domain}`;
+    await chrome.alarms.create(alarmName, {
+      when: expiresAt.getTime(),
+    });
 
-    // Set up re-block alarm
-    if (chrome?.alarms) {
-      const alarmName = `reblock-${domain}`;
-      await chrome.alarms.create(alarmName, {
-        when: expiresAt.getTime(),
-      });
-
-      // Store temporary access info
-      await this.saveTemporaryAccess({
-        domain,
-        startTime: new Date(),
-        expiresAt,
-        grantedMinutes,
-      });
-    }
-
-    console.info(
-      `✅ Granted ${grantedMinutes}min temporary access to ${domain}`
-    );
-
-    return {
-      success: true,
+    // Store temporary access info
+    await this.saveTemporaryAccess({
+      domain,
+      startTime: new Date(),
       expiresAt,
-      remaining: allowanceCheck.remaining - grantedMinutes,
-    };
+      grantedMinutes,
+    });
   }
 
   /**
@@ -565,7 +615,9 @@ export class BlockerEngine {
     // Re-sync rules to re-enable blocking for this domain
     await this.syncRules();
 
-    console.info(`🚫 Re-blocked ${domain} after ${actualMinutes}min of access`);
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`🚫 Re-blocked ${domain} after ${actualMinutes}min of access`);
+    }
   }
 
   /**
@@ -618,22 +670,32 @@ export class BlockerEngine {
     expiresAt: Date;
     grantedMinutes: number;
   }): Promise<void> {
-    if (chrome?.storage) {
-      const result = await chrome.storage.local.get(
-        BlockerEngine.TEMP_ACCESS_KEY
-      );
-      const tempAccesses = result[BlockerEngine.TEMP_ACCESS_KEY] ?? {};
-
-      tempAccesses[info.domain] = {
-        startTime: info.startTime.toISOString(),
-        expiresAt: info.expiresAt.toISOString(),
-        grantedMinutes: info.grantedMinutes,
-      };
-
-      await chrome.storage.local.set({
-        [BlockerEngine.TEMP_ACCESS_KEY]: tempAccesses,
-      });
+    if (!chrome?.storage) {
+      return;
     }
+
+    const result = await chrome.storage.local.get(
+      BlockerEngine.TEMP_ACCESS_KEY
+    );
+    const tempAccesses: Record<string, {
+      startTime: string;
+      expiresAt: string;
+      grantedMinutes: number;
+    }> = (result[BlockerEngine.TEMP_ACCESS_KEY] as Record<string, {
+      startTime: string;
+      expiresAt: string;
+      grantedMinutes: number;
+    }>) ?? {};
+
+    tempAccesses[info.domain] = {
+      startTime: info.startTime.toISOString(),
+      expiresAt: info.expiresAt.toISOString(),
+      grantedMinutes: info.grantedMinutes,
+    };
+
+    await chrome.storage.local.set({
+      [BlockerEngine.TEMP_ACCESS_KEY]: tempAccesses,
+    });
   }
 
   /**
@@ -645,14 +707,25 @@ export class BlockerEngine {
     expiresAt: string;
     grantedMinutes: number;
   } | null> {
-    if (chrome?.storage) {
-      const result = await chrome.storage.local.get(
-        BlockerEngine.TEMP_ACCESS_KEY
-      );
-      const tempAccesses = result[BlockerEngine.TEMP_ACCESS_KEY] ?? {};
-      return tempAccesses[domain] ?? null;
+    if (!chrome?.storage) {
+      return null;
     }
-    return null;
+
+    const result = await chrome.storage.local.get(
+      BlockerEngine.TEMP_ACCESS_KEY
+    );
+    const tempAccesses: Record<string, {
+      startTime: string;
+      expiresAt: string;
+      grantedMinutes: number;
+    }> = (result[BlockerEngine.TEMP_ACCESS_KEY] as Record<string, {
+      startTime: string;
+      expiresAt: string;
+      grantedMinutes: number;
+    }>) ?? {};
+
+    const access = tempAccesses[domain];
+    return access ?? null;
   }
 
   /**
@@ -660,17 +733,28 @@ export class BlockerEngine {
    * @private
    */
   private async removeTemporaryAccess(domain: string): Promise<void> {
-    if (chrome?.storage) {
-      const result = await chrome.storage.local.get(
-        BlockerEngine.TEMP_ACCESS_KEY
-      );
-      const tempAccesses = result[BlockerEngine.TEMP_ACCESS_KEY] ?? {};
-
-      delete tempAccesses[domain];
-
-      await chrome.storage.local.set({
-        [BlockerEngine.TEMP_ACCESS_KEY]: tempAccesses,
-      });
+    if (!chrome?.storage) {
+      return;
     }
+
+    const result = await chrome.storage.local.get(
+      BlockerEngine.TEMP_ACCESS_KEY
+    );
+    const tempAccesses: Record<string, {
+      startTime: string;
+      expiresAt: string;
+      grantedMinutes: number;
+    }> = (result[BlockerEngine.TEMP_ACCESS_KEY] as Record<string, {
+      startTime: string;
+      expiresAt: string;
+      grantedMinutes: number;
+    }>) ?? {};
+
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete tempAccesses[domain];
+
+    await chrome.storage.local.set({
+      [BlockerEngine.TEMP_ACCESS_KEY]: tempAccesses,
+    });
   }
 }

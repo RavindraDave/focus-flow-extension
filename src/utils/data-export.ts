@@ -97,9 +97,11 @@ export function exportAnalyticsToJSON(
   analytics: AnalyticsData,
   sessions?: PomodoroSession[]
 ): string {
+  const extensionVersion = chrome?.runtime?.getManifest?.()?.version ?? '1.0.0';
+
   const exportData = {
     exportDate: new Date().toISOString(),
-    extensionVersion: '1.0.0', // TODO: Get from manifest
+    extensionVersion,
     analytics: {
       totalFocusTimeMinutes: analytics.totalFocusTimeMinutes,
       totalSessions: analytics.totalSessions,

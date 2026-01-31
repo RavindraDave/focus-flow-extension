@@ -118,11 +118,14 @@ export class AnalyticsTracker {
    *
    * Increments blocked attempts counter for today.
    */
-  async trackBlockedAttempt(): Promise<void> {
+  trackBlockedAttempt(): void {
     // Note: blockedAttempts is not part of DailyStats type definition
     // This functionality may need to be tracked separately or added to the type
     // For now, we'll skip this update to maintain type safety
-    console.log('Blocked attempt tracked (not yet part of DailyStats type)');
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('Blocked attempt tracked (not yet part of DailyStats type)');
+    }
   }
 
   /**
@@ -374,7 +377,10 @@ export class AnalyticsTracker {
    */
   private async awardAchievement(achievement: Achievement): Promise<void> {
     await this.analyticsRepository.addAchievement(achievement);
-    console.info(`🎉 Achievement unlocked: ${achievement.name}`);
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.info(`🎉 Achievement unlocked: ${achievement.name}`);
+    }
   }
 
   /**

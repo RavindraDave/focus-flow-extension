@@ -71,7 +71,7 @@ module.exports = {
     'react/prop-types': 'off', // Using TypeScript
 
     // General Best Practices
-    'no-console': ['warn', { allow: ['warn', 'error'] }],
+    'no-console': ['warn', { allow: ['warn', 'error', 'info', 'log'] }],
     'prefer-const': 'error',
     'no-var': 'error',
     'eqeqeq': ['error', 'always'],
@@ -81,12 +81,44 @@ module.exports = {
     '@typescript-eslint/prefer-optional-chain': 'error',
     '@typescript-eslint/no-floating-promises': 'error',
     '@typescript-eslint/await-thenable': 'error',
+    '@typescript-eslint/require-await': 'warn',
 
     // Security
     'no-eval': 'error',
     'no-implied-eval': 'error',
     'no-new-func': 'error',
   },
+  overrides: [
+    {
+      // Relax rules for background scripts (console logging is useful for debugging)
+      files: ['src/background/**/*.ts'],
+      rules: {
+        'no-console': 'off',
+        'max-lines-per-function': ['warn', { max: 60 }],
+      },
+    },
+    {
+      // Relax rules for test files
+      files: ['**/*.test.ts', '**/*.test.tsx', 'tests/**/*.ts'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/explicit-function-return-type': 'off',
+        'max-lines-per-function': 'off',
+        'complexity': 'off',
+        '@typescript-eslint/require-await': 'off',
+      },
+    },
+    {
+      // Relax rules for type declaration files
+      files: ['**/*.d.ts'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
+      },
+    },
+  ],
   ignorePatterns: [
     'dist',
     'build',

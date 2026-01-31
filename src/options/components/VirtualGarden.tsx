@@ -24,22 +24,22 @@ const Tree: React.FC<TreeProps> = ({ status, date, completedSessions, abandonedS
   const [showTooltip, setShowTooltip] = useState(false);
 
   const getTreeIcon = () => {
-    if (status === 'empty') return '🌱'; // Seedling for no activity
-    if (status === 'withered') return '🥀'; // Withered for abandoned
+    if (status === 'empty') {return '🌱';} // Seedling for no activity
+    if (status === 'withered') {return '🥀';} // Withered for abandoned
 
     // Different tree stages based on number of completed sessions
-    if (completedSessions >= 8) return '🌳'; // Mature tree
-    if (completedSessions >= 4) return '🌲'; // Growing tree
+    if (completedSessions >= 8) {return '🌳';} // Mature tree
+    if (completedSessions >= 4) {return '🌲';} // Growing tree
     return '🌿'; // Young tree
   };
 
   const getTreeSize = () => {
-    if (status === 'empty') return 'text-2xl';
-    if (status === 'withered') return 'text-2xl opacity-50';
+    if (status === 'empty') {return 'text-2xl';}
+    if (status === 'withered') {return 'text-2xl opacity-50';}
 
     // Larger trees for more sessions
-    if (completedSessions >= 8) return 'text-4xl';
-    if (completedSessions >= 4) return 'text-3xl';
+    if (completedSessions >= 8) {return 'text-4xl';}
+    if (completedSessions >= 4) {return 'text-3xl';}
     return 'text-2xl';
   };
 

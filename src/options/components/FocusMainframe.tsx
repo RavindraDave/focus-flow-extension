@@ -58,7 +58,7 @@ export const FocusMainframe: React.FC = () => {
   }, []);
 
   const calculateXP = (): number => {
-    if (!analytics) return 0;
+    if (!analytics) {return 0;}
 
     const sessionXP = analytics.totalSessions * XP_PER_COMPLETED_SESSION;
     const focusXP = analytics.totalFocusTimeMinutes * XP_PER_FOCUS_MINUTE;
@@ -79,16 +79,16 @@ export const FocusMainframe: React.FC = () => {
   };
 
   const getNextRank = (currentRankIndex: number) => {
-    if (currentRankIndex >= RANKS.length - 1) return null;
+    if (currentRankIndex >= RANKS.length - 1) {return null;}
     return RANKS[currentRankIndex + 1];
   };
 
   const getProgressToNextRank = (xp: number, currentRankIndex: number) => {
     const nextRank = getNextRank(currentRankIndex);
-    if (!nextRank) return 100; // Max rank achieved
+    if (!nextRank) {return 100;} // Max rank achieved
 
     const currentRank = RANKS[currentRankIndex];
-    if (!currentRank) return 0;
+    if (!currentRank) {return 0;}
 
     const currentRankXP = currentRank.minXP;
     const nextRankXP = nextRank.minXP;
@@ -98,7 +98,7 @@ export const FocusMainframe: React.FC = () => {
   };
 
   const getDataNodes = (): DataNode[] => {
-    if (!analytics) return [];
+    if (!analytics) {return [];}
 
     const xp = calculateXP();
     const rank = getCurrentRank(xp);

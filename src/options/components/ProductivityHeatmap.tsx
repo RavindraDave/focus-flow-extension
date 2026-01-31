@@ -27,10 +27,10 @@ const INTENSITY_COLORS = [
 ];
 
 const getIntensity = (minutes: number): number => {
-  if (minutes === 0) return 0;
-  if (minutes < 30) return 1;
-  if (minutes < 60) return 2;
-  if (minutes < 120) return 3;
+  if (minutes === 0) {return 0;}
+  if (minutes < 30) {return 1;}
+  if (minutes < 60) {return 2;}
+  if (minutes < 120) {return 3;}
   return 4;
 };
 
@@ -114,7 +114,7 @@ export const ProductivityHeatmap: React.FC = () => {
   };
 
   const calculateStats = () => {
-    if (!analytics) return { totalDays: 0, avgMinutes: 0, maxMinutes: 0, activeDays: 0 };
+    if (!analytics) {return { totalDays: 0, avgMinutes: 0, maxMinutes: 0, activeDays: 0 };}
 
     const last84Days = analytics.dailyStats?.filter(stat => {
       const statDate = new Date(stat.date);
@@ -140,8 +140,8 @@ export const ProductivityHeatmap: React.FC = () => {
   };
 
   const formatMinutes = (minutes: number): string => {
-    if (minutes === 0) return '0min';
-    if (minutes < 60) return `${minutes}min`;
+    if (minutes === 0) {return '0min';}
+    if (minutes < 60) {return `${minutes}min`;}
 
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -237,7 +237,7 @@ export const ProductivityHeatmap: React.FC = () => {
         <div className="flex gap-1 mt-2 ml-12">
           {weeks.map((week, index) => {
             const firstDayOfWeek = week[0]?.date;
-            if (!firstDayOfWeek) return null;
+            if (!firstDayOfWeek) {return null;}
 
             const month = firstDayOfWeek.getMonth();
             const prevWeekFirstDay = weeks[index - 1]?.[0]?.date;
