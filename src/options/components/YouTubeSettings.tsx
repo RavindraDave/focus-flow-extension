@@ -8,6 +8,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../../components/atoms/Button';
 import type { YouTubeConfig } from '../../types';
 import { IS_PREMIUM_COMING_SOON } from '../../utils/constants';
+import { createLogger } from '../../utils/logger';
+
+const log = createLogger('YouTubeSettings');
 
 export interface YouTubeSettingsProps {
   isPremium: boolean;
@@ -44,7 +47,7 @@ export const YouTubeSettings: React.FC<YouTubeSettingsProps> = ({ isPremium }) =
           setConfig(result.youtubeControls);
         }
       } catch (error) {
-        console.error('Failed to load YouTube settings:', error);
+        log.error('Failed to load YouTube settings', error instanceof Error ? error : undefined);
       } finally {
         setIsLoading(false);
       }
@@ -74,7 +77,7 @@ export const YouTubeSettings: React.FC<YouTubeSettingsProps> = ({ isPremium }) =
       // Clear message after 3 seconds
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
-      console.error('Failed to save YouTube settings:', error);
+      log.error('Failed to save YouTube settings', error instanceof Error ? error : undefined);
       setSaveMessage('Failed to save settings');
     } finally {
       setIsSaving(false);

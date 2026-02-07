@@ -8,6 +8,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Schedule } from '../types';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('useSchedules');
 
 /**
  * Raw schedule from storage (dates as strings)
@@ -107,7 +110,7 @@ export function useSchedules(): UseSchedulesReturn {
         throw new Error(response.error || 'Failed to fetch schedules');
       }
     } catch (err) {
-      console.error('Failed to fetch schedules:', err);
+      log.error('Failed to fetch schedules', err instanceof Error ? err : undefined);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
@@ -126,7 +129,7 @@ export function useSchedules(): UseSchedulesReturn {
         setNextSchedule(response.data);
       }
     } catch (err) {
-      console.error('Failed to fetch next schedule:', err);
+      log.error('Failed to fetch next schedule', err instanceof Error ? err : undefined);
     }
   }, []);
 

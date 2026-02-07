@@ -5,6 +5,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { BlockRule } from '../types';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('useBlockRules');
 
 export interface UseBlockRulesReturn {
   rules: BlockRule[];
@@ -51,7 +54,7 @@ export function useBlockRules(): UseBlockRulesReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch block rules';
       setError(message);
-      console.error('Failed to fetch block rules:', err);
+      log.error('Failed to fetch block rules', err instanceof Error ? err : undefined);
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +105,7 @@ export function useBlockRules(): UseBlockRulesReturn {
           });
 
           if (!response.success) {
-            console.error('Failed to add rule:', rule.pattern, response.error);
+            log.error('Failed to add rule', undefined, { pattern: rule.pattern, error: response.error });
           }
         }
 
@@ -190,7 +193,7 @@ export function useBlockRules(): UseBlockRulesReturn {
           });
 
           if (!response.success) {
-            console.error('Failed to delete rule:', id, response.error);
+            log.error('Failed to delete rule', undefined, { id, error: response.error });
           }
         }
 

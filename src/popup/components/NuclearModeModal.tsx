@@ -8,6 +8,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../components/atoms/Button';
 import { IS_PREMIUM_COMING_SOON } from '../../utils/constants';
 
+// Rate limiting storage key
+const RATE_LIMIT_KEY = 'nuclear_mode_rate_limit';
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_FAILED_ATTEMPTS = 5;
+
+interface RateLimitData {
+  failedAttempts: number;
+  firstAttemptTime: number;
+  lockedUntil: number | null;
+}
+
 export interface NuclearModeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -79,7 +90,123 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
   const [isActivating, setIsActivating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Rate limiting state
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [rateLimitMinutesRemaining, setRateLimitMinutesRemaining] = useState(0);
+
   const typingInputRef = useRef<HTMLTextAreaElement>(null);
+
+  /**
+   * Load rate limiting data from storage
+   */
+  const loadRateLimitData = async (): Promise<RateLimitData | null> => {
+    if (!chrome?.storage?.local) return null;
+    const result = await chrome.storage.local.get(RATE_LIMIT_KEY);
+    return result[RATE_LIMIT_KEY] || null;
+  };
+
+  /**
+   * Save rate limiting data to storage
+   */
+  const saveRateLimitData = async (data: RateLimitData): Promise<void> => {
+    if (!chrome?.storage?.local) return;
+    await chrome.storage.local.set({ [RATE_LIMIT_KEY]: data });
+  };
+
+  /**
+   * Clear rate limiting data (when window expires)
+   */
+  const clearRateLimitData = async (): Promise<void> => {
+    if (!chrome?.storage?.local) return;
+    await chrome.storage.local.remove(RATE_LIMIT_KEY);
+  };
+
+  /**
+   * Record a failed attempt
+   */
+  const recordFailedAttempt = async (): Promise<void> => {
+    const now = Date.now();
+    const existing = await loadRateLimitData();
+
+    let data: RateLimitData;
+
+    if (!existing || now - existing.firstAttemptTime > RATE_LIMIT_WINDOW_MS) {
+      // Start new rate limit window
+      data = {
+        failedAttempts: 1,
+        firstAttemptTime: now,
+        lockedUntil: null,
+      };
+    } else {
+      // Increment existing window
+      data = {
+        ...existing,
+        failedAttempts: existing.failedAttempts + 1,
+      };
+
+      // Lock if exceeded max attempts
+      if (data.failedAttempts >= MAX_FAILED_ATTEMPTS) {
+        data.lockedUntil = now + RATE_LIMIT_WINDOW_MS;
+      }
+    }
+
+    await saveRateLimitData(data);
+
+    // Update UI state
+    if (data.lockedUntil && data.lockedUntil > now) {
+      setIsRateLimited(true);
+      setRateLimitMinutesRemaining(Math.ceil((data.lockedUntil - now) / 60000));
+    }
+  };
+
+  /**
+   * Check rate limiting on mount
+   */
+  useEffect(() => {
+    const checkRateLimit = async (): Promise<void> => {
+      const data = await loadRateLimitData();
+      if (!data) return;
+
+      const now = Date.now();
+
+      // Check if locked
+      if (data.lockedUntil && data.lockedUntil > now) {
+        setIsRateLimited(true);
+        setRateLimitMinutesRemaining(Math.ceil((data.lockedUntil - now) / 60000));
+      } else if (data.lockedUntil && data.lockedUntil <= now) {
+        // Lock expired, clear data
+        await clearRateLimitData();
+        setIsRateLimited(false);
+      } else if (now - data.firstAttemptTime > RATE_LIMIT_WINDOW_MS) {
+        // Window expired, clear data
+        await clearRateLimitData();
+      }
+    };
+
+    if (isOpen) {
+      void checkRateLimit();
+    }
+  }, [isOpen]);
+
+  /**
+   * Update rate limit countdown
+   */
+  useEffect(() => {
+    if (isRateLimited && rateLimitMinutesRemaining > 0) {
+      const timer = setInterval(() => {
+        setRateLimitMinutesRemaining(prev => {
+          if (prev <= 1) {
+            setIsRateLimited(false);
+            void clearRateLimitData();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 60000); // Update every minute
+      return () => clearInterval(timer);
+    }
+    return undefined;
+  }, [isRateLimited, rateLimitMinutesRemaining]);
 
   /**
    * Reset modal state when closed
@@ -198,6 +325,12 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
    * Handle math answer submission
    */
   const handleMathSubmit = (): void => {
+    // Check if rate limited
+    if (isRateLimited) {
+      setError(`Too many failed attempts. Try again in ${rateLimitMinutesRemaining} minutes.`);
+      return;
+    }
+
     const currentProblem = mathProblems[currentMathIndex];
     if (!currentProblem) { return; }
 
@@ -210,6 +343,10 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
 
     if (userAnswer !== currentProblem.answer) {
       setMathErrors(mathErrors + 1);
+
+      // Record failed attempt for persistent rate limiting
+      void recordFailedAttempt();
+
       if (mathErrors + 1 >= 3) {
         setError('Too many errors. Please start over.');
         setTimeout(() => {
@@ -325,8 +462,26 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
             </div>
           ) : (
             <>
+              {/* Rate limit warning - shown prominently when user is locked out */}
+              {isRateLimited && (
+                <div
+                  role="alert"
+                  className="bg-warning-50 border border-warning-300 text-warning-800 px-4 py-4 rounded-md mb-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">⏳</span>
+                    <div>
+                      <p className="font-semibold">Too many failed attempts</p>
+                      <p className="text-sm mt-1">
+                        Please wait {rateLimitMinutesRemaining} {rateLimitMinutesRemaining === 1 ? 'minute' : 'minutes'} before trying again.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Error message */}
-              {error && (
+              {error && !isRateLimited && (
                 <div
                   role="alert"
                   className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-md text-sm mb-4"
@@ -437,10 +592,11 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
                       type="number"
                       value={mathAnswer}
                       onChange={(e) => setMathAnswer(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleMathSubmit()}
-                      className="w-32 px-4 py-2 text-center text-2xl border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      onKeyDown={(e) => e.key === 'Enter' && !isRateLimited && handleMathSubmit()}
+                      className="w-32 px-4 py-2 text-center text-2xl border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="?"
                       autoFocus
+                      disabled={isRateLimited}
                     />
                   </div>
 
@@ -448,7 +604,7 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
                     Errors: {mathErrors} / 3 allowed
                   </p>
 
-                  <Button variant="primary" size="md" onClick={handleMathSubmit} className="w-full">
+                  <Button variant="primary" size="md" onClick={handleMathSubmit} className="w-full" disabled={isRateLimited}>
                     Submit Answer
                   </Button>
                 </div>

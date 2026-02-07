@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { Pie } from 'react-chartjs-2';
+import type { TooltipItem } from 'chart.js';
 import { chartColors, defaultChartOptions } from './chartConfig';
 
 export interface SessionDistributionChartProps {
@@ -76,7 +77,7 @@ export const SessionDistributionChart: React.FC<SessionDistributionChartProps> =
       tooltip: {
         ...defaultChartOptions.plugins.tooltip,
         callbacks: {
-          label: (context: any): string => {
+          label: (context: TooltipItem<'pie'>): string => {
             const label = context.label || '';
             const value = context.parsed || 0;
             const percentage = totalSessions > 0 ? ((value / totalSessions) * 100).toFixed(1) : 0;

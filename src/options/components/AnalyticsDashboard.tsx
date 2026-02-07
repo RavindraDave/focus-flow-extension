@@ -17,7 +17,36 @@ import {
   exportSessionsAsCSV,
   exportAnalyticsAsJSON,
 } from '../../utils/data-export';
-import type { PomodoroSession, DailyStats } from '../../types';
+import type { PomodoroSession, DailyStats, AnalyticsData } from '../../types';
+import { createLogger } from '../../utils/logger';
+
+/**
+ * Weekly/Monthly productivity summary from analytics tracker
+ */
+interface ProductivitySummary {
+  totalPomodoros: number;
+  totalFocusTime: number;
+  averagePerDay: number;
+  completionRate: number;
+  topCategories: Array<{ category: string; count: number }>;
+}
+
+/**
+ * Serialized DailyStats (dates as strings from JSON)
+ */
+interface SerializedDailyStats extends Omit<DailyStats, 'date'> {
+  date: string;
+}
+
+/**
+ * Serialized PomodoroSession (dates as strings from JSON)
+ */
+interface SerializedPomodoroSession extends Omit<PomodoroSession, 'startTime' | 'endTime'> {
+  startTime: string;
+  endTime?: string;
+}
+
+const log = createLogger('AnalyticsDashboard');
 
 /**
  * Format minutes into hours and minutes
@@ -40,10 +69,10 @@ function formatDuration(minutes: number): string {
  */
 export const AnalyticsDashboard: React.FC = () => {
   const { todayStats, streak, isLoading, error } = useAnalytics();
-  const [weeklyData, setWeeklyData] = useState<any>(null);
+  const [weeklyData, setWeeklyData] = useState<ProductivitySummary | null>(null);
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [sessions, setSessions] = useState<PomodoroSession[]>([]);
-  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
   /**
@@ -68,7 +97,7 @@ export const AnalyticsDashboard: React.FC = () => {
           setAnalyticsData(analyticsResponse.data);
 
           // Convert date strings back to Date objects
-          const statsWithDates = (analyticsResponse.data.dailyStats || []).map((stat: any) => ({
+          const statsWithDates = (analyticsResponse.data.dailyStats || []).map((stat: SerializedDailyStats) => ({
             ...stat,
             date: new Date(stat.date),
           }));
@@ -77,7 +106,7 @@ export const AnalyticsDashboard: React.FC = () => {
 
         if (sessionsResponse.success && sessionsResponse.data) {
           // Convert date strings back to Date objects
-          const sessionsWithDates = sessionsResponse.data.map((session: any) => ({
+          const sessionsWithDates = sessionsResponse.data.map((session: SerializedPomodoroSession) => ({
             ...session,
             startTime: new Date(session.startTime),
             endTime: session.endTime ? new Date(session.endTime) : undefined,
@@ -85,7 +114,7 @@ export const AnalyticsDashboard: React.FC = () => {
           setSessions(sessionsWithDates);
         }
       } catch (err) {
-        console.error('Failed to fetch chart data:', err);
+        log.error('Failed to fetch chart data', err instanceof Error ? err : undefined);
       }
     };
 
@@ -172,7 +201,7 @@ export const AnalyticsDashboard: React.FC = () => {
       setIsExporting(true);
       exportSessionsAsCSV(sessions);
     } catch (err) {
-      console.error('Failed to export CSV:', err);
+      log.error('Failed to export CSV', err instanceof Error ? err : undefined);
       alert('Failed to export data. Please try again.');
     } finally {
       setIsExporting(false);
@@ -190,7 +219,7 @@ export const AnalyticsDashboard: React.FC = () => {
       setIsExporting(true);
       exportAnalyticsAsJSON(analyticsData, sessions);
     } catch (err) {
-      console.error('Failed to export JSON:', err);
+      log.error('Failed to export JSON', err instanceof Error ? err : undefined);
       alert('Failed to export data. Please try again.');
     } finally {
       setIsExporting(false);

@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { Line } from 'react-chartjs-2';
+import type { TooltipItem } from 'chart.js';
 import { chartColors, defaultChartOptions, defaultScales } from './chartConfig';
 
 export interface FocusTimeChartProps {
@@ -89,8 +90,8 @@ export const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
       tooltip: {
         ...defaultChartOptions.plugins.tooltip,
         callbacks: {
-          label: (context: any): string => {
-            const minutes = context.parsed.y;
+          label: (context: TooltipItem<'line'>): string => {
+            const minutes = context.parsed.y ?? 0;
             return `Focus Time: ${formatMinutesForTooltip(minutes)}`;
           },
         },

@@ -23,6 +23,9 @@ import { Spinner } from '../components/atoms/Spinner';
 import { LogViewer } from '../components/organisms/LogViewer';
 import { createLogger } from '../utils/logger';
 import { IS_PREMIUM_COMING_SOON, FEATURE_FLAGS, SUPPORT_EMAIL, PRIVACY_POLICY_URL, DOCS_URL } from '../utils/constants';
+import type { UserSettings } from '../types';
+
+type ThemeMode = 'modern' | 'zen' | 'cyber';
 
 const log = createLogger('OptionsApp');
 
@@ -310,7 +313,7 @@ const App: React.FC = () => {
 /**
  * Dashboard Tab Component
  */
-const DashboardTab: React.FC<{ settings: any; setActiveTab: (tab: Tab) => void }> = ({ setActiveTab }) => {
+const DashboardTab: React.FC<{ settings: UserSettings | null; setActiveTab: (tab: Tab) => void }> = ({ setActiveTab }) => {
   const [nuclearMode, setNuclearMode] = useState(false);
   const [strictBlocking, setStrictBlocking] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -326,7 +329,7 @@ const DashboardTab: React.FC<{ settings: any; setActiveTab: (tab: Tab) => void }
         setNuclearMode(result.nuclear_mode ?? false);
         setStrictBlocking(result.strict_blocking ?? false);
       } catch (error) {
-        console.error('Failed to load toggle states:', error);
+        log.error('Failed to load toggle states', error instanceof Error ? error : undefined);
       } finally {
         setIsLoading(false);
       }
@@ -345,7 +348,7 @@ const DashboardTab: React.FC<{ settings: any; setActiveTab: (tab: Tab) => void }
     try {
       await chrome.storage.sync.set({ nuclear_mode: newValue });
     } catch (error) {
-      console.error('Failed to save nuclear mode:', error);
+      log.error('Failed to save nuclear mode', error instanceof Error ? error : undefined);
       // Revert on error
       setNuclearMode(previousValue);
     }
@@ -362,7 +365,7 @@ const DashboardTab: React.FC<{ settings: any; setActiveTab: (tab: Tab) => void }
     try {
       await chrome.storage.sync.set({ strict_blocking: newValue });
     } catch (error) {
-      console.error('Failed to save strict blocking:', error);
+      log.error('Failed to save strict blocking', error instanceof Error ? error : undefined);
       // Revert on error
       setStrictBlocking(previousValue);
     }
@@ -574,12 +577,12 @@ const DashboardTab: React.FC<{ settings: any; setActiveTab: (tab: Tab) => void }
  * Timer Settings Tab Component
  */
 const TimerTab: React.FC<{
-  settings: any;
+  settings: UserSettings | null;
   isLoading: boolean;
   error: string | null;
-  onSave: (settings: any) => Promise<void>;
+  onSave: (settings: Partial<UserSettings>) => Promise<void>;
   theme: string;
-  onThemeChange: (theme: any) => Promise<void>;
+  onThemeChange: (theme: ThemeMode) => Promise<void>;
 }> = ({ settings, isLoading, error, onSave, theme, onThemeChange }) => {
   const [soundEnabled, setSoundEnabled] = React.useState(true);
   const [soundVolume, setSoundVolume] = React.useState(50);
@@ -609,7 +612,8 @@ const TimerTab: React.FC<{
   // Test current theme sound
   const handleTestSound = async () => {
     const { testThemeSound } = await import('../utils/sounds');
-    await testThemeSound(theme as any, soundVolume / 100);
+    // theme comes from settings which is validated, safe to cast
+    await testThemeSound(theme as 'modern' | 'zen' | 'cyber', soundVolume / 100);
   };
 
   return (
@@ -784,7 +788,7 @@ const TimerTab: React.FC<{
 /**
  * Blocking Rules Tab Component
  */
-const BlockingTab: React.FC<{ settings: any }> = ({ settings }) => {
+const BlockingTab: React.FC<{ settings: UserSettings | null }> = ({ settings }) => {
   const isWhitelist = settings?.blockingMode === 'whitelist';
 
   return (
@@ -957,9 +961,9 @@ const DataConfigTab: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      console.log('Configuration exported successfully');
+      log.info('Configuration exported successfully');
     } catch (error) {
-      console.error('Failed to export configuration:', error);
+      log.error('Failed to export configuration', error instanceof Error ? error : undefined);
       alert('Failed to export configuration. Please try again.');
     } finally {
       setIsExporting(false);
@@ -1020,7 +1024,7 @@ const DataConfigTab: React.FC = () => {
       alert('Configuration imported successfully! Reloading page...');
       window.location.reload();
     } catch (error) {
-      console.error('Failed to import configuration:', error);
+      log.error('Failed to import configuration', error instanceof Error ? error : undefined);
       const message = error instanceof Error ? error.message : 'Unknown error';
       alert(`Failed to import configuration: ${message}`);
     } finally {
@@ -1036,9 +1040,19 @@ const DataConfigTab: React.FC = () => {
    * Export focus session history to CSV
    */
   const handleExportHistory = async () => {
+    // Define minimal interface for legacy history data that may have various formats
+    interface LegacySessionData {
+      timestamp?: string | number;
+      date?: string | number;
+      duration?: number;
+      taskName?: string;
+      label?: string;
+      type?: string;
+    }
+
     try {
       const { history } = await chrome.storage.local.get('history');
-      const sessions = history || [];
+      const sessions: LegacySessionData[] = history || [];
 
       if (sessions.length === 0) {
         alert('No history data to export.');
@@ -1047,16 +1061,16 @@ const DataConfigTab: React.FC = () => {
 
       // Create CSV content
       const headers = ['Date', 'Duration (minutes)', 'Task Name', 'Session Type'];
-      const rows = sessions.map((session: any) => [
-        new Date(session.timestamp || session.date).toLocaleString(),
-        Math.round((session.duration || 0) / 60),
+      const rows = sessions.map((session: LegacySessionData) => [
+        new Date(session.timestamp || session.date || Date.now()).toLocaleString(),
+        String(Math.round((session.duration || 0) / 60)),
         session.taskName || session.label || 'Untitled',
         session.type || 'Focus',
       ]);
 
       const csvContent = [
         headers.join(','),
-        ...rows.map((row: string[]) => row.map((cell: string | number) => `"${cell}"`).join(',')),
+        ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
       ].join('\n');
 
       // Create downloadable CSV file
@@ -1070,9 +1084,9 @@ const DataConfigTab: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      console.log('History exported successfully');
+      log.info('History exported successfully');
     } catch (error) {
-      console.error('Failed to export history:', error);
+      log.error('Failed to export history', error instanceof Error ? error : undefined);
       alert('Failed to export history. Please try again.');
     }
   };
@@ -1104,7 +1118,7 @@ const DataConfigTab: React.FC = () => {
       alert('All data has been deleted. Reloading extension...');
       window.location.reload();
     } catch (error) {
-      console.error('Failed to reset data:', error);
+      log.error('Failed to reset data', error instanceof Error ? error : undefined);
       alert('Failed to reset data. Please try again or reinstall the extension.');
     }
   };

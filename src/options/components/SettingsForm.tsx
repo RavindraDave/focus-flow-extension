@@ -7,6 +7,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../../components/atoms/Button';
 import { Input } from '../../components/atoms/Input';
 import type { UserSettings } from '../../types';
+import { createLogger } from '../../utils/logger';
+
+const log = createLogger('SettingsForm');
 
 export interface SettingsFormProps {
   settings: UserSettings;
@@ -104,7 +107,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      console.error('Failed to save settings:', err);
+      log.error('Failed to save settings', err instanceof Error ? err : undefined);
     } finally {
       setIsSaving(false);
     }

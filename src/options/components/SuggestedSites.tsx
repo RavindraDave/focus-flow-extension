@@ -9,6 +9,9 @@ import { Button } from '../../components/atoms/Button';
 import { Badge } from '../../components/atoms/Badge';
 import { SUGGESTED_SITES, type SiteCategory, type SuggestedSite } from '../../utils/suggested-sites';
 import { useBlockRules } from '../../hooks/useBlockRules';
+import { createLogger } from '../../utils/logger';
+
+const log = createLogger('SuggestedSites');
 
 /**
  * SuggestedSites component
@@ -73,7 +76,7 @@ export const SuggestedSites: React.FC = () => {
         timeUsedToday: 0,
       });
     } catch (error) {
-      console.error('Failed to add site:', error);
+      log.error('Failed to add site', error instanceof Error ? error : undefined);
     } finally {
       setAddingDomains(prev => {
         const next = new Set(prev);
@@ -122,7 +125,7 @@ export const SuggestedSites: React.FC = () => {
         }))
       );
     } catch (error) {
-      console.error('Failed to add category:', error);
+      log.error('Failed to add category', error instanceof Error ? error : undefined);
     } finally {
       // Clear category loading state
       setAddingCategories(prev => {

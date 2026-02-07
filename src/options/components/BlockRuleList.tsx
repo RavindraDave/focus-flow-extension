@@ -16,6 +16,9 @@ import { useSettings } from '../../hooks/useSettings';
 import type { BlockRule } from '../../types';
 import { BlockRuleSchema } from '../../types/schemas';
 import { FEATURE_FLAGS, IS_PREMIUM_COMING_SOON } from '../../utils/constants';
+import { createLogger } from '../../utils/logger';
+
+const log = createLogger('BlockRuleList');
 
 /**
  * Format time used
@@ -111,7 +114,7 @@ export const BlockRuleList: React.FC = () => {
           await deleteRule(rule.id);
           setConfirmState(null);
         } catch (error) {
-          console.error('Failed to delete rule:', error);
+          log.error('Failed to delete rule', error instanceof Error ? error : undefined);
           setConfirmState(prev => prev ? { ...prev, isLoading: false } : null);
         } finally {
           setDeletingRuleId(null);
@@ -140,7 +143,7 @@ export const BlockRuleList: React.FC = () => {
           setSelectedRuleIds(new Set());
           setConfirmState(null);
         } catch (error) {
-          console.error('Failed to delete rules:', error);
+          log.error('Failed to delete rules', error instanceof Error ? error : undefined);
           setConfirmState(prev => prev ? { ...prev, isLoading: false } : null);
         }
       },
@@ -166,7 +169,7 @@ export const BlockRuleList: React.FC = () => {
           setSelectedRuleIds(new Set());
           setConfirmState(null);
         } catch (error) {
-          console.error('Failed to clear all rules:', error);
+          log.error('Failed to clear all rules', error instanceof Error ? error : undefined);
           setConfirmState(prev => prev ? { ...prev, isLoading: false } : null);
         }
       },
@@ -261,9 +264,7 @@ export const BlockRuleList: React.FC = () => {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
         alert(`Failed to import rules: ${message}`);
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Import error:', err);
-        }
+        log.error('Import error', err instanceof Error ? err : undefined);
       }
     };
     input.click();

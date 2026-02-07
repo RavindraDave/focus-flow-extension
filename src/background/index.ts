@@ -462,17 +462,36 @@ class BackgroundServiceWorker {
    * Set up chrome.runtime.onSuspend listener
    *
    * Handles cleanup before service worker unloads.
+   * Note: We can't use truly async operations here, but we can start them.
+   * The actual state persistence happens during tick() and pause/resume operations.
    * @private
    */
   private setupSuspendListener(): void {
     if (chrome.runtime?.onSuspend) {
       chrome.runtime.onSuspend.addListener(() => {
-        if (process.env.NODE_ENV === 'development') {
-          log.info('Service worker suspending - performing cleanup');
-        }
-        // Note: Can't use async operations here as they may not complete
-        // Storage writes are already debounced and will flush automatically
+        log.info('Service worker suspending - performing cleanup');
+
+        // Start async flush operations - they may not complete but timer state
+        // is already persisted during tick() operations
+        // Using void to explicitly ignore the promise (we can't await here)
+        void this.flushPendingWrites();
       });
+    }
+  }
+
+  /**
+   * Flush all pending writes before suspension
+   * This is best-effort since service worker may terminate before completion
+   * @private
+   */
+  private async flushPendingWrites(): Promise<void> {
+    try {
+      // Import storage service and flush
+      const { storageService } = await import('../services/storage-service');
+      await storageService.flush();
+      log.info('Pending writes flushed successfully');
+    } catch (error) {
+      log.error('Failed to flush pending writes', error instanceof Error ? error : undefined);
     }
   }
 
@@ -573,10 +592,19 @@ class BackgroundServiceWorker {
   /**
    * Restore timer state after browser restart
    *
-   * Checks if there was an active session before restart and resumes it.
+   * Uses TimerEngine's built-in restoration with mutex protection.
    * @private
    */
   private async restoreTimerState(): Promise<void> {
+    // First try to restore from TimerEngine's persisted state (most accurate)
+    const restored = await this.timerEngine.restoreFromStorage();
+
+    if (restored) {
+      log.info('Timer state restored from persisted storage');
+      return;
+    }
+
+    // Fallback: check session repository for active sessions
     const currentSession = await this.sessionRepository.getCurrentSession();
 
     if (currentSession?.status === 'active') {

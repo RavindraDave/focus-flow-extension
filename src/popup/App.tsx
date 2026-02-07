@@ -12,6 +12,9 @@ import { useTimer, useAnalytics, useNuclearMode } from '../hooks';
 import { useThemeContext } from '../contexts/ThemeContext';
 import OnboardingModal from '../components/onboarding/OnboardingModal';
 import type { UserSettings } from '../types';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('PopupApp');
 
 /**
  * Main Popup App component
@@ -61,7 +64,7 @@ const App: React.FC = () => {
           setSettings(response.data);
         }
       } catch (error) {
-        console.error('Failed to load settings:', error);
+        log.error('Failed to load settings', error instanceof Error ? error : undefined);
       }
     }
 

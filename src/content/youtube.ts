@@ -10,6 +10,9 @@
  */
 
 import type { YouTubeConfig } from '../types';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('YouTubeContentScript');
 
 /**
  * CSS selectors for YouTube elements to hide
@@ -75,12 +78,12 @@ async function loadSettings(): Promise<void> {
 
     if (result.youtubeControls) {
       config = result.youtubeControls;
-      console.log('[Focus Flow] YouTube settings loaded:', config);
+      log.debug('YouTube settings loaded', { config });
     } else {
-      console.log('[Focus Flow] No YouTube settings found, using defaults');
+      log.debug('No YouTube settings found, using defaults');
     }
   } catch (error) {
-    console.error('[Focus Flow] Failed to load YouTube settings:', error);
+    log.error('Failed to load YouTube settings', error instanceof Error ? error : undefined);
   }
 }
 
@@ -210,7 +213,7 @@ function handleStorageChange(changes: { [key: string]: chrome.storage.StorageCha
       setupObserver();
     }
 
-    console.log('[Focus Flow] YouTube settings updated:', config);
+    log.debug('YouTube settings updated', { config });
   }
 }
 
@@ -239,15 +242,18 @@ async function initialize(): Promise<void> {
     // Log performance - measure only initialization logic, not DOM wait time
     const endTime = performance.now();
     const executionTime = endTime - startTime;
-    console.log(`[Focus Flow] YouTube content script initialized in ${executionTime.toFixed(2)}ms`);
+    log.info('YouTube content script initialized', { executionTimeMs: executionTime.toFixed(2) });
 
     // Warn if exceeds performance target (adjusted for storage API latency)
     // Note: chrome.storage.sync.get typically takes 10-30ms, so target is <100ms total
     if (executionTime > 100) {
-      console.warn(`[Focus Flow] Performance warning: Initialization took ${executionTime.toFixed(2)}ms (target: <100ms)`);
+      log.warn('Performance warning: Initialization exceeded target', {
+        executionTimeMs: executionTime.toFixed(2),
+        targetMs: 100
+      });
     }
   } catch (error) {
-    console.error('[Focus Flow] Failed to initialize YouTube content script:', error);
+    log.error('Failed to initialize YouTube content script', error instanceof Error ? error : undefined);
   }
 }
 

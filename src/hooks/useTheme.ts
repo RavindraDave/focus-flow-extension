@@ -1,4 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('useTheme');
 
 /**
  * Visual theme type
@@ -82,7 +85,7 @@ export function useTheme(): {
         setThemeState(savedTheme);
         applyTheme(savedTheme);
       } catch (error) {
-        console.error('Failed to load theme preference:', error);
+        log.error('Failed to load theme preference', error instanceof Error ? error : undefined);
         // Fallback to default theme
         applyTheme(DEFAULT_THEME);
       } finally {
@@ -126,7 +129,7 @@ export function useTheme(): {
       // Apply theme immediately
       applyTheme(mode);
     } catch (error) {
-      console.error('Failed to save theme preference:', error);
+      log.error('Failed to save theme preference', error instanceof Error ? error : undefined);
       throw new Error('Unable to save theme preference');
     }
   }, []);

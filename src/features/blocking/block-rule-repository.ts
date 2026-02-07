@@ -6,7 +6,7 @@
  * All storage access goes through StorageService with validation.
  */
 
-import { storageService, StorageError } from '../../services/storage-service';
+import { storageService, StorageError, StorageErrorCode } from '../../services/storage-service';
 import { BlockRuleSchema } from '../../types/schemas';
 import { STORAGE_KEYS, STORAGE_LIMITS, ERROR_MESSAGES } from '../../utils/constants';
 import type { BlockRule } from '../../types';
@@ -90,7 +90,7 @@ export class BlockRuleRepository {
       if (rules.length >= maxRules) {
         throw new StorageError(
           ERROR_MESSAGES.MAX_BLOCK_RULES_REACHED,
-          'VALIDATION_FAILED' as any
+          StorageErrorCode.VALIDATION_FAILED
         );
       }
     }
@@ -158,7 +158,7 @@ export class BlockRuleRepository {
     if (ruleIndex === -1) {
       throw new StorageError(
         `Block rule with ID ${id} not found`,
-        'NOT_FOUND' as any
+        StorageErrorCode.NOT_FOUND
       );
     }
 
@@ -166,7 +166,7 @@ export class BlockRuleRepository {
     if (!rule) {
       throw new StorageError(
         `Block rule with ID ${id} not found`,
-        'NOT_FOUND' as any
+        StorageErrorCode.NOT_FOUND
       );
     }
 
@@ -218,7 +218,7 @@ export class BlockRuleRepository {
     if (ruleIndex === -1) {
       throw new StorageError(
         `Block rule with ID ${id} not found`,
-        'NOT_FOUND' as any
+        StorageErrorCode.NOT_FOUND
       );
     }
 
@@ -226,7 +226,7 @@ export class BlockRuleRepository {
     if (!rule) {
       throw new StorageError(
         `Block rule with ID ${id} not found`,
-        'NOT_FOUND' as any
+        StorageErrorCode.NOT_FOUND
       );
     }
 

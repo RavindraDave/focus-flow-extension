@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
+import type { TooltipItem } from 'chart.js';
 import { chartColors, defaultChartOptions, defaultScales } from './chartConfig';
 
 export interface ProductivityByHourChartProps {
@@ -108,12 +109,12 @@ export const ProductivityByHourChart: React.FC<ProductivityByHourChartProps> = (
       tooltip: {
         ...defaultChartOptions.plugins.tooltip,
         callbacks: {
-          title: (context: any): string => {
-            const hour = context[0].dataIndex;
+          title: (context: TooltipItem<'bar'>[]): string => {
+            const hour = context[0]?.dataIndex ?? 0;
             return formatHour(hour);
           },
-          label: (context: any): string => {
-            const sessions = context.parsed.y;
+          label: (context: TooltipItem<'bar'>): string => {
+            const sessions = context.parsed.y ?? 0;
             const percentage =
               totalSessions > 0 ? ((sessions / totalSessions) * 100).toFixed(1) : '0';
             return `${sessions} ${sessions === 1 ? 'session' : 'sessions'} (${percentage}%)`;

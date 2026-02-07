@@ -4,6 +4,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('useNuclearMode');
 
 export interface NuclearModeStatus {
   isActive: boolean;
@@ -52,7 +55,7 @@ export function useNuclearMode(): UseNuclearModeReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch Nuclear Mode status';
       setError(message);
-      console.error('Failed to fetch Nuclear Mode status:', err);
+      log.error('Failed to fetch Nuclear Mode status', err instanceof Error ? err : undefined);
     } finally {
       setIsLoading(false);
     }

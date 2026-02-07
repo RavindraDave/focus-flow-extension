@@ -6,7 +6,7 @@
  * Handles default settings initialization and partial updates.
  */
 
-import { storageService, StorageError } from './storage-service';
+import { storageService, StorageError, StorageErrorCode } from './storage-service';
 import {
   UserSettingsSchema,
   PartialUserSettingsSchema,
@@ -76,7 +76,7 @@ export class SettingsRepository {
       if (isModifyingProtected) {
         throw new StorageError(
           'Cannot modify protected settings while nuclear mode is active. Settings locked: nuclearMode, autoStartNextSession, youtubeControls',
-          'VALIDATION_FAILED' as any
+          StorageErrorCode.VALIDATION_FAILED
         );
       }
     }
@@ -118,7 +118,7 @@ export class SettingsRepository {
     if (currentSettings.nuclearMode.active) {
       throw new StorageError(
         'Cannot reset settings while nuclear mode is active',
-        'VALIDATION_FAILED' as any
+        StorageErrorCode.VALIDATION_FAILED
       );
     }
 
@@ -289,7 +289,7 @@ export class SettingsRepository {
     } catch {
       throw new StorageError(
         'Invalid JSON format',
-        'VALIDATION_FAILED' as any
+        StorageErrorCode.VALIDATION_FAILED
       );
     }
 
@@ -299,7 +299,7 @@ export class SettingsRepository {
     if (!result.success) {
       throw new StorageError(
         `Invalid settings data: ${result.error.errors.map((e) => e.message).join(', ')}`,
-        'VALIDATION_FAILED' as any
+        StorageErrorCode.VALIDATION_FAILED
       );
     }
 

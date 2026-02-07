@@ -5,6 +5,10 @@
  * Respects user preferences for volume and sound enabled/disabled.
  */
 
+import { createLogger } from './logger';
+
+const log = createLogger('Sounds');
+
 export type ThemeMode = 'modern' | 'zen' | 'cyber';
 
 export type NotificationSound = {
@@ -43,7 +47,7 @@ async function soundFileExists(filename: string): Promise<boolean> {
     const response = await fetch(url, { method: 'HEAD' });
     return response.ok;
   } catch (error) {
-    console.warn(`Sound file check failed for ${filename}:`, error);
+    log.warn('Sound file check failed', { filename, error });
     return false;
   }
 }
@@ -70,7 +74,7 @@ export async function playNotificationSound(options?: {
     // Determine if sound should play
     const soundEnabled = options?.enabled ?? settings.sound_enabled ?? true;
     if (!soundEnabled) {
-      console.log('Notification sound disabled by user preference');
+      log.debug('Notification sound disabled by user preference');
       return;
     }
 
@@ -81,10 +85,10 @@ export async function playNotificationSound(options?: {
     // Check if sound file exists
     const exists = await soundFileExists(soundInfo.file);
     if (!exists) {
-      console.warn(
-        `Sound file not found: ${soundInfo.file}. ` +
-        `See public/assets/sounds/README.md for installation instructions.`
-      );
+      log.warn('Sound file not found', {
+        file: soundInfo.file,
+        hint: 'See public/assets/sounds/README.md for installation instructions'
+      });
       return;
     }
 
@@ -98,10 +102,13 @@ export async function playNotificationSound(options?: {
     // Play the sound
     await audio.play();
 
-    console.log(`Played notification sound: ${soundInfo.description} (volume: ${Math.round(volume * 100)}%)`);
+    log.debug('Played notification sound', {
+      description: soundInfo.description,
+      volume: Math.round(volume * 100)
+    });
   } catch (error) {
     // Fail silently - don't interrupt user experience for sound issues
-    console.error('Failed to play notification sound:', error);
+    log.error('Failed to play notification sound', error instanceof Error ? error : undefined);
   }
 }
 
@@ -133,10 +140,10 @@ export async function preloadSounds(): Promise<void> {
       if (exists) {
         // Preload by creating Audio element (browser caches it)
         new Audio(chrome.runtime.getURL(`assets/sounds/${file}`));
-        console.log(`Preloaded sound: ${file}`);
+        log.debug('Preloaded sound', { file });
       }
     } catch (error) {
-      console.warn(`Failed to preload sound ${file}:`, error);
+      log.warn('Failed to preload sound', { file, error });
     }
   });
 

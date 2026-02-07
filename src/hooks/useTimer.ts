@@ -6,6 +6,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { TimerStatus } from '../types/messages';
 import type { SessionType } from '../types';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('useTimer');
 
 /**
  * Check if Chrome extension APIs are available
@@ -71,7 +74,7 @@ export function useTimer(): UseTimerReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setError(message);
-      console.error('Failed to fetch timer status:', err);
+      log.error('Failed to fetch timer status', err instanceof Error ? err : undefined);
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +139,7 @@ export function useTimer(): UseTimerReturn {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to start timer';
         setError(message);
-        console.error('Failed to start timer:', err);
+        log.error('Failed to start timer', err instanceof Error ? err : undefined);
       } finally {
         setIsLoading(false);
       }
@@ -166,7 +169,7 @@ export function useTimer(): UseTimerReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to pause timer';
       setError(message);
-      console.error('Failed to pause timer:', err);
+      log.error('Failed to pause timer', err instanceof Error ? err : undefined);
     } finally {
       setIsLoading(false);
     }
@@ -194,7 +197,7 @@ export function useTimer(): UseTimerReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to resume timer';
       setError(message);
-      console.error('Failed to resume timer:', err);
+      log.error('Failed to resume timer', err instanceof Error ? err : undefined);
     } finally {
       setIsLoading(false);
     }
@@ -222,7 +225,7 @@ export function useTimer(): UseTimerReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to stop timer';
       setError(message);
-      console.error('Failed to stop timer:', err);
+      log.error('Failed to stop timer', err instanceof Error ? err : undefined);
     } finally {
       setIsLoading(false);
     }

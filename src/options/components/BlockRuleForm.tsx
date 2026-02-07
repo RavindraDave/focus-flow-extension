@@ -7,6 +7,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../../components/atoms/Button';
 import { Input } from '../../components/atoms/Input';
 import type { BlockRule } from '../../types';
+import { createLogger } from '../../utils/logger';
+
+const log = createLogger('BlockRuleForm');
 
 export interface BlockRuleFormProps {
   rule?: BlockRule | undefined; // If provided, editing existing rule
@@ -115,7 +118,7 @@ export const BlockRuleForm: React.FC<BlockRuleFormProps> = ({
 
       onCancel(); // Close modal on success
     } catch (err) {
-      console.error('Failed to save rule:', err);
+      log.error('Failed to save rule', err instanceof Error ? err : undefined);
     } finally {
       setIsSaving(false);
     }

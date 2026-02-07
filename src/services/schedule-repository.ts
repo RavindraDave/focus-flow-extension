@@ -11,6 +11,7 @@ import { Schedule, DayOfWeek } from '../types/index';
 import { ScheduleSchema } from '../types/schemas';
 import { STORAGE_KEYS, STORAGE_LIMITS, ERROR_MESSAGES } from '../utils/constants';
 import { z } from 'zod';
+import { createLogger } from '../utils/logger';
 
 /**
  * Repository for managing schedules
@@ -22,6 +23,7 @@ import { z } from 'zod';
  * ```
  */
 export class ScheduleRepository {
+  private readonly log = createLogger('ScheduleRepository');
   private storageService: StorageService;
 
   constructor(storageService?: StorageService) {
@@ -157,7 +159,7 @@ export class ScheduleRepository {
     const filtered = schedules.filter(s => s.id !== id);
 
     if (filtered.length === initialLength) {
-      console.warn(`Schedule deletion failed: ID ${id} not found`);
+      this.log.warn('Schedule deletion failed: ID not found', { id });
       return false;
     }
 
@@ -170,7 +172,7 @@ export class ScheduleRepository {
       z.array(ScheduleSchema) as unknown as z.ZodType<Schedule[]>
     );
 
-    console.info(`Schedule deleted: ${id}`);
+    this.log.info('Schedule deleted', { id });
     return true;
   }
 

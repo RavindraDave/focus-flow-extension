@@ -8,10 +8,13 @@
  * IMPORTANT: Migrations are irreversible. Always backup data before migrating.
  */
 
-import { storageService, StorageError } from './storage-service';
+import { storageService, StorageError, StorageErrorCode } from './storage-service';
 import { STORAGE_KEYS, CURRENT_SCHEMA_VERSION, DEFAULT_SETTINGS, DEFAULT_ANALYTICS } from '../utils/constants';
 import type { UserSettings, AnalyticsData } from '../types';
 import { z } from 'zod';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('MigrationService');
 
 /**
  * Migration function signature
@@ -57,13 +60,17 @@ export class MigrationService {
       };
     }
 
-    console.log(
-      `Starting migration from v${currentVersion} to v${CURRENT_SCHEMA_VERSION}`
-    );
+    log.info('Starting migration', {
+      fromVersion: currentVersion,
+      toVersion: CURRENT_SCHEMA_VERSION
+    });
+
+    // Store backup for potential restoration
+    let backup: string | null = null;
 
     try {
       // Backup current data before migration
-      await this.createBackup();
+      backup = await this.createBackup();
 
       // Get all data from storage
       let data = await this.getAllData();
@@ -77,7 +84,7 @@ export class MigrationService {
           throw new Error(`No migration defined for version ${version}`);
         }
 
-        console.log(`Applying migration to v${version}...`);
+        log.info('Applying migration', { toVersion: version });
         data = await migrationFn(data);
         migrationsApplied++;
       }
@@ -88,7 +95,7 @@ export class MigrationService {
       // Save migrated data
       await this.saveAllData(data);
 
-      console.log(`Migration completed successfully. Applied ${migrationsApplied} migrations.`);
+      log.info('Migration completed successfully', { migrationsApplied });
 
       return {
         success: true,
@@ -97,15 +104,19 @@ export class MigrationService {
         migrationsApplied,
       };
     } catch (error) {
-      console.error('Migration failed:', error);
+      log.error('Migration failed', error instanceof Error ? error : undefined);
 
       // Attempt to restore backup
-      try {
-        // In production, we'd restore from backup here
-        // For now, just log the error
-        console.error('Backup restoration not implemented yet');
-      } catch (restoreError) {
-        console.error('Failed to restore backup:', restoreError);
+      if (backup) {
+        try {
+          log.info('Attempting to restore backup after failed migration');
+          await this.restoreFromBackup(backup);
+          log.info('Backup restored successfully');
+        } catch (restoreError) {
+          log.error('Failed to restore backup', restoreError instanceof Error ? restoreError : undefined);
+        }
+      } else {
+        log.error('No backup available to restore');
       }
 
       return {
@@ -230,7 +241,7 @@ export class MigrationService {
     } catch (error) {
       throw new StorageError(
         `Failed to restore backup: ${error instanceof Error ? error.message : String(error)}`,
-        'UNKNOWN' as any
+        StorageErrorCode.UNKNOWN
       );
     }
   }
@@ -285,7 +296,7 @@ export class MigrationService {
    * DANGER: This is irreversible!
    */
   async resetToDefaults(): Promise<void> {
-    console.warn('Resetting all data to defaults...');
+    log.warn('Resetting all data to defaults');
 
     await storageService.clear();
 
@@ -308,7 +319,7 @@ export class MigrationService {
 
     await this.saveAllData(defaultData);
 
-    console.log('Reset to defaults completed.');
+    log.info('Reset to defaults completed');
   }
 
   /**

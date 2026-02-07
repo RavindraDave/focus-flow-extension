@@ -4,6 +4,17 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { createLogger } from '../utils/logger';
+import type { DailyStats } from '../types';
+
+const log = createLogger('useAnalytics');
+
+/**
+ * Serialized DailyStats (dates as strings from JSON)
+ */
+interface SerializedDailyStats extends Omit<DailyStats, 'date'> {
+  date: string;
+}
 
 export interface TodayStats {
   focusTime: number; // minutes
@@ -56,7 +67,7 @@ export function useAnalytics(): UseAnalyticsReturn {
         // Get today's stats
         const today = new Date().toISOString().split('T')[0];
         const todayData = analytics.dailyStats?.find(
-          (s: any) => new Date(s.date).toISOString().split('T')[0] === today
+          (s: SerializedDailyStats) => new Date(s.date).toISOString().split('T')[0] === today
         );
 
         setTodayStats({
@@ -72,7 +83,7 @@ export function useAnalytics(): UseAnalyticsReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch analytics';
       setError(message);
-      console.error('Failed to fetch analytics:', err);
+      log.error('Failed to fetch analytics', err instanceof Error ? err : undefined);
     } finally {
       setIsLoading(false);
     }

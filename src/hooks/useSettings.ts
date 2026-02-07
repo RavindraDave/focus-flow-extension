@@ -5,6 +5,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { UserSettings } from '../types';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('useSettings');
 
 export interface UseSettingsReturn {
   settings: UserSettings | null;
@@ -44,7 +47,7 @@ export function useSettings(): UseSettingsReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch settings';
       setError(message);
-      console.error('Failed to fetch settings:', err);
+      log.error('Failed to fetch settings', err instanceof Error ? err : undefined);
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +77,7 @@ export function useSettings(): UseSettingsReturn {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to update settings';
         setError(message);
-        console.error('Failed to update settings:', err);
+        log.error('Failed to update settings', err instanceof Error ? err : undefined);
         throw err; // Re-throw for component error handling
       } finally {
         setIsLoading(false);

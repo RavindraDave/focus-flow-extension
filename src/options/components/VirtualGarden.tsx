@@ -9,6 +9,9 @@
 
 import React, { useState, useEffect } from 'react';
 import type { AnalyticsData } from '../../types';
+import { createLogger } from '../../utils/logger';
+
+const log = createLogger('VirtualGarden');
 
 interface TreeProps {
   status: 'empty' | 'healthy' | 'withered';
@@ -98,7 +101,7 @@ export const VirtualGarden: React.FC = () => {
           setAnalytics(response.data);
         }
       } catch (error) {
-        console.error('Failed to fetch analytics:', error);
+        log.error('Failed to fetch analytics', error instanceof Error ? error : undefined);
       } finally {
         setIsLoading(false);
       }

@@ -15,6 +15,7 @@
  */
 
 import type { ZodSchema } from 'zod';
+import { createLogger } from '../utils/logger';
 import {
   STORAGE_LIMITS,
   RATE_LIMITS,
@@ -83,6 +84,7 @@ interface DebouncedWrite {
  * ```
  */
 export class StorageService {
+  private readonly log = createLogger('StorageService');
   private writeQueue: Map<string, DebouncedWrite> = new Map();
   private writeTimers: Map<string, NodeJS.Timeout> = new Map();
   private writeCount: number = 0;
@@ -121,9 +123,10 @@ export class StorageService {
 
       if (!parseResult.success) {
         // Log validation error (sanitized)
-        console.error(`Storage validation failed for key "${key}":`,
-          parseResult.error.errors.map(e => e.message).join(', ')
-        );
+        this.log.error('Storage validation failed', undefined, {
+          key,
+          errors: parseResult.error.errors.map(e => e.message).join(', ')
+        });
 
         throw new StorageError(
           `Corrupted data in storage for key "${key}". Validation failed.`,
@@ -318,7 +321,9 @@ export class StorageService {
   /**
    * Debounced write to storage
    *
-   * Groups rapid writes to the same key to prevent rate limiting
+   * Groups rapid writes to the same key to prevent rate limiting.
+   * When a new write supersedes a pending write, the pending write's
+   * promise is resolved (not rejected) since the new value will be written.
    */
   private debouncedWrite<T>(
     key: string,
@@ -330,6 +335,15 @@ export class StorageService {
       const existingTimer = this.writeTimers.get(key);
       if (existingTimer) {
         clearTimeout(existingTimer);
+      }
+
+      // Resolve the previous pending write's promise since the new write supersedes it
+      // This prevents promise leaks and hanging awaits
+      const existingWrite = this.writeQueue.get(key);
+      if (existingWrite) {
+        // Resolve the old promise - the caller's value will effectively be written
+        // by the new write (which has the newer value)
+        existingWrite.resolve();
       }
 
       // Create new debounced write entry
