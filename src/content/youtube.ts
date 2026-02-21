@@ -77,7 +77,7 @@ async function loadSettings(): Promise<void> {
     const result = await chrome.storage.sync.get('youtubeControls');
 
     if (result.youtubeControls) {
-      config = result.youtubeControls;
+      config = result.youtubeControls as YouTubeConfig;
       log.debug('YouTube settings loaded', { config });
     } else {
       log.debug('No YouTube settings found, using defaults');
@@ -259,10 +259,12 @@ async function initialize(): Promise<void> {
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initialize);
+  document.addEventListener('DOMContentLoaded', () => {
+    void initialize();
+  });
 } else {
   // DOM already loaded
-  initialize();
+  void initialize();
 }
 
 // Clean up on page unload

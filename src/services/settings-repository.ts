@@ -234,7 +234,7 @@ export class SettingsRepository {
    */
   private generateDeviceSecret(): string {
     // Use Web Crypto API (browser environment) or crypto module (Node.js/tests)
-    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
+    if (globalThis.crypto?.getRandomValues) {
       // Browser: Generate secure random bytes
       const bytes = new Uint8Array(32);
       globalThis.crypto.getRandomValues(bytes);

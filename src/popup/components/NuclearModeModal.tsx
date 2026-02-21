@@ -100,7 +100,7 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
    * Load rate limiting data from storage
    */
   const loadRateLimitData = async (): Promise<RateLimitData | null> => {
-    if (!chrome?.storage?.local) return null;
+    if (!chrome?.storage?.local) {return null;}
     const result = await chrome.storage.local.get(RATE_LIMIT_KEY);
     return result[RATE_LIMIT_KEY] || null;
   };
@@ -109,7 +109,7 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
    * Save rate limiting data to storage
    */
   const saveRateLimitData = async (data: RateLimitData): Promise<void> => {
-    if (!chrome?.storage?.local) return;
+    if (!chrome?.storage?.local) {return;}
     await chrome.storage.local.set({ [RATE_LIMIT_KEY]: data });
   };
 
@@ -117,7 +117,7 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
    * Clear rate limiting data (when window expires)
    */
   const clearRateLimitData = async (): Promise<void> => {
-    if (!chrome?.storage?.local) return;
+    if (!chrome?.storage?.local) {return;}
     await chrome.storage.local.remove(RATE_LIMIT_KEY);
   };
 
@@ -165,7 +165,7 @@ export const NuclearModeModal: React.FC<NuclearModeModalProps> = ({
   useEffect(() => {
     const checkRateLimit = async (): Promise<void> => {
       const data = await loadRateLimitData();
-      if (!data) return;
+      if (!data) {return;}
 
       const now = Date.now();
 

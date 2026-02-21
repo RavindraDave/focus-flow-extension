@@ -49,8 +49,8 @@ export class StreakTracker {
     analyticsRepository?: AnalyticsRepository,
     sessionRepository?: SessionRepository
   ) {
-    this.analyticsRepository = analyticsRepository || new AnalyticsRepository();
-    this.sessionRepository = sessionRepository || new SessionRepository();
+    this.analyticsRepository = analyticsRepository ?? new AnalyticsRepository();
+    this.sessionRepository = sessionRepository ?? new SessionRepository();
   }
 
   /**
@@ -92,11 +92,11 @@ export class StreakTracker {
         };
       } else {
         // Missed today - try to use freeze if available
-        updatedStreak = await this.handleMissedDay(streak, isPremium, now);
+        updatedStreak = this.handleMissedDay(streak, isPremium, now);
       }
     } else if (daysSinceLastCheckIn > 1) {
       // Missed multiple days - try to recover with freezes
-      updatedStreak = await this.handleMultipleMissedDays(
+      updatedStreak = this.handleMultipleMissedDays(
         streak,
         daysSinceLastCheckIn,
         isPremium,
@@ -193,11 +193,11 @@ export class StreakTracker {
    * @returns Updated streak data
    * @private
    */
-  private async handleMissedDay(
+  private handleMissedDay(
     streak: StreakData,
     isPremium: boolean,
     now: Date
-  ): Promise<Partial<StreakData>> {
+  ): Partial<StreakData> {
     if (isPremium && streak.freezesAvailable > 0) {
       // Use a freeze to maintain streak
       log.info('Using streak freeze to maintain streak');
@@ -226,12 +226,12 @@ export class StreakTracker {
    * @returns Updated streak data
    * @private
    */
-  private async handleMultipleMissedDays(
+  private handleMultipleMissedDays(
     streak: StreakData,
     daysMissed: number,
     isPremium: boolean,
     now: Date
-  ): Promise<Partial<StreakData>> {
+  ): Partial<StreakData> {
     const daysToRecover = daysMissed - 1; // Today is covered by current session
 
     if (isPremium && streak.freezesAvailable >= daysToRecover) {

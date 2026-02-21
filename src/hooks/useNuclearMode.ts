@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import type { BackgroundResponse } from '../types/messages';
 import { createLogger } from '../utils/logger';
 
 const log = createLogger('useNuclearMode');
@@ -24,8 +25,16 @@ export interface UseNuclearModeReturn {
 }
 
 /**
+ * Send a typed message to background for nuclear mode
+ */
+async function sendNuclearMessage<T>(
+  message: Record<string, unknown>
+): Promise<BackgroundResponse<T>> {
+  return chrome.runtime.sendMessage(message) as Promise<BackgroundResponse<T>>;
+}
+
+/**
  * Custom hook to manage Nuclear Mode
- * Complexity: 6 (multiple async operations + polling + error handling)
  */
 export function useNuclearMode(): UseNuclearModeReturn {
   const [isActive, setIsActive] = useState(false);
@@ -35,22 +44,21 @@ export function useNuclearMode(): UseNuclearModeReturn {
 
   /**
    * Fetch Nuclear Mode status from background
-   * Complexity: 4 (async + error handling)
    */
   const fetchStatus = useCallback(async (): Promise<void> => {
     try {
       setError(null);
 
-      const response = await chrome.runtime.sendMessage({
+      const response = await sendNuclearMessage<NuclearModeStatus>({
         type: 'NUCLEAR_MODE_GET_STATUS',
       });
 
-      if (response.success && response.data) {
-        const status: NuclearModeStatus = response.data;
+      if (response.success) {
+        const status = response.data;
         setIsActive(status.isActive);
         setRemainingSeconds(status.remainingTime);
       } else {
-        throw new Error(response.error || 'Failed to fetch Nuclear Mode status');
+        throw new Error(response.error ?? 'Failed to fetch Nuclear Mode status');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch Nuclear Mode status';
@@ -63,7 +71,6 @@ export function useNuclearMode(): UseNuclearModeReturn {
 
   /**
    * Activate Nuclear Mode
-   * Complexity: 4 (async + error handling + validation)
    */
   const activate = useCallback(async (durationHours: number): Promise<void> => {
     if (durationHours < 1 || durationHours > 8) {
@@ -73,7 +80,7 @@ export function useNuclearMode(): UseNuclearModeReturn {
     try {
       setError(null);
 
-      const response = await chrome.runtime.sendMessage({
+      const response = await sendNuclearMessage<boolean>({
         type: 'NUCLEAR_MODE_ACTIVATE',
         durationHours,
       });
@@ -81,7 +88,7 @@ export function useNuclearMode(): UseNuclearModeReturn {
       if (response.success) {
         await fetchStatus();
       } else {
-        throw new Error(response.error || 'Failed to activate Nuclear Mode');
+        throw new Error(response.error ?? 'Failed to activate Nuclear Mode');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to activate Nuclear Mode';
@@ -92,20 +99,19 @@ export function useNuclearMode(): UseNuclearModeReturn {
 
   /**
    * Deactivate Nuclear Mode (only works if expired)
-   * Complexity: 3 (async + error handling)
    */
   const deactivate = useCallback(async (): Promise<void> => {
     try {
       setError(null);
 
-      const response = await chrome.runtime.sendMessage({
+      const response = await sendNuclearMessage<boolean>({
         type: 'NUCLEAR_MODE_DEACTIVATE',
       });
 
       if (response.success) {
         await fetchStatus();
       } else {
-        throw new Error(response.error || 'Failed to deactivate Nuclear Mode');
+        throw new Error(response.error ?? 'Failed to deactivate Nuclear Mode');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to deactivate Nuclear Mode';
@@ -118,12 +124,12 @@ export function useNuclearMode(): UseNuclearModeReturn {
    * Fetch on mount and setup polling
    */
   useEffect(() => {
-    fetchStatus();
+    void fetchStatus();
 
     // Poll every 5 seconds when active
     const pollInterval = setInterval(() => {
       if (!document.hidden) {
-        fetchStatus();
+        void fetchStatus();
       }
     }, 5000);
 

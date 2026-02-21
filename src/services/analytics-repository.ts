@@ -40,7 +40,7 @@ export class AnalyticsRepository {
   private storageService: StorageService;
 
   constructor(storageService?: StorageService) {
-    this.storageService = storageService || new StorageService();
+    this.storageService = storageService ?? new StorageService();
   }
 
   /**
@@ -233,7 +233,7 @@ export class AnalyticsRepository {
         const statDate = new Date(s.date);
         statDate.setHours(0, 0, 0, 0);
         return statDate.getTime() === targetDate.getTime();
-      }) || null
+      }) ?? null
     );
   }
 

@@ -72,8 +72,8 @@ export function exportSessionsToCSV(sessions: PomodoroSession[]): string {
     escapeCSVField(session.endTime ? formatDate(session.endTime) : ''),
     escapeCSVField(formatDuration(session.duration)),
     escapeCSVField(session.actualDuration ? formatDuration(session.actualDuration) : ''),
-    escapeCSVField(session.taskName || ''),
-    escapeCSVField(session.category || ''),
+    escapeCSVField(session.taskName ?? ''),
+    escapeCSVField(session.category ?? ''),
   ]);
 
   // Combine headers and rows
@@ -83,6 +83,43 @@ export function exportSessionsToCSV(sessions: PomodoroSession[]): string {
   ];
 
   return csvLines.join('\n');
+}
+
+/**
+ * Build analytics section for JSON export
+ * Complexity: 3 (data transformation)
+ */
+function buildAnalyticsSection(analytics: AnalyticsData): Record<string, unknown> {
+  return {
+    totalFocusTimeMinutes: analytics.totalFocusTimeMinutes,
+    totalSessions: analytics.totalSessions,
+    totalBreaks: analytics.totalBreaks,
+    streak: {
+      current: analytics.streak.currentStreak,
+      longest: analytics.streak.longestStreak,
+      lastSessionDate: analytics.streak.lastSessionDate
+        ? formatDate(analytics.streak.lastSessionDate)
+        : null,
+      todayCompleted: analytics.streak.todayCompleted,
+    },
+    dailyStats: analytics.dailyStats.map(stat => ({
+      date: formatDate(stat.date),
+      focusTimeMinutes: stat.focusTimeMinutes,
+      completedSessions: stat.completedSessions,
+      abandonedSessions: stat.abandonedSessions,
+      breaksTaken: stat.breaksTaken,
+      sessionsByCategory: stat.sessionsByCategory,
+      mostProductiveHour: stat.mostProductiveHour,
+    })),
+    achievements: analytics.achievements.map(achievement => ({
+      id: achievement.id,
+      name: achievement.name,
+      description: achievement.description,
+      category: achievement.category,
+      unlockedAt: formatDate(achievement.unlockedAt),
+      icon: achievement.icon,
+    })),
+  };
 }
 
 /**
@@ -102,36 +139,7 @@ export function exportAnalyticsToJSON(
   const exportData = {
     exportDate: new Date().toISOString(),
     extensionVersion,
-    analytics: {
-      totalFocusTimeMinutes: analytics.totalFocusTimeMinutes,
-      totalSessions: analytics.totalSessions,
-      totalBreaks: analytics.totalBreaks,
-      streak: {
-        current: analytics.streak.currentStreak,
-        longest: analytics.streak.longestStreak,
-        lastSessionDate: analytics.streak.lastSessionDate
-          ? formatDate(analytics.streak.lastSessionDate)
-          : null,
-        todayCompleted: analytics.streak.todayCompleted,
-      },
-      dailyStats: analytics.dailyStats.map(stat => ({
-        date: formatDate(stat.date),
-        focusTimeMinutes: stat.focusTimeMinutes,
-        completedSessions: stat.completedSessions,
-        abandonedSessions: stat.abandonedSessions,
-        breaksTaken: stat.breaksTaken,
-        sessionsByCategory: stat.sessionsByCategory,
-        mostProductiveHour: stat.mostProductiveHour,
-      })),
-      achievements: analytics.achievements.map(achievement => ({
-        id: achievement.id,
-        name: achievement.name,
-        description: achievement.description,
-        category: achievement.category,
-        unlockedAt: formatDate(achievement.unlockedAt),
-        icon: achievement.icon,
-      })),
-    },
+    analytics: buildAnalyticsSection(analytics),
     sessions: sessions?.map(session => ({
       id: session.id,
       type: session.type,

@@ -242,7 +242,7 @@ export function validateMessage(message: BackgroundMessage): {
     return { valid: true };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { valid: false, error: error.errors[0]?.message || 'Validation failed' };
+      return { valid: false, error: error.errors[0]?.message ?? 'Validation failed' };
     }
     return { valid: false, error: 'Unknown validation error' };
   }

@@ -19,7 +19,7 @@ const log = createLogger('MigrationService');
 /**
  * Migration function signature
  */
-type MigrationFunction = (data: Record<string, unknown>) => Promise<Record<string, unknown>>;
+type MigrationFunction = (data: Record<string, unknown>) => Promise<Record<string, unknown>> | Record<string, unknown>;
 
 /**
  * Migration Service
@@ -69,33 +69,8 @@ export class MigrationService {
     let backup: string | null = null;
 
     try {
-      // Backup current data before migration
       backup = await this.createBackup();
-
-      // Get all data from storage
-      let data = await this.getAllData();
-
-      // Apply migrations sequentially
-      let migrationsApplied = 0;
-      for (let version = currentVersion + 1; version <= CURRENT_SCHEMA_VERSION; version++) {
-        const migrationFn = this.migrations.get(version);
-
-        if (!migrationFn) {
-          throw new Error(`No migration defined for version ${version}`);
-        }
-
-        log.info('Applying migration', { toVersion: version });
-        data = await migrationFn(data);
-        migrationsApplied++;
-      }
-
-      // Update version
-      data[STORAGE_KEYS.VERSION] = CURRENT_SCHEMA_VERSION;
-
-      // Save migrated data
-      await this.saveAllData(data);
-
-      log.info('Migration completed successfully', { migrationsApplied });
+      const migrationsApplied = await this.applyMigrations(currentVersion);
 
       return {
         success: true,
@@ -104,20 +79,7 @@ export class MigrationService {
         migrationsApplied,
       };
     } catch (error) {
-      log.error('Migration failed', error instanceof Error ? error : undefined);
-
-      // Attempt to restore backup
-      if (backup) {
-        try {
-          log.info('Attempting to restore backup after failed migration');
-          await this.restoreFromBackup(backup);
-          log.info('Backup restored successfully');
-        } catch (restoreError) {
-          log.error('Failed to restore backup', restoreError instanceof Error ? restoreError : undefined);
-        }
-      } else {
-        log.error('No backup available to restore');
-      }
+      await this.handleMigrationFailure(error, backup);
 
       return {
         success: false,
@@ -126,6 +88,60 @@ export class MigrationService {
         migrationsApplied: 0,
         error: error instanceof Error ? error.message : String(error),
       };
+    }
+  }
+
+  /**
+   * Apply all pending migrations sequentially
+   *
+   * @param currentVersion - Current schema version
+   * @returns Number of migrations applied
+   * @private
+   */
+  private async applyMigrations(currentVersion: number): Promise<number> {
+    let data = await this.getAllData();
+    let migrationsApplied = 0;
+
+    for (let version = currentVersion + 1; version <= CURRENT_SCHEMA_VERSION; version++) {
+      const migrationFn = this.migrations.get(version);
+
+      if (!migrationFn) {
+        throw new Error(`No migration defined for version ${version}`);
+      }
+
+      log.info('Applying migration', { toVersion: version });
+      data = await migrationFn(data);
+      migrationsApplied++;
+    }
+
+    data[STORAGE_KEYS.VERSION] = CURRENT_SCHEMA_VERSION;
+    await this.saveAllData(data);
+
+    log.info('Migration completed successfully', { migrationsApplied });
+    return migrationsApplied;
+  }
+
+  /**
+   * Handle migration failure by attempting backup restoration
+   *
+   * @param error - The error that caused the migration failure
+   * @param backup - Serialized backup string or null
+   * @private
+   */
+  private async handleMigrationFailure(error: unknown, backup: string | null): Promise<void> {
+    log.error('Migration failed', error instanceof Error ? error : undefined);
+
+    if (!backup) {
+      log.error('No backup available to restore');
+      return;
+    }
+
+    try {
+      log.info('Attempting to restore backup after failed migration');
+      await this.restoreFromBackup(backup);
+      log.info('Backup restored successfully');
+    } catch (restoreError) {
+      log.error('Failed to restore backup', restoreError instanceof Error ? restoreError : undefined);
     }
   }
 
@@ -163,9 +179,9 @@ export class MigrationService {
    * Initial migration for fresh installs or legacy data.
    * Sets up default structure.
    */
-  private async migrateToV1(
+  private migrateToV1(
     data: Record<string, unknown>
-  ): Promise<Record<string, unknown>> {
+  ): Record<string, unknown> {
     // Initialize with defaults if missing
     const migrated: Record<string, unknown> = {
       version: 1,
@@ -177,29 +193,48 @@ export class MigrationService {
       analytics: data[STORAGE_KEYS.ANALYTICS] ?? DEFAULT_ANALYTICS,
     };
 
-    // Ensure settings has nuclear mode config
-    if (migrated.settings && typeof migrated.settings === 'object') {
-      const settings = migrated.settings as UserSettings;
-      if (!settings.nuclearMode) {
-        settings.nuclearMode = DEFAULT_SETTINGS.nuclearMode;
-      }
-      if (!settings.nuclearMode.deviceSecret) {
-        settings.nuclearMode.deviceSecret = this.generateDeviceSecret();
-      }
-    }
-
-    // Ensure analytics has required fields
-    if (migrated.analytics && typeof migrated.analytics === 'object') {
-      const analytics = migrated.analytics as AnalyticsData;
-      if (!analytics.streak) {
-        analytics.streak = DEFAULT_ANALYTICS.streak;
-      }
-      if (!analytics.achievements) {
-        analytics.achievements = [];
-      }
-    }
+    this.ensureSettingsNuclearMode(migrated);
+    this.ensureAnalyticsFields(migrated);
 
     return migrated;
+  }
+
+  /**
+   * Ensure settings has nuclear mode config
+   *
+   * @param migrated - Migrated data record to update in place
+   * @private
+   */
+  private ensureSettingsNuclearMode(migrated: Record<string, unknown>): void {
+    if (!migrated.settings || typeof migrated.settings !== 'object') {
+      return;
+    }
+    const settings = migrated.settings as UserSettings;
+    if (!settings.nuclearMode) {
+      settings.nuclearMode = DEFAULT_SETTINGS.nuclearMode;
+    }
+    if (!settings.nuclearMode.deviceSecret) {
+      settings.nuclearMode.deviceSecret = this.generateDeviceSecret();
+    }
+  }
+
+  /**
+   * Ensure analytics has required fields
+   *
+   * @param migrated - Migrated data record to update in place
+   * @private
+   */
+  private ensureAnalyticsFields(migrated: Record<string, unknown>): void {
+    if (!migrated.analytics || typeof migrated.analytics !== 'object') {
+      return;
+    }
+    const analytics = migrated.analytics as AnalyticsData;
+    if (!analytics.streak) {
+      analytics.streak = DEFAULT_ANALYTICS.streak;
+    }
+    if (!analytics.achievements) {
+      analytics.achievements = [];
+    }
   }
 
   /**
@@ -209,9 +244,9 @@ export class MigrationService {
    * Add new fields, transform existing data, etc.
    */
   // @ts-expect-error - Reserved for future migration
-  private async migrateToV2(
+  private migrateToV2(
     data: Record<string, unknown>
-  ): Promise<Record<string, unknown>> {
+  ): Record<string, unknown> {
     // Example: Add new field to settings
     // const settings = data[STORAGE_KEYS.SETTINGS] as UserSettings;
     // settings.newField = defaultValue;
@@ -236,7 +271,7 @@ export class MigrationService {
    */
   async restoreFromBackup(backup: string): Promise<void> {
     try {
-      const data = JSON.parse(backup);
+      const data = JSON.parse(backup) as Record<string, unknown>;
       await this.saveAllData(data);
     } catch (error) {
       throw new StorageError(
@@ -277,7 +312,7 @@ export class MigrationService {
    * @returns 32-byte hex string
    */
   private generateDeviceSecret(): string {
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    if (crypto?.getRandomValues) {
       const bytes = new Uint8Array(32);
       crypto.getRandomValues(bytes);
       return Array.from(bytes)

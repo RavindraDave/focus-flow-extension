@@ -111,7 +111,7 @@ export class StorageService {
         return null;
       }
 
-      const data = result[key];
+      const data: unknown = result[key];
 
       // Null/undefined is valid (missing data)
       if (data === null || data === undefined) {
@@ -360,7 +360,7 @@ export class StorageService {
 
       // Schedule write
       const timer = setTimeout(() => {
-        this.flushDebouncedWrite(key);
+        void this.flushDebouncedWrite(key);
       }, RATE_LIMITS.STORAGE_WRITE_DEBOUNCE_MS);
 
       this.writeTimers.set(key, timer);

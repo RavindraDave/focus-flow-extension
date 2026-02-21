@@ -44,7 +44,7 @@ export class NuclearModeManager {
   private lastKnownTime: number;
 
   constructor(settingsRepository?: SettingsRepository) {
-    this.settingsRepository = settingsRepository || new SettingsRepository();
+    this.settingsRepository = settingsRepository ?? new SettingsRepository();
     this.lastKnownTime = Date.now();
   }
 
@@ -205,7 +205,7 @@ export class NuclearModeManager {
    *
    * Security: OWASP ASVS V8.2.3 - Detect system time manipulation
    */
-  async detectTimeManipulation(): Promise<boolean> {
+  detectTimeManipulation(): boolean {
     const now = Date.now();
     const timeDiff = now - this.lastKnownTime;
 
@@ -345,7 +345,7 @@ export class NuclearModeManager {
     const remainingMs = await this.getRemainingTime();
     const remainingFormatted = await this.getRemainingTimeFormatted();
     const integrityValid = await this.verifyIntegrity();
-    const timeManipulationDetected = await this.detectTimeManipulation();
+    const timeManipulationDetected = this.detectTimeManipulation();
 
     return {
       active: isActive,

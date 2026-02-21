@@ -309,7 +309,7 @@ export class BlockerEngine {
       return; // Not in blocking mode
     }
 
-    await this.analyticsTracker.trackBlockedAttempt();
+    this.analyticsTracker.trackBlockedAttempt();
     log.info('Blocked attempt', { domain });
   }
 

@@ -27,7 +27,7 @@ export class ScheduleRepository {
   private storageService: StorageService;
 
   constructor(storageService?: StorageService) {
-    this.storageService = storageService || new StorageService();
+    this.storageService = storageService ?? new StorageService();
   }
 
   /**
@@ -65,7 +65,7 @@ export class ScheduleRepository {
       (await this.storageService.get(
         STORAGE_KEYS.SCHEDULES,
         z.array(ScheduleSchema) as unknown as z.ZodType<Schedule[]>
-      )) || [];
+      )) ?? [];
 
     return schedules;
   }
@@ -185,7 +185,7 @@ export class ScheduleRepository {
    */
   async findById(id: string): Promise<Schedule | null> {
     const schedules = await this.getAllSchedules();
-    return schedules.find(s => s.id === id) || null;
+    return schedules.find(s => s.id === id) ?? null;
   }
 
   /**
@@ -197,7 +197,7 @@ export class ScheduleRepository {
    */
   private getDayName(dayNumber: number): DayOfWeek {
     const days: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    return days[dayNumber] || 'monday';
+    return days[dayNumber] ?? 'monday';
   }
 
   /**

@@ -48,15 +48,10 @@ function formatMinutesForTooltip(minutes: number): string {
 }
 
 /**
- * FocusTimeChart Component
- * Complexity: 4 (data transformation + chart configuration)
+ * Build chart data configuration
  */
-export const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
-  dailyFocusTime,
-  labels,
-  height = 300,
-}) => {
-  const data = {
+function buildChartData(labels: string[], dailyFocusTime: number[]) {
+  return {
     labels,
     datasets: [
       {
@@ -66,7 +61,7 @@ export const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
         backgroundColor: chartColors.primary.light,
         borderWidth: 2,
         fill: true,
-        tension: 0.4, // Smooth curve
+        tension: 0.4,
         pointRadius: 4,
         pointHoverRadius: 6,
         pointBackgroundColor: chartColors.primary.main,
@@ -78,15 +73,18 @@ export const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
       },
     ],
   };
+}
 
-  const options = {
+/**
+ * Build chart options configuration
+ */
+function buildChartOptions(): object {
+  return {
     ...defaultChartOptions,
     scales: defaultScales,
     plugins: {
       ...defaultChartOptions.plugins,
-      title: {
-        display: false,
-      },
+      title: { display: false },
       tooltip: {
         ...defaultChartOptions.plugins.tooltip,
         callbacks: {
@@ -98,32 +96,49 @@ export const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
       },
       legend: {
         ...defaultChartOptions.plugins.legend,
-        display: false, // Hide legend for single dataset
+        display: false,
       },
     },
   };
+}
 
-  // Empty state
+/** Empty state when no data is available */
+function FocusTimeEmptyState({ height }: { height: number }): React.ReactElement {
+  return (
+    <div
+      className="flex items-center justify-center bg-bg-secondary rounded-lg"
+      style={{ height: `${height}px` }}
+      role="img"
+      aria-label="No focus time data available for the past 7 days"
+    >
+      <p className="text-text-tertiary text-sm">
+        No focus time recorded yet. Complete a Pomodoro session to see your progress!
+      </p>
+    </div>
+  );
+}
+
+/**
+ * FocusTimeChart Component
+ * Complexity: 4 (data transformation + chart configuration)
+ */
+export const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
+  dailyFocusTime,
+  labels,
+  height = 300,
+}) => {
   if (dailyFocusTime.length === 0 || dailyFocusTime.every(val => val === 0)) {
-    return (
-      <div
-        className="flex items-center justify-center bg-bg-secondary rounded-lg"
-        style={{ height: `${height}px` }}
-        role="img"
-        aria-label="No focus time data available for the past 7 days"
-      >
-        <p className="text-text-tertiary text-sm">
-          No focus time recorded yet. Complete a Pomodoro session to see your progress!
-        </p>
-      </div>
-    );
+    return <FocusTimeEmptyState height={height} />;
   }
+
+  const data = buildChartData(labels, dailyFocusTime);
+  const options = buildChartOptions();
 
   return (
     <div
       role="img"
       aria-label={`Focus time trend for the past 7 days. ${labels
-        .map((label, idx) => `${label}: ${formatMinutesForTooltip(dailyFocusTime[idx] || 0)}`)
+        .map((label, idx) => `${label}: ${formatMinutesForTooltip(dailyFocusTime[idx] ?? 0)}`)
         .join(', ')}`}
     >
       <Line data={data} options={options} height={height} />

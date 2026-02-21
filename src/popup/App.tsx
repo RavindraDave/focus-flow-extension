@@ -17,10 +17,56 @@ import { createLogger } from '../utils/logger';
 const log = createLogger('PopupApp');
 
 /**
+ * Header section component for popup
+ */
+const PopupHeader: React.FC<{ onSettingsClick: () => void }> = ({ onSettingsClick }): React.ReactElement => (
+  <header className="flex justify-between items-center mb-6">
+    <div className="flex items-center gap-2">
+      <div className="w-6 h-6 bg-accent rounded-md flex items-center justify-center text-white text-xs font-bold">F</div>
+      <span className="font-semibold tracking-tight text-text-primary">Focus Flow</span>
+    </div>
+    <button
+      onClick={onSettingsClick}
+      className="text-text-tertiary hover:text-text-primary transition"
+      aria-label="Settings"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+      </svg>
+    </button>
+  </header>
+);
+
+/**
+ * Footer section component for popup
+ */
+const PopupFooter: React.FC<{ onNuclearClick: () => void }> = ({ onNuclearClick }): React.ReactElement => (
+  <footer className="mt-auto pt-4 border-t border-border">
+    <div className="flex justify-between items-center">
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+        <span className="text-xs text-text-tertiary">System Ready</span>
+      </div>
+
+      <button
+        onClick={onNuclearClick}
+        className="text-xs text-error hover:text-error/80 flex items-center gap-1 transition font-medium"
+      >
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        Nuclear Mode
+      </button>
+    </div>
+  </footer>
+);
+
+/**
  * Main Popup App component
  * Complexity: 7 (multiple hooks + conditional rendering + nuclear mode)
  */
-const App: React.FC = () => {
+const App: React.FC = (): React.ReactElement => {
   // Get theme context (theme is initialized by ThemeProvider)
   const { setTheme } = useThemeContext();
 
@@ -72,7 +118,7 @@ const App: React.FC = () => {
   }, []);
 
   // Handle onboarding completion
-  const handleOnboardingComplete = async (selectedTheme: 'modern' | 'zen' | 'cyber') => {
+  const handleOnboardingComplete = async (selectedTheme: 'modern' | 'zen' | 'cyber'): Promise<void> => {
     // Save onboarding completion flag
     await chrome.storage.sync.set({ has_onboarded: true });
 
@@ -117,22 +163,7 @@ const App: React.FC = () => {
   return (
     <PopupLayout>
       {/* Header */}
-      <header className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-accent rounded-md flex items-center justify-center text-white text-xs font-bold">F</div>
-          <span className="font-semibold tracking-tight text-text-primary">Focus Flow</span>
-        </div>
-        <button
-          onClick={() => chrome.runtime.openOptionsPage()}
-          className="text-text-tertiary hover:text-text-primary transition"
-          aria-label="Settings"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-          </svg>
-        </button>
-      </header>
+      <PopupHeader onSettingsClick={() => chrome.runtime.openOptionsPage()} />
 
       {/* Main Content */}
       <main className="space-y-8">
@@ -191,7 +222,7 @@ const App: React.FC = () => {
         {/* Quick Stats */}
         <section aria-labelledby="stats-heading">
           <h2 id="stats-heading" className="sr-only">
-            Today's Statistics
+            Today&apos;s Statistics
           </h2>
           {analyticsError && (
             <div
@@ -202,34 +233,17 @@ const App: React.FC = () => {
             </div>
           )}
           <QuickStats
-            focusTime={todayStats?.focusTime || 0}
-            pomodorosCompleted={todayStats?.pomodorosCompleted || 0}
-            streakDays={streak?.current || 0}
-            longestStreak={streak?.longest || 0}
+            focusTime={todayStats?.focusTime ?? 0}
+            pomodorosCompleted={todayStats?.pomodorosCompleted ?? 0}
+            streakDays={streak?.current ?? 0}
+            longestStreak={streak?.longest ?? 0}
             isLoading={analyticsLoading}
           />
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto pt-4 border-t border-border">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
-            <span className="text-xs text-text-tertiary">System Ready</span>
-          </div>
-
-          <button
-            onClick={() => setIsNuclearModalOpen(true)}
-            className="text-xs text-error hover:text-error/80 flex items-center gap-1 transition font-medium"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-            Nuclear Mode
-          </button>
-        </div>
-      </footer>
+      <PopupFooter onNuclearClick={() => setIsNuclearModalOpen(true)} />
 
       {/* Nuclear Mode Modal */}
       <NuclearModeModal
@@ -242,7 +256,7 @@ const App: React.FC = () => {
       {/* Onboarding Modal (First Run) */}
       {showOnboarding && (
         <OnboardingModal
-          onComplete={handleOnboardingComplete}
+          onComplete={(selectedTheme: 'modern' | 'zen' | 'cyber'): void => { void handleOnboardingComplete(selectedTheme); }}
           suggestedTheme={suggestedTheme}
         />
       )}

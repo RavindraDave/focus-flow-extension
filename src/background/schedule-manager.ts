@@ -66,7 +66,7 @@ export class ScheduleManager {
    */
   private getDayName(dayNumber: number): DayOfWeek {
     const days: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    return days[dayNumber] || 'monday';
+    return days[dayNumber] ?? 'monday';
   }
 
   /**
@@ -233,7 +233,7 @@ export class ScheduleManager {
         ? `Blocking active until ${schedule.endTime}`
         : `You can now access blocked sites`;
 
-      await chrome.notifications.create({
+      chrome.notifications.create({
         type: 'basic',
         iconUrl: chrome.runtime.getURL('/icons/icon_v10_128.png'),
         title,
@@ -292,8 +292,8 @@ export class ScheduleManager {
    */
   private getMinutesUntilNextOccurrence(schedule: Schedule, fromTime: Date = new Date()): number {
     const timeParts = schedule.startTime.split(':').map(Number);
-    const startHour = timeParts[0] || 0;
-    const startMinute = timeParts[1] || 0;
+    const startHour = timeParts[0] ?? 0;
+    const startMinute = timeParts[1] ?? 0;
 
     // Check each of the next 7 days
     for (let daysAhead = 0; daysAhead < 7; daysAhead++) {

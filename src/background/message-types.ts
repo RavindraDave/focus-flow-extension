@@ -320,6 +320,131 @@ const ScheduleDeleteMessageSchema = z.object({
 });
 
 /**
+ * Validate timer-related messages
+ *
+ * @param type - Message type
+ * @param message - The raw message
+ * @returns true if handled, false if not a timer message
+ * @private
+ */
+function validateTimerMessage(type: string, message: unknown): boolean {
+  switch (type) {
+    case 'TIMER_START':
+      TimerStartMessageSchema.parse(message);
+      return true;
+    case 'TIMER_PAUSE':
+    case 'TIMER_RESUME':
+    case 'TIMER_STOP':
+    case 'TIMER_GET_STATUS':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Validate blocker and blocklist messages
+ *
+ * @param type - Message type
+ * @param message - The raw message
+ * @returns true if handled, false if not a blocker/blocklist message
+ * @private
+ */
+function validateBlocklistMessage(type: string, message: unknown): boolean {
+  switch (type) {
+    case 'BLOCKER_TRACK_ATTEMPT':
+      BlockerTrackMessageSchema.parse(message);
+      return true;
+    case 'BLOCKER_CHECK_ALLOWANCE':
+      BlockerCheckAllowanceMessageSchema.parse(message);
+      return true;
+    case 'BLOCKER_GRANT_ACCESS':
+      BlockerGrantAccessMessageSchema.parse(message);
+      return true;
+    case 'BLOCKER_GET_TEMP_ACCESS':
+      BlockerGetTempAccessMessageSchema.parse(message);
+      return true;
+    case 'BLOCKLIST_ADD':
+      BlockListAddMessageSchema.parse(message);
+      return true;
+    case 'BLOCKLIST_UPDATE':
+      BlockListUpdateMessageSchema.parse(message);
+      return true;
+    case 'BLOCKLIST_DELETE':
+      BlockListDeleteMessageSchema.parse(message);
+      return true;
+    case 'BLOCKER_SYNC_RULES':
+    case 'BLOCKER_GET_STATS':
+    case 'BLOCKLIST_GET_ALL':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Validate schedule-related messages
+ *
+ * @param type - Message type
+ * @param message - The raw message
+ * @returns true if handled, false if not a schedule message
+ * @private
+ */
+function validateScheduleMessage(type: string, message: unknown): boolean {
+  switch (type) {
+    case 'SCHEDULE_ADD':
+      ScheduleAddMessageSchema.parse(message);
+      return true;
+    case 'SCHEDULE_UPDATE':
+      ScheduleUpdateMessageSchema.parse(message);
+      return true;
+    case 'SCHEDULE_DELETE':
+      ScheduleDeleteMessageSchema.parse(message);
+      return true;
+    case 'SCHEDULE_GET_ALL':
+    case 'SCHEDULE_GET_NEXT':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Validate analytics, streak, session, settings, and nuclear mode messages
+ *
+ * @param type - Message type
+ * @param message - The raw message
+ * @returns true if handled, false if not matched
+ * @private
+ */
+function validateAnalyticsMessage(type: string, message: unknown): boolean {
+  switch (type) {
+    case 'NUCLEAR_MODE_ACTIVATE':
+      NuclearModeActivateMessageSchema.parse(message);
+      return true;
+    case 'SESSION_GET_HISTORY':
+      SessionGetHistoryMessageSchema.parse(message);
+      return true;
+    case 'SETTINGS_UPDATE':
+      SettingsUpdateMessageSchema.parse(message);
+      return true;
+    case 'NUCLEAR_MODE_DEACTIVATE':
+    case 'NUCLEAR_MODE_GET_STATUS':
+    case 'ANALYTICS_GET':
+    case 'ANALYTICS_GET_FOCUS_SCORE':
+    case 'ANALYTICS_GET_WEEKLY_SUMMARY':
+    case 'ANALYTICS_GET_MONTHLY_SUMMARY':
+    case 'STREAK_GET':
+    case 'STREAK_CHECK':
+    case 'SESSION_GET_TODAY':
+    case 'SETTINGS_GET':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
  * Validate a background message at runtime
  * SECURITY: Prevents malformed/malicious messages from being processed
  *
@@ -336,89 +461,14 @@ export function validateBackgroundMessage(message: unknown): { valid: boolean; e
   const msg = message as { type: string };
 
   try {
-    // Validate based on message type
-    switch (msg.type) {
-      case 'TIMER_START':
-        TimerStartMessageSchema.parse(message);
-        break;
+    const handled =
+      validateTimerMessage(msg.type, message) ||
+      validateBlocklistMessage(msg.type, message) ||
+      validateScheduleMessage(msg.type, message) ||
+      validateAnalyticsMessage(msg.type, message);
 
-      case 'NUCLEAR_MODE_ACTIVATE':
-        NuclearModeActivateMessageSchema.parse(message);
-        break;
-
-      case 'BLOCKER_TRACK_ATTEMPT':
-        BlockerTrackMessageSchema.parse(message);
-        break;
-
-      case 'BLOCKER_CHECK_ALLOWANCE':
-        BlockerCheckAllowanceMessageSchema.parse(message);
-        break;
-
-      case 'BLOCKER_GRANT_ACCESS':
-        BlockerGrantAccessMessageSchema.parse(message);
-        break;
-
-      case 'BLOCKER_GET_TEMP_ACCESS':
-        BlockerGetTempAccessMessageSchema.parse(message);
-        break;
-
-      case 'BLOCKLIST_ADD':
-        BlockListAddMessageSchema.parse(message);
-        break;
-
-      case 'BLOCKLIST_UPDATE':
-        BlockListUpdateMessageSchema.parse(message);
-        break;
-
-      case 'BLOCKLIST_DELETE':
-        BlockListDeleteMessageSchema.parse(message);
-        break;
-
-      case 'SESSION_GET_HISTORY':
-        SessionGetHistoryMessageSchema.parse(message);
-        break;
-
-      case 'SETTINGS_UPDATE':
-        SettingsUpdateMessageSchema.parse(message);
-        break;
-
-      case 'SCHEDULE_ADD':
-        ScheduleAddMessageSchema.parse(message);
-        break;
-
-      case 'SCHEDULE_UPDATE':
-        ScheduleUpdateMessageSchema.parse(message);
-        break;
-
-      case 'SCHEDULE_DELETE':
-        ScheduleDeleteMessageSchema.parse(message);
-        break;
-
-      // Messages that don't require additional validation (no payload)
-      case 'TIMER_PAUSE':
-      case 'TIMER_RESUME':
-      case 'TIMER_STOP':
-      case 'TIMER_GET_STATUS':
-      case 'NUCLEAR_MODE_DEACTIVATE':
-      case 'NUCLEAR_MODE_GET_STATUS':
-      case 'ANALYTICS_GET':
-      case 'ANALYTICS_GET_FOCUS_SCORE':
-      case 'ANALYTICS_GET_WEEKLY_SUMMARY':
-      case 'ANALYTICS_GET_MONTHLY_SUMMARY':
-      case 'STREAK_GET':
-      case 'STREAK_CHECK':
-      case 'BLOCKER_SYNC_RULES':
-      case 'BLOCKER_GET_STATS':
-      case 'BLOCKLIST_GET_ALL':
-      case 'SESSION_GET_TODAY':
-      case 'SETTINGS_GET':
-      case 'SCHEDULE_GET_ALL':
-      case 'SCHEDULE_GET_NEXT':
-        // These messages only have a type field, no additional validation needed
-        break;
-
-      default:
-        return { valid: false, error: `Unknown message type: ${msg.type}` };
+    if (!handled) {
+      return { valid: false, error: `Unknown message type: ${msg.type}` };
     }
 
     return { valid: true };

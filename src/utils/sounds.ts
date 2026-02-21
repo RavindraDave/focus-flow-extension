@@ -53,6 +53,27 @@ async function soundFileExists(filename: string): Promise<boolean> {
 }
 
 /**
+ * Resolve sound settings from storage and options
+ */
+async function resolveSoundSettings(options?: {
+  theme?: ThemeMode;
+  volume?: number;
+  enabled?: boolean;
+}): Promise<{ soundEnabled: boolean; theme: ThemeMode; volume: number }> {
+  const settings: Record<string, unknown> = await chrome.storage.sync.get([
+    'visual_theme',
+    'sound_enabled',
+    'sound_volume',
+  ]);
+
+  const soundEnabled = options?.enabled ?? (settings.sound_enabled as boolean | undefined) ?? true;
+  const theme: ThemeMode = (options?.theme ?? (settings.visual_theme as string | undefined) ?? 'modern') as ThemeMode;
+  const volume: number = options?.volume ?? (settings.sound_volume as number | undefined) ?? 0.5;
+
+  return { soundEnabled, theme, volume };
+}
+
+/**
  * Play a notification sound based on current theme
  *
  * @param options - Optional overrides for theme, volume, and sound enablement
@@ -64,22 +85,13 @@ export async function playNotificationSound(options?: {
   enabled?: boolean;
 }): Promise<void> {
   try {
-    // Get user preferences
-    const settings = await chrome.storage.sync.get([
-      'visual_theme',
-      'sound_enabled',
-      'sound_volume',
-    ]);
+    const { soundEnabled, theme, volume } = await resolveSoundSettings(options);
 
-    // Determine if sound should play
-    const soundEnabled = options?.enabled ?? settings.sound_enabled ?? true;
     if (!soundEnabled) {
       log.debug('Notification sound disabled by user preference');
       return;
     }
 
-    // Determine which theme sound to use
-    const theme: ThemeMode = (options?.theme ?? settings.visual_theme ?? 'modern') as ThemeMode;
     const soundInfo = THEME_SOUNDS[theme];
 
     // Check if sound file exists
@@ -94,9 +106,6 @@ export async function playNotificationSound(options?: {
 
     // Create and configure audio element
     const audio = new Audio(chrome.runtime.getURL(`assets/sounds/${soundInfo.file}`));
-
-    // Set volume (0.0 to 1.0)
-    const volume = options?.volume ?? settings.sound_volume ?? 0.5;
     audio.volume = Math.max(0, Math.min(1, volume));
 
     // Play the sound

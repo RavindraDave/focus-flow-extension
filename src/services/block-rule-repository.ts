@@ -24,7 +24,7 @@ export class BlockRuleRepository {
   private storageService: StorageService;
 
   constructor(storageService?: StorageService) {
-    this.storageService = storageService || new StorageService();
+    this.storageService = storageService ?? new StorageService();
   }
 
   /**
@@ -58,7 +58,7 @@ export class BlockRuleRepository {
       (await this.storageService.get(
         STORAGE_KEYS.BLOCK_RULES,
         z.array(BlockRuleSchema) as unknown as z.ZodType<BlockRule[]>
-      )) || [];
+      )) ?? [];
 
     return rules;
   }
@@ -159,7 +159,7 @@ export class BlockRuleRepository {
    */
   async findById(id: string): Promise<BlockRule | null> {
     const rules = await this.getAllRules();
-    return rules.find(r => r.id === id) || null;
+    return rules.find(r => r.id === id) ?? null;
   }
 
   /**

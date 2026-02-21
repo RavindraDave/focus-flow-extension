@@ -34,18 +34,10 @@ export interface SessionDistributionChartProps {
 }
 
 /**
- * SessionDistributionChart Component
- * Complexity: 4 (data aggregation + chart configuration)
+ * Build chart data for session distribution
  */
-export const SessionDistributionChart: React.FC<SessionDistributionChartProps> = ({
-  workSessions,
-  shortBreaks,
-  longBreaks,
-  height = 300,
-}) => {
-  const totalSessions = workSessions + shortBreaks + longBreaks;
-
-  const data = {
+function buildChartData(workSessions: number, shortBreaks: number, longBreaks: number) {
+  return {
     labels: ['Work Sessions', 'Short Breaks', 'Long Breaks'],
     datasets: [
       {
@@ -66,14 +58,17 @@ export const SessionDistributionChart: React.FC<SessionDistributionChartProps> =
       },
     ],
   };
+}
 
-  const options = {
+/**
+ * Build chart options for session distribution
+ */
+function buildChartOptions(totalSessions: number): object {
+  return {
     ...defaultChartOptions,
     plugins: {
       ...defaultChartOptions.plugins,
-      title: {
-        display: false,
-      },
+      title: { display: false },
       tooltip: {
         ...defaultChartOptions.plugins.tooltip,
         callbacks: {
@@ -92,23 +87,42 @@ export const SessionDistributionChart: React.FC<SessionDistributionChartProps> =
       },
     },
   };
+}
 
-  // Empty state
+/** Empty state for session distribution chart */
+function DistributionEmptyState({ height }: { height: number }): React.ReactElement {
+  return (
+    <div
+      className="flex items-center justify-center bg-bg-secondary rounded-lg"
+      style={{ height: `${height}px` }}
+      role="img"
+      aria-label="No session data available"
+    >
+      <p className="text-text-tertiary text-sm">
+        No sessions completed yet. Start a Pomodoro to see your session distribution!
+      </p>
+    </div>
+  );
+}
+
+/**
+ * SessionDistributionChart Component
+ * Complexity: 4 (data aggregation + chart configuration)
+ */
+export const SessionDistributionChart: React.FC<SessionDistributionChartProps> = ({
+  workSessions,
+  shortBreaks,
+  longBreaks,
+  height = 300,
+}) => {
+  const totalSessions = workSessions + shortBreaks + longBreaks;
+
   if (totalSessions === 0) {
-    return (
-      <div
-        className="flex items-center justify-center bg-bg-secondary rounded-lg"
-        style={{ height: `${height}px` }}
-        role="img"
-        aria-label="No session data available"
-      >
-        <p className="text-text-tertiary text-sm">
-          No sessions completed yet. Start a Pomodoro to see your session distribution!
-        </p>
-      </div>
-    );
+    return <DistributionEmptyState height={height} />;
   }
 
+  const data = buildChartData(workSessions, shortBreaks, longBreaks);
+  const options = buildChartOptions(totalSessions);
   const workPercent = ((workSessions / totalSessions) * 100).toFixed(1);
   const shortBreakPercent = ((shortBreaks / totalSessions) * 100).toFixed(1);
   const longBreakPercent = ((longBreaks / totalSessions) * 100).toFixed(1);

@@ -76,8 +76,7 @@ class Logger {
     level: LogLevel,
     component: string,
     message: string,
-    data?: unknown,
-    error?: Error
+    context?: { data?: unknown; error?: Error }
   ): void {
     // Filter by log level
     if (level < this.minLevel) {
@@ -89,8 +88,8 @@ class Logger {
       level,
       component,
       message,
-      data,
-      error,
+      data: context?.data,
+      error: context?.error,
     };
 
     // Store in memory
@@ -113,6 +112,7 @@ class Logger {
   /**
    * Output log to console with formatting
    */
+  /* eslint-disable no-console */
   private logToConsole(entry: LogEntry): void {
     const prefix = `[${entry.component}]`;
     const message = `${prefix} ${entry.message}`;
@@ -132,6 +132,7 @@ class Logger {
         break;
     }
   }
+  /* eslint-enable no-console */
 
   /**
    * Persist log to Chrome storage
@@ -225,19 +226,19 @@ class ComponentLogger {
   ) {}
 
   debug(message: string, data?: unknown): void {
-    this.logger.log(LogLevel.DEBUG, this.componentName, message, data);
+    this.logger.log(LogLevel.DEBUG, this.componentName, message, { data });
   }
 
   info(message: string, data?: unknown): void {
-    this.logger.log(LogLevel.INFO, this.componentName, message, data);
+    this.logger.log(LogLevel.INFO, this.componentName, message, { data });
   }
 
   warn(message: string, data?: unknown): void {
-    this.logger.log(LogLevel.WARN, this.componentName, message, data);
+    this.logger.log(LogLevel.WARN, this.componentName, message, { data });
   }
 
   error(message: string, error?: Error, data?: unknown): void {
-    this.logger.log(LogLevel.ERROR, this.componentName, message, data, error);
+    this.logger.log(LogLevel.ERROR, this.componentName, message, { data, ...(error !== undefined ? { error } : {}) });
   }
 
   /**

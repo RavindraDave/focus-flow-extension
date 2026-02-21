@@ -81,7 +81,7 @@ export function useTheme(): {
     async function loadTheme(): Promise<void> {
       try {
         const result = await chrome.storage.sync.get(THEME_STORAGE_KEY);
-        const savedTheme = (result[THEME_STORAGE_KEY] as ThemeMode) || DEFAULT_THEME;
+        const savedTheme = (result[THEME_STORAGE_KEY] as ThemeMode) ?? DEFAULT_THEME;
         setThemeState(savedTheme);
         applyTheme(savedTheme);
       } catch (error) {
@@ -93,7 +93,7 @@ export function useTheme(): {
       }
     }
 
-    loadTheme();
+    void loadTheme();
   }, []);
 
   // Listen to storage changes (sync across extension pages)

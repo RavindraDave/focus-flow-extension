@@ -5,15 +5,22 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createLogger } from '../utils/logger';
-import type { DailyStats } from '../types';
+import type { BackgroundResponse } from '../types/messages';
 
 const log = createLogger('useAnalytics');
 
 /**
  * Serialized DailyStats (dates as strings from JSON)
  */
-interface SerializedDailyStats extends Omit<DailyStats, 'date'> {
+interface SerializedDailyStats {
   date: string;
+  focusTime: number;
+  pomodorosCompleted: number;
+  pomodorosAbandoned: number;
+}
+
+interface AnalyticsResponseData {
+  dailyStats?: SerializedDailyStats[];
 }
 
 export interface TodayStats {
@@ -38,8 +45,29 @@ export interface UseAnalyticsReturn {
 }
 
 /**
+ * Fetch and process analytics data from the background service worker
+ */
+function processAnalyticsResponse(
+  analyticsResponse: BackgroundResponse<AnalyticsResponseData>
+): TodayStats | null {
+  if (!analyticsResponse.success) {
+    return null;
+  }
+  const analytics = analyticsResponse.data;
+  const today = new Date().toISOString().split('T')[0];
+  const todayData = analytics.dailyStats?.find(
+    (s: SerializedDailyStats) => new Date(s.date).toISOString().split('T')[0] === today
+  );
+
+  return {
+    focusTime: todayData?.focusTime ?? 0,
+    pomodorosCompleted: todayData?.pomodorosCompleted ?? 0,
+    pomodorosAbandoned: todayData?.pomodorosAbandoned ?? 0,
+  };
+}
+
+/**
  * Custom hook to fetch analytics data
- * Complexity: 4 (multiple async operations + error handling)
  */
 export function useAnalytics(): UseAnalyticsReturn {
   const [todayStats, setTodayStats] = useState<TodayStats | null>(null);
@@ -49,7 +77,6 @@ export function useAnalytics(): UseAnalyticsReturn {
 
   /**
    * Fetch analytics data from background service worker
-   * Complexity: 4 (try-catch + parallel fetch)
    */
   const fetchAnalytics = useCallback(async (): Promise<void> => {
     try {
@@ -58,26 +85,16 @@ export function useAnalytics(): UseAnalyticsReturn {
 
       // Fetch both in parallel
       const [analyticsResponse, streakResponse] = await Promise.all([
-        chrome.runtime.sendMessage({ type: 'ANALYTICS_GET' }),
-        chrome.runtime.sendMessage({ type: 'STREAK_GET' }),
+        chrome.runtime.sendMessage({ type: 'ANALYTICS_GET' }) as Promise<BackgroundResponse<AnalyticsResponseData>>,
+        chrome.runtime.sendMessage({ type: 'STREAK_GET' }) as Promise<BackgroundResponse<StreakData>>,
       ]);
 
-      if (analyticsResponse.success && analyticsResponse.data) {
-        const analytics = analyticsResponse.data;
-        // Get today's stats
-        const today = new Date().toISOString().split('T')[0];
-        const todayData = analytics.dailyStats?.find(
-          (s: SerializedDailyStats) => new Date(s.date).toISOString().split('T')[0] === today
-        );
-
-        setTodayStats({
-          focusTime: todayData?.focusTime || 0,
-          pomodorosCompleted: todayData?.pomodorosCompleted || 0,
-          pomodorosAbandoned: todayData?.pomodorosAbandoned || 0,
-        });
+      const stats = processAnalyticsResponse(analyticsResponse);
+      if (stats) {
+        setTodayStats(stats);
       }
 
-      if (streakResponse.success && streakResponse.data) {
+      if (streakResponse.success) {
         setStreak(streakResponse.data);
       }
     } catch (err) {
@@ -93,7 +110,7 @@ export function useAnalytics(): UseAnalyticsReturn {
    * Fetch on mount
    */
   useEffect(() => {
-    fetchAnalytics();
+    void fetchAnalytics();
   }, [fetchAnalytics]);
 
   return {

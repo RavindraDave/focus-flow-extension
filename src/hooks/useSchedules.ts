@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Schedule } from '../types';
+import type { BackgroundResponse } from '../types/messages';
 import { createLogger } from '../utils/logger';
 
 const log = createLogger('useSchedules');
@@ -21,93 +22,75 @@ interface RawSchedule extends Omit<Schedule, 'exceptions' | 'createdAt' | 'updat
   updatedAt: string;
 }
 
+/**
+ * Next schedule info from the background
+ */
+interface NextScheduleInfo {
+  schedule: Schedule | null;
+  minutesUntilStart: number;
+}
+
 export interface UseSchedulesReturn {
-  /**
-   * All schedules
-   */
+  /** All schedules */
   schedules: Schedule[];
-
-  /**
-   * Loading state
-   */
+  /** Loading state */
   isLoading: boolean;
-
-  /**
-   * Error message if operation failed
-   */
+  /** Error message if operation failed */
   error: string | null;
-
-  /**
-   * Add a new schedule
-   */
+  /** Add a new schedule */
   addSchedule: (schedule: Omit<Schedule, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-
-  /**
-   * Update an existing schedule
-   */
+  /** Update an existing schedule */
   updateSchedule: (id: string, updates: Partial<Schedule>) => Promise<void>;
-
-  /**
-   * Delete a schedule
-   */
+  /** Delete a schedule */
   deleteSchedule: (id: string) => Promise<void>;
-
-  /**
-   * Toggle schedule enabled state
-   */
+  /** Toggle schedule enabled state */
   toggleSchedule: (id: string) => Promise<void>;
-
-  /**
-   * Refresh schedules from storage
-   */
+  /** Refresh schedules from storage */
   refresh: () => Promise<void>;
-
-  /**
-   * Next upcoming schedule info
-   */
-  nextSchedule: {
-    schedule: Schedule | null;
-    minutesUntilStart: number;
-  } | null;
+  /** Next upcoming schedule info */
+  nextSchedule: NextScheduleInfo | null;
 }
 
 /**
- * Custom hook for managing schedules
- * Complexity: 9 (multiple async operations + state management)
- *
- * @returns Schedule management functions and state
+ * Send a typed message to background for schedule operations
  */
-export function useSchedules(): UseSchedulesReturn {
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nextSchedule, setNextSchedule] = useState<{
-    schedule: Schedule | null;
-    minutesUntilStart: number;
-  } | null>(null);
+async function sendScheduleMessage<T>(
+  message: Record<string, unknown>
+): Promise<BackgroundResponse<T>> {
+  return chrome.runtime.sendMessage(message) as Promise<BackgroundResponse<T>>;
+}
 
-  /**
-   * Fetch all schedules from background
-   * Complexity: 4 (async + error handling + state updates)
-   */
-  const fetchSchedules = useCallback(async (): Promise<void> => {
+/**
+ * Convert raw schedule data (with string dates) to Schedule objects
+ */
+function convertRawSchedules(raw: RawSchedule[]): Schedule[] {
+  return raw.map((schedule) => ({
+    ...schedule,
+    exceptions: schedule.exceptions.map((d) => new Date(d)),
+    createdAt: new Date(schedule.createdAt),
+    updatedAt: new Date(schedule.updatedAt),
+  }));
+}
+
+/**
+ * Hook to fetch schedules from background
+ */
+function useFetchSchedules(
+  setSchedules: React.Dispatch<React.SetStateAction<Schedule[]>>,
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  setError: React.Dispatch<React.SetStateAction<string | null>>
+): () => Promise<void> {
+  return useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await chrome.runtime.sendMessage({ type: 'SCHEDULE_GET_ALL' });
+      const response = await sendScheduleMessage<RawSchedule[]>({ type: 'SCHEDULE_GET_ALL' });
 
-      if (response.success && response.data) {
-        // Convert date strings back to Date objects
-        const schedulesWithDates = (response.data as RawSchedule[]).map((schedule) => ({
-          ...schedule,
-          exceptions: schedule.exceptions.map((d) => new Date(d)),
-          createdAt: new Date(schedule.createdAt),
-          updatedAt: new Date(schedule.updatedAt),
-        }));
-        setSchedules(schedulesWithDates);
+      if (response.success) {
+        setSchedules(convertRawSchedules(response.data));
       } else {
-        throw new Error(response.error || 'Failed to fetch schedules');
+        throw new Error(response.error ?? 'Failed to fetch schedules');
       }
     } catch (err) {
       log.error('Failed to fetch schedules', err instanceof Error ? err : undefined);
@@ -115,43 +98,51 @@ export function useSchedules(): UseSchedulesReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [setSchedules, setIsLoading, setError]);
+}
 
-  /**
-   * Fetch next upcoming schedule
-   * Complexity: 3 (async + error handling)
-   */
-  const fetchNextSchedule = useCallback(async (): Promise<void> => {
+/**
+ * Hook to fetch next upcoming schedule
+ */
+function useFetchNextSchedule(
+  setNextSchedule: React.Dispatch<React.SetStateAction<NextScheduleInfo | null>>
+): () => Promise<void> {
+  return useCallback(async (): Promise<void> => {
     try {
-      const response = await chrome.runtime.sendMessage({ type: 'SCHEDULE_GET_NEXT' });
+      const response = await sendScheduleMessage<NextScheduleInfo>({ type: 'SCHEDULE_GET_NEXT' });
 
-      if (response.success && response.data) {
+      if (response.success) {
         setNextSchedule(response.data);
       }
     } catch (err) {
       log.error('Failed to fetch next schedule', err instanceof Error ? err : undefined);
     }
-  }, []);
+  }, [setNextSchedule]);
+}
 
-  /**
-   * Add a new schedule
-   * Complexity: 5 (async + validation + error handling + refresh)
-   */
+/**
+ * Custom hook for managing schedules
+ *
+ * @returns Schedule management functions and state
+ */
+export function useSchedules(): UseSchedulesReturn {
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [nextSchedule, setNextSchedule] = useState<NextScheduleInfo | null>(null);
+
+  const fetchSchedules = useFetchSchedules(setSchedules, setIsLoading, setError);
+  const fetchNextSchedule = useFetchNextSchedule(setNextSchedule);
+
+  /** Add a new schedule */
   const addSchedule = useCallback(
     async (schedule: Omit<Schedule, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
       try {
         setError(null);
-
-        const response = await chrome.runtime.sendMessage({
-          type: 'SCHEDULE_ADD',
-          schedule,
-        });
-
+        const response = await sendScheduleMessage<Schedule>({ type: 'SCHEDULE_ADD', schedule });
         if (!response.success) {
-          throw new Error(response.error || 'Failed to add schedule');
+          throw new Error(response.error ?? 'Failed to add schedule');
         }
-
-        // Refresh schedules list
         await fetchSchedules();
         await fetchNextSchedule();
       } catch (err) {
@@ -163,26 +154,15 @@ export function useSchedules(): UseSchedulesReturn {
     [fetchSchedules, fetchNextSchedule]
   );
 
-  /**
-   * Update an existing schedule
-   * Complexity: 5 (async + validation + error handling + refresh)
-   */
+  /** Update an existing schedule */
   const updateSchedule = useCallback(
     async (id: string, updates: Partial<Schedule>): Promise<void> => {
       try {
         setError(null);
-
-        const response = await chrome.runtime.sendMessage({
-          type: 'SCHEDULE_UPDATE',
-          id,
-          updates,
-        });
-
+        const response = await sendScheduleMessage<Schedule>({ type: 'SCHEDULE_UPDATE', id, updates });
         if (!response.success) {
-          throw new Error(response.error || 'Failed to update schedule');
+          throw new Error(response.error ?? 'Failed to update schedule');
         }
-
-        // Refresh schedules list
         await fetchSchedules();
         await fetchNextSchedule();
       } catch (err) {
@@ -194,30 +174,18 @@ export function useSchedules(): UseSchedulesReturn {
     [fetchSchedules, fetchNextSchedule]
   );
 
-  /**
-   * Delete a schedule
-   * Complexity: 5 (async + confirmation + error handling + refresh)
-   */
+  /** Delete a schedule */
   const deleteSchedule = useCallback(
     async (id: string): Promise<void> => {
       try {
         setError(null);
-
-        const response = await chrome.runtime.sendMessage({
-          type: 'SCHEDULE_DELETE',
-          id,
-        });
-
+        const response = await sendScheduleMessage<boolean>({ type: 'SCHEDULE_DELETE', id });
         if (!response.success) {
-          throw new Error(response.error || 'Failed to delete schedule');
+          throw new Error(response.error ?? 'Failed to delete schedule');
         }
-
-        // Check if the delete actually happened (response.data should be true)
         if (response.data === false) {
           throw new Error('Schedule not found or could not be deleted');
         }
-
-        // Refresh schedules list
         await fetchSchedules();
         await fetchNextSchedule();
       } catch (err) {
@@ -229,17 +197,13 @@ export function useSchedules(): UseSchedulesReturn {
     [fetchSchedules, fetchNextSchedule]
   );
 
-  /**
-   * Toggle schedule enabled state
-   * Complexity: 4 (find + toggle + update)
-   */
+  /** Toggle schedule enabled state */
   const toggleSchedule = useCallback(
     async (id: string): Promise<void> => {
       const schedule = schedules.find(s => s.id === id);
       if (!schedule) {
         throw new Error('Schedule not found');
       }
-
       await updateSchedule(id, { enabled: !schedule.enabled });
     },
     [schedules, updateSchedule]
@@ -247,13 +211,15 @@ export function useSchedules(): UseSchedulesReturn {
 
   // Fetch schedules on mount
   useEffect(() => {
-    fetchSchedules();
-    fetchNextSchedule();
+    void fetchSchedules();
+    void fetchNextSchedule();
   }, [fetchSchedules, fetchNextSchedule]);
 
   // Refresh next schedule every minute
   useEffect(() => {
-    const interval = setInterval(fetchNextSchedule, 60000);
+    const interval = setInterval(() => {
+      void fetchNextSchedule();
+    }, 60000);
     return () => clearInterval(interval);
   }, [fetchNextSchedule]);
 

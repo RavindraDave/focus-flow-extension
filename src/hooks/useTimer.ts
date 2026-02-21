@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { TimerStatus } from '../types/messages';
+import type { BackgroundResponse } from '../types/messages';
 import type { SessionType } from '../types';
 import { createLogger } from '../utils/logger';
 
@@ -16,6 +17,15 @@ const log = createLogger('useTimer');
 const isChromeApiAvailable = (): boolean => {
   return typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.sendMessage;
 };
+
+/**
+ * Send a typed message to background for timer operations
+ */
+async function sendTimerMessage<T>(
+  message: Record<string, unknown>
+): Promise<BackgroundResponse<T>> {
+  return chrome.runtime.sendMessage(message) as Promise<BackgroundResponse<T>>;
+}
 
 export interface UseTimerReturn {
   // State
@@ -48,7 +58,6 @@ export function useTimer(): UseTimerReturn {
 
   /**
    * Fetch timer status from background service worker
-   * Complexity: 3 (try-catch + message sending)
    */
   const fetchStatus = useCallback(async (): Promise<void> => {
     if (!isChromeApiAvailable()) {
@@ -58,18 +67,15 @@ export function useTimer(): UseTimerReturn {
     }
 
     try {
-      const response = await chrome.runtime.sendMessage<
-        { type: 'TIMER_GET_STATUS' },
-        { success: boolean; data?: TimerStatus; error?: string }
-      >({
+      const response = await sendTimerMessage<TimerStatus>({
         type: 'TIMER_GET_STATUS',
       });
 
-      if (response.success && response.data) {
+      if (response.success) {
         setStatus(response.data);
         setError(null);
       } else {
-        throw new Error(response.error || 'Failed to get timer status');
+        throw new Error(response.error ?? 'Failed to get timer status');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -85,12 +91,12 @@ export function useTimer(): UseTimerReturn {
    * Uses Page Visibility API to reduce CPU usage when tab is hidden
    */
   useEffect(() => {
-    fetchStatus();
+    void fetchStatus();
 
     // Track document visibility
     const handleVisibilityChange = (): void => {
       if (!document.hidden) {
-        fetchStatus();
+        void fetchStatus();
       }
     };
 
@@ -99,7 +105,7 @@ export function useTimer(): UseTimerReturn {
     // Poll every second only if tab is visible
     const interval = setInterval(() => {
       if (!document.hidden) {
-        fetchStatus();
+        void fetchStatus();
       }
     }, 1000);
 
@@ -111,7 +117,6 @@ export function useTimer(): UseTimerReturn {
 
   /**
    * Start a new timer session
-   * Complexity: 3 (validation + try-catch)
    */
   const start = useCallback(
     async (sessionType: SessionType, taskName?: string): Promise<void> => {
@@ -125,14 +130,14 @@ export function useTimer(): UseTimerReturn {
         setError(null);
 
         // Background worker uses user settings for duration
-        const response = await chrome.runtime.sendMessage({
+        const response = await sendTimerMessage<TimerStatus>({
           type: 'TIMER_START',
           sessionType,
           taskName,
         });
 
         if (!response.success) {
-          throw new Error(response.error || 'Failed to start timer');
+          throw new Error(response.error ?? 'Failed to start timer');
         }
 
         await fetchStatus();
@@ -149,7 +154,6 @@ export function useTimer(): UseTimerReturn {
 
   /**
    * Pause the active timer
-   * Complexity: 2 (try-catch)
    */
   const pause = useCallback(async (): Promise<void> => {
     if (!isChromeApiAvailable()) {
@@ -159,10 +163,10 @@ export function useTimer(): UseTimerReturn {
 
     try {
       setIsLoading(true);
-      const response = await chrome.runtime.sendMessage({ type: 'TIMER_PAUSE' });
+      const response = await sendTimerMessage<TimerStatus>({ type: 'TIMER_PAUSE' });
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to pause timer');
+        throw new Error(response.error ?? 'Failed to pause timer');
       }
 
       await fetchStatus();
@@ -177,7 +181,6 @@ export function useTimer(): UseTimerReturn {
 
   /**
    * Resume a paused timer
-   * Complexity: 2 (try-catch)
    */
   const resume = useCallback(async (): Promise<void> => {
     if (!isChromeApiAvailable()) {
@@ -187,10 +190,10 @@ export function useTimer(): UseTimerReturn {
 
     try {
       setIsLoading(true);
-      const response = await chrome.runtime.sendMessage({ type: 'TIMER_RESUME' });
+      const response = await sendTimerMessage<TimerStatus>({ type: 'TIMER_RESUME' });
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to resume timer');
+        throw new Error(response.error ?? 'Failed to resume timer');
       }
 
       await fetchStatus();
@@ -205,7 +208,6 @@ export function useTimer(): UseTimerReturn {
 
   /**
    * Stop and abandon the active timer
-   * Complexity: 2 (try-catch)
    */
   const stop = useCallback(async (): Promise<void> => {
     if (!isChromeApiAvailable()) {
@@ -215,10 +217,10 @@ export function useTimer(): UseTimerReturn {
 
     try {
       setIsLoading(true);
-      const response = await chrome.runtime.sendMessage({ type: 'TIMER_STOP' });
+      const response = await sendTimerMessage<TimerStatus>({ type: 'TIMER_STOP' });
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to stop timer');
+        throw new Error(response.error ?? 'Failed to stop timer');
       }
 
       await fetchStatus();
@@ -234,10 +236,10 @@ export function useTimer(): UseTimerReturn {
   return {
     // State
     isActive: status?.state !== 'idle' && !status?.isPaused,
-    isPaused: status?.isPaused || false,
-    sessionType: status?.currentSession?.type || null,
-    remainingSeconds: status?.remainingSeconds || 0,
-    totalSeconds: status?.totalSeconds || 0,
+    isPaused: status?.isPaused ?? false,
+    sessionType: status?.currentSession?.type ?? null,
+    remainingSeconds: status?.remainingSeconds ?? 0,
+    totalSeconds: status?.totalSeconds ?? 0,
     taskName: status?.currentSession?.taskName,
 
     // Actions

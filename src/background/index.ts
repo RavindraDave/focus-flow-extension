@@ -540,7 +540,7 @@ class BackgroundServiceWorker {
         });
 
         // Show welcome notification
-        await chrome.notifications.create({
+        chrome.notifications.create({
           type: 'basic',
           iconUrl: chrome.runtime.getURL('/icons/icon_v10_128.png'),
           title: 'Focus Flow Installed!',
@@ -638,7 +638,7 @@ class BackgroundServiceWorker {
    * @param previousVersion - Previous extension version
    * @private
    */
-  private async runMigrations(previousVersion?: string): Promise<void> {
+  private runMigrations(previousVersion?: string): void {
     if (!previousVersion) {
       return;
     }

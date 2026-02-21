@@ -49,28 +49,16 @@ function getBarColor(sessionCount: number, maxSessions: number): string {
 }
 
 /**
- * ProductivityByHourChart Component
- * Complexity: 5 (data transformation + color mapping + chart configuration)
+ * Build chart data for productivity by hour
  */
-export const ProductivityByHourChart: React.FC<ProductivityByHourChartProps> = ({
-  sessionsPerHour,
-  height = 300,
-}) => {
-  // Ensure we have 24 hours of data
-  const hourData = Array.from({ length: 24 }, (_, i) => sessionsPerHour[i] || 0);
-  const maxSessions = Math.max(...hourData, 1);
-  const totalSessions = hourData.reduce((sum, count) => sum + count, 0);
-
-  // Generate labels for all 24 hours
+function buildChartData(hourData: number[], maxSessions: number) {
   const labels = Array.from({ length: 24 }, (_, i) => formatHour(i));
-
-  // Generate colors based on productivity level
   const backgroundColors = hourData.map(count => getBarColor(count, maxSessions));
   const borderColors = hourData.map(count =>
     count === 0 ? chartColors.neutral.border : chartColors.primary.border
   );
 
-  const data = {
+  return {
     labels,
     datasets: [
       {
@@ -85,8 +73,13 @@ export const ProductivityByHourChart: React.FC<ProductivityByHourChartProps> = (
       },
     ],
   };
+}
 
-  const options = {
+/**
+ * Build chart options for productivity by hour
+ */
+function buildChartOptions(totalSessions: number): object {
+  return {
     ...defaultChartOptions,
     scales: {
       ...defaultScales,
@@ -103,9 +96,7 @@ export const ProductivityByHourChart: React.FC<ProductivityByHourChartProps> = (
     },
     plugins: {
       ...defaultChartOptions.plugins,
-      title: {
-        display: false,
-      },
+      title: { display: false },
       tooltip: {
         ...defaultChartOptions.plugins.tooltip,
         callbacks: {
@@ -123,29 +114,47 @@ export const ProductivityByHourChart: React.FC<ProductivityByHourChartProps> = (
       },
       legend: {
         ...defaultChartOptions.plugins.legend,
-        display: false, // Hide legend for single dataset
+        display: false,
       },
     },
   };
+}
 
-  // Empty state
+/** Empty state for productivity chart */
+function ProductivityEmptyState({ height }: { height: number }): React.ReactElement {
+  return (
+    <div
+      className="flex items-center justify-center bg-bg-secondary rounded-lg"
+      style={{ height: `${height}px` }}
+      role="img"
+      aria-label="No productivity data available by hour"
+    >
+      <p className="text-text-tertiary text-sm">
+        No sessions completed yet. Complete Pomodoros throughout the day to see your productivity
+        patterns!
+      </p>
+    </div>
+  );
+}
+
+/**
+ * ProductivityByHourChart Component
+ * Complexity: 5 (data transformation + color mapping + chart configuration)
+ */
+export const ProductivityByHourChart: React.FC<ProductivityByHourChartProps> = ({
+  sessionsPerHour,
+  height = 300,
+}) => {
+  const hourData = Array.from({ length: 24 }, (_, i) => sessionsPerHour[i] ?? 0);
+  const maxSessions = Math.max(...hourData, 1);
+  const totalSessions = hourData.reduce((sum, count) => sum + count, 0);
+
   if (totalSessions === 0) {
-    return (
-      <div
-        className="flex items-center justify-center bg-bg-secondary rounded-lg"
-        style={{ height: `${height}px` }}
-        role="img"
-        aria-label="No productivity data available by hour"
-      >
-        <p className="text-text-tertiary text-sm">
-          No sessions completed yet. Complete Pomodoros throughout the day to see your productivity
-          patterns!
-        </p>
-      </div>
-    );
+    return <ProductivityEmptyState height={height} />;
   }
 
-  // Find peak productivity hour
+  const data = buildChartData(hourData, maxSessions);
+  const options = buildChartOptions(totalSessions);
   const peakHourIndex = hourData.indexOf(maxSessions);
   const peakHourLabel = formatHour(peakHourIndex);
 

@@ -145,7 +145,7 @@ export const DateSchema = z
  * - Script injection
  * - Excessive length
  */
-export function createSanitizedTextSchema(maxLength: number = 1000) {
+export function createSanitizedTextSchema(maxLength: number = 1000): z.ZodEffects<z.ZodString, string, string> {
   return z
     .string()
     .max(maxLength, `Text too long (max ${maxLength} characters)`)

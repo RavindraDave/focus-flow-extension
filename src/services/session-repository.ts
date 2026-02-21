@@ -31,7 +31,7 @@ export class SessionRepository {
   private storageService: StorageService;
 
   constructor(storageService?: StorageService) {
-    this.storageService = storageService || new StorageService();
+    this.storageService = storageService ?? new StorageService();
   }
 
   /**
@@ -105,7 +105,7 @@ export class SessionRepository {
       (await this.storageService.get(
         STORAGE_KEYS.SESSIONS,
         z.array(PomodoroSessionSchema) as unknown as z.ZodType<PomodoroSession[]>
-      )) || [];
+      )) ?? [];
 
     // Return newest first
     const sorted = sessions.sort((a, b) => {
@@ -192,7 +192,7 @@ export class SessionRepository {
    */
   async findById(id: string): Promise<PomodoroSession | null> {
     const sessions = await this.getSessionHistory();
-    return sessions.find((s) => s.id === id) || null;
+    return sessions.find((s) => s.id === id) ?? null;
   }
 
   /**
@@ -303,7 +303,7 @@ export class SessionRepository {
   async cleanupOldSessions(
     sessions?: PomodoroSession[]
   ): Promise<void> {
-    const allSessions = sessions || (await this.getSessionHistory());
+    const allSessions = sessions ?? (await this.getSessionHistory());
 
     // Sort by date (newest first) and keep only the limit
     const sorted = allSessions.sort((a, b) => {

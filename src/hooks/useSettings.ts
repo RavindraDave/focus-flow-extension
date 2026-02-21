@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { UserSettings } from '../types';
+import type { BackgroundResponse } from '../types/messages';
 import { createLogger } from '../utils/logger';
 
 const log = createLogger('useSettings');
@@ -18,8 +19,16 @@ export interface UseSettingsReturn {
 }
 
 /**
+ * Send a typed message to background for settings operations
+ */
+async function sendSettingsMessage<T>(
+  message: Record<string, unknown>
+): Promise<BackgroundResponse<T>> {
+  return chrome.runtime.sendMessage(message) as Promise<BackgroundResponse<T>>;
+}
+
+/**
  * Custom hook to manage user settings
- * Complexity: 4 (multiple async operations + error handling)
  */
 export function useSettings(): UseSettingsReturn {
   const [settings, setSettings] = useState<UserSettings | null>(null);
@@ -28,21 +37,20 @@ export function useSettings(): UseSettingsReturn {
 
   /**
    * Fetch settings from background service worker
-   * Complexity: 3 (try-catch + message sending)
    */
   const fetchSettings = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await chrome.runtime.sendMessage({
+      const response = await sendSettingsMessage<UserSettings>({
         type: 'SETTINGS_GET',
       });
 
-      if (response.success && response.data) {
+      if (response.success) {
         setSettings(response.data);
       } else {
-        throw new Error(response.error || 'Failed to get settings');
+        throw new Error(response.error ?? 'Failed to get settings');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch settings';
@@ -55,7 +63,6 @@ export function useSettings(): UseSettingsReturn {
 
   /**
    * Update settings
-   * Complexity: 3 (validation + try-catch)
    */
   const updateSettings = useCallback(
     async (updates: Partial<UserSettings>): Promise<void> => {
@@ -63,13 +70,13 @@ export function useSettings(): UseSettingsReturn {
         setIsLoading(true);
         setError(null);
 
-        const response = await chrome.runtime.sendMessage({
+        const response = await sendSettingsMessage<UserSettings>({
           type: 'SETTINGS_UPDATE',
           updates,
         });
 
         if (!response.success) {
-          throw new Error(response.error || 'Failed to update settings');
+          throw new Error(response.error ?? 'Failed to update settings');
         }
 
         // Refresh settings after update
@@ -90,7 +97,7 @@ export function useSettings(): UseSettingsReturn {
    * Fetch on mount
    */
   useEffect(() => {
-    fetchSettings();
+    void fetchSettings();
   }, [fetchSettings]);
 
   return {
