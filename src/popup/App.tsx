@@ -11,7 +11,7 @@ import { TimerDisplay, TimerControls, QuickStats, NuclearModeModal, NuclearModeS
 import { useTimer, useAnalytics, useNuclearMode } from '../hooks';
 import { useThemeContext } from '../contexts/ThemeContext';
 import OnboardingModal from '../components/onboarding/OnboardingModal';
-import type { UserSettings } from '../types';
+import type { SessionType, UserSettings } from '../types';
 import { createLogger } from '../utils/logger';
 
 const log = createLogger('PopupApp');
@@ -62,50 +62,46 @@ const PopupFooter: React.FC<{ onNuclearClick: () => void }> = ({ onNuclearClick 
   </footer>
 );
 
-/**
- * Main Popup App component
- * Complexity: 7 (multiple hooks + conditional rendering + nuclear mode)
- */
-const App: React.FC = (): React.ReactElement => {
-  // Get theme context (theme is initialized by ThemeProvider)
-  const { setTheme } = useThemeContext();
-
-  // Onboarding state
+/** Hook for first-run onboarding detection */
+function useOnboarding(setTheme: (theme: 'modern' | 'zen' | 'cyber') => Promise<void>): {
+  showOnboarding: boolean;
+  suggestedTheme: 'modern' | 'zen' | 'cyber';
+  handleOnboardingComplete: (selectedTheme: 'modern' | 'zen' | 'cyber') => Promise<void>;
+} {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [suggestedTheme, setSuggestedTheme] = useState<'modern' | 'zen' | 'cyber'>('modern');
 
-  // Settings state
-  const [settings, setSettings] = useState<UserSettings | null>(null);
-
-  // Modal state
-  const [isNuclearModalOpen, setIsNuclearModalOpen] = useState(false);
-
-  // Check for first run and detect OS theme preference
   useEffect(() => {
     async function checkFirstRun(): Promise<void> {
       const result = await chrome.storage.sync.get(['has_onboarded']);
-
       if (!result.has_onboarded) {
-        // Detect OS theme preference
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const suggested = prefersDark ? 'cyber' : 'modern';
-
-        setSuggestedTheme(suggested);
+        setSuggestedTheme(prefersDark ? 'cyber' : 'modern');
         setShowOnboarding(true);
       }
     }
-
     void checkFirstRun();
   }, []);
 
-  // Load user settings
+  const handleOnboardingComplete = async (selectedTheme: 'modern' | 'zen' | 'cyber'): Promise<void> => {
+    await chrome.storage.sync.set({ has_onboarded: true });
+    await setTheme(selectedTheme);
+    setShowOnboarding(false);
+  };
+
+  return { showOnboarding, suggestedTheme, handleOnboardingComplete };
+}
+
+/** Hook for loading user settings */
+function useSettings(): UserSettings | null {
+  const [settings, setSettings] = useState<UserSettings | null>(null);
+
   useEffect(() => {
     async function loadSettings(): Promise<void> {
       try {
         const response = (await chrome.runtime.sendMessage({
           type: 'SETTINGS_GET',
         })) as unknown as { success: boolean; data: UserSettings };
-
         if (response.success) {
           setSettings(response.data);
         }
@@ -113,147 +109,91 @@ const App: React.FC = (): React.ReactElement => {
         log.error('Failed to load settings', error instanceof Error ? error : undefined);
       }
     }
-
     void loadSettings();
   }, []);
 
-  // Handle onboarding completion
-  const handleOnboardingComplete = async (selectedTheme: 'modern' | 'zen' | 'cyber'): Promise<void> => {
-    // Save onboarding completion flag
-    await chrome.storage.sync.set({ has_onboarded: true });
+  return settings;
+}
 
-    // Apply selected theme
-    await setTheme(selectedTheme);
+/** Main content area with timer, controls, and stats */
+function PopupMainContent({ timerError, timerProps, controlsProps, analyticsError, statsProps, isNuclearActive, nuclearRemainingSeconds, nuclearError }: {
+  timerError: string | null;
+  timerProps: { remainingSeconds: number; totalSeconds: number; sessionType: SessionType | null; isActive: boolean; isPaused: boolean };
+  controlsProps: { isActive: boolean; isPaused: boolean; onStart: (sessionType: SessionType, taskName?: string) => void; onPause: () => void; onResume: () => void; onStop: () => void; disabled: boolean; settings: UserSettings | null };
+  analyticsError: string | null;
+  statsProps: { focusTime: number; pomodorosCompleted: number; streakDays: number; longestStreak: number; isLoading: boolean };
+  isNuclearActive: boolean;
+  nuclearRemainingSeconds: number;
+  nuclearError: string | null;
+}): React.ReactElement {
+  return (
+    <main className="space-y-8">
+      <NuclearModeStatus isActive={isNuclearActive} remainingSeconds={nuclearRemainingSeconds} />
+      {nuclearError && (
+        <div role="alert" className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-md text-sm">
+          {nuclearError}
+        </div>
+      )}
+      <section aria-labelledby="timer-heading">
+        <h2 id="timer-heading" className="sr-only">Pomodoro Timer</h2>
+        <TimerDisplay {...timerProps} />
+      </section>
+      <section aria-labelledby="controls-heading">
+        <h2 id="controls-heading" className="sr-only">Timer Controls</h2>
+        {timerError && (
+          <div role="alert" className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-md text-sm mb-4">
+            {timerError}
+          </div>
+        )}
+        <TimerControls {...controlsProps} />
+      </section>
+      <section aria-labelledby="stats-heading">
+        <h2 id="stats-heading" className="sr-only">Today&apos;s Statistics</h2>
+        {analyticsError && (
+          <div role="alert" className="bg-warning-50 border border-warning-200 text-warning-700 px-4 py-3 rounded-md text-sm mb-4">
+            {analyticsError}
+          </div>
+        )}
+        <QuickStats {...statsProps} />
+      </section>
+    </main>
+  );
+}
 
-    // Close onboarding modal
-    setShowOnboarding(false);
-  };
+/**
+ * Main Popup App component
+ * Complexity: 7 (multiple hooks + conditional rendering + nuclear mode)
+ */
+const App: React.FC = (): React.ReactElement => {
+  const { setTheme } = useThemeContext();
+  const { showOnboarding, suggestedTheme, handleOnboardingComplete } = useOnboarding(setTheme);
+  const settings = useSettings();
+  const [isNuclearModalOpen, setIsNuclearModalOpen] = useState(false);
 
-  // Timer state and controls
-  const {
-    isActive,
-    isPaused,
-    sessionType,
-    remainingSeconds,
-    totalSeconds,
-    start,
-    pause,
-    resume,
-    stop,
-    isLoading: timerLoading,
-    error: timerError,
-  } = useTimer();
-
-  // Analytics and stats
-  const {
-    todayStats,
-    streak,
-    isLoading: analyticsLoading,
-    error: analyticsError,
-  } = useAnalytics();
-
-  // Nuclear Mode state and controls
-  const {
-    isActive: isNuclearActive,
-    remainingSeconds: nuclearRemainingSeconds,
-    activate: activateNuclear,
-    error: nuclearError,
-  } = useNuclearMode();
+  const { isActive, isPaused, sessionType, remainingSeconds, totalSeconds, start, pause, resume, stop, isLoading: timerLoading, error: timerError } = useTimer();
+  const { todayStats, streak, isLoading: analyticsLoading, error: analyticsError } = useAnalytics();
+  const { isActive: isNuclearActive, remainingSeconds: nuclearRemainingSeconds, activate: activateNuclear, error: nuclearError } = useNuclearMode();
 
   return (
     <PopupLayout>
-      {/* Header */}
       <PopupHeader onSettingsClick={() => chrome.runtime.openOptionsPage()} />
-
-      {/* Main Content */}
-      <main className="space-y-8">
-        {/* Nuclear Mode Status */}
-        <NuclearModeStatus isActive={isNuclearActive} remainingSeconds={nuclearRemainingSeconds} />
-
-        {/* Nuclear Mode Error */}
-        {nuclearError && (
-          <div
-            role="alert"
-            className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-md text-sm"
-          >
-            {nuclearError}
-          </div>
-        )}
-
-        {/* Timer Display */}
-        <section aria-labelledby="timer-heading">
-          <h2 id="timer-heading" className="sr-only">
-            Pomodoro Timer
-          </h2>
-          <TimerDisplay
-            remainingSeconds={remainingSeconds}
-            totalSeconds={totalSeconds}
-            sessionType={sessionType}
-            isActive={isActive}
-            isPaused={isPaused}
-          />
-        </section>
-
-        {/* Timer Controls */}
-        <section aria-labelledby="controls-heading">
-          <h2 id="controls-heading" className="sr-only">
-            Timer Controls
-          </h2>
-          {timerError && (
-            <div
-              role="alert"
-              className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-md text-sm mb-4"
-            >
-              {timerError}
-            </div>
-          )}
-          <TimerControls
-            isActive={isActive}
-            isPaused={isPaused}
-            onStart={start}
-            onPause={pause}
-            onResume={resume}
-            onStop={stop}
-            disabled={timerLoading}
-            settings={settings}
-          />
-        </section>
-
-        {/* Quick Stats */}
-        <section aria-labelledby="stats-heading">
-          <h2 id="stats-heading" className="sr-only">
-            Today&apos;s Statistics
-          </h2>
-          {analyticsError && (
-            <div
-              role="alert"
-              className="bg-warning-50 border border-warning-200 text-warning-700 px-4 py-3 rounded-md text-sm mb-4"
-            >
-              {analyticsError}
-            </div>
-          )}
-          <QuickStats
-            focusTime={todayStats?.focusTime ?? 0}
-            pomodorosCompleted={todayStats?.pomodorosCompleted ?? 0}
-            streakDays={streak?.current ?? 0}
-            longestStreak={streak?.longest ?? 0}
-            isLoading={analyticsLoading}
-          />
-        </section>
-      </main>
-
-      {/* Footer */}
+      <PopupMainContent
+        timerError={timerError}
+        timerProps={{ remainingSeconds, totalSeconds, sessionType, isActive, isPaused }}
+        controlsProps={{ isActive, isPaused, onStart: (...args) => void start(...args), onPause: () => void pause(), onResume: () => void resume(), onStop: () => void stop(), disabled: timerLoading, settings }}
+        analyticsError={analyticsError}
+        statsProps={{ focusTime: todayStats?.focusTime ?? 0, pomodorosCompleted: todayStats?.pomodorosCompleted ?? 0, streakDays: streak?.current ?? 0, longestStreak: streak?.longest ?? 0, isLoading: analyticsLoading }}
+        isNuclearActive={isNuclearActive}
+        nuclearRemainingSeconds={nuclearRemainingSeconds}
+        nuclearError={nuclearError}
+      />
       <PopupFooter onNuclearClick={() => setIsNuclearModalOpen(true)} />
-
-      {/* Nuclear Mode Modal */}
       <NuclearModeModal
         isOpen={isNuclearModalOpen}
         onClose={() => setIsNuclearModalOpen(false)}
         onActivate={activateNuclear}
         isPremium={!!settings?.premiumLicenseKey}
       />
-
-      {/* Onboarding Modal (First Run) */}
       {showOnboarding && (
         <OnboardingModal
           onComplete={(selectedTheme: 'modern' | 'zen' | 'cyber'): void => { void handleOnboardingComplete(selectedTheme); }}

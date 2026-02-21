@@ -57,7 +57,7 @@ export interface UseSchedulesReturn {
 async function sendScheduleMessage<T>(
   message: Record<string, unknown>
 ): Promise<BackgroundResponse<T>> {
-  return chrome.runtime.sendMessage(message) as Promise<BackgroundResponse<T>>;
+  return chrome.runtime.sendMessage<Record<string, unknown>, BackgroundResponse<T>>(message);
 }
 
 /**
@@ -121,20 +121,20 @@ function useFetchNextSchedule(
 }
 
 /**
- * Custom hook for managing schedules
- *
- * @returns Schedule management functions and state
+ * Hook for schedule mutation operations (add, update, delete)
  */
-export function useSchedules(): UseSchedulesReturn {
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nextSchedule, setNextSchedule] = useState<NextScheduleInfo | null>(null);
-
-  const fetchSchedules = useFetchSchedules(setSchedules, setIsLoading, setError);
-  const fetchNextSchedule = useFetchNextSchedule(setNextSchedule);
-
-  /** Add a new schedule */
+// eslint-disable-next-line max-lines-per-function
+function useScheduleMutations(
+  schedules: Schedule[],
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+  fetchSchedules: () => Promise<void>,
+  fetchNextSchedule: () => Promise<void>
+): {
+  addSchedule: (schedule: Omit<Schedule, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateSchedule: (id: string, updates: Partial<Schedule>) => Promise<void>;
+  deleteSchedule: (id: string) => Promise<void>;
+  toggleSchedule: (id: string) => Promise<void>;
+} {
   const addSchedule = useCallback(
     async (schedule: Omit<Schedule, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
       try {
@@ -151,10 +151,9 @@ export function useSchedules(): UseSchedulesReturn {
         throw err;
       }
     },
-    [fetchSchedules, fetchNextSchedule]
+    [fetchSchedules, fetchNextSchedule, setError]
   );
 
-  /** Update an existing schedule */
   const updateSchedule = useCallback(
     async (id: string, updates: Partial<Schedule>): Promise<void> => {
       try {
@@ -171,10 +170,9 @@ export function useSchedules(): UseSchedulesReturn {
         throw err;
       }
     },
-    [fetchSchedules, fetchNextSchedule]
+    [fetchSchedules, fetchNextSchedule, setError]
   );
 
-  /** Delete a schedule */
   const deleteSchedule = useCallback(
     async (id: string): Promise<void> => {
       try {
@@ -194,10 +192,9 @@ export function useSchedules(): UseSchedulesReturn {
         throw err;
       }
     },
-    [fetchSchedules, fetchNextSchedule]
+    [fetchSchedules, fetchNextSchedule, setError]
   );
 
-  /** Toggle schedule enabled state */
   const toggleSchedule = useCallback(
     async (id: string): Promise<void> => {
       const schedule = schedules.find(s => s.id === id);
@@ -209,13 +206,30 @@ export function useSchedules(): UseSchedulesReturn {
     [schedules, updateSchedule]
   );
 
-  // Fetch schedules on mount
+  return { addSchedule, updateSchedule, deleteSchedule, toggleSchedule };
+}
+
+/**
+ * Custom hook for managing schedules
+ *
+ * @returns Schedule management functions and state
+ */
+export function useSchedules(): UseSchedulesReturn {
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [nextSchedule, setNextSchedule] = useState<NextScheduleInfo | null>(null);
+
+  const fetchSchedules = useFetchSchedules(setSchedules, setIsLoading, setError);
+  const fetchNextSchedule = useFetchNextSchedule(setNextSchedule);
+  const { addSchedule, updateSchedule, deleteSchedule, toggleSchedule } =
+    useScheduleMutations(schedules, setError, fetchSchedules, fetchNextSchedule);
+
   useEffect(() => {
     void fetchSchedules();
     void fetchNextSchedule();
   }, [fetchSchedules, fetchNextSchedule]);
 
-  // Refresh next schedule every minute
   useEffect(() => {
     const interval = setInterval(() => {
       void fetchNextSchedule();

@@ -46,6 +46,7 @@ interface ConfirmState {
  * BlockRuleList component
  * Complexity: 10 (CRUD + bulk operations + modal management)
  */
+// eslint-disable-next-line max-lines-per-function, complexity
 export const BlockRuleList: React.FC = () => {
   const {
     rules,
@@ -206,10 +207,12 @@ export const BlockRuleList: React.FC = () => {
    * Handle import from JSON file
    * SECURITY: Validates imported rules against schema
    */
+  // eslint-disable-next-line max-lines-per-function
   const handleImport = (): void => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
+    // eslint-disable-next-line complexity
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) { return; }
@@ -332,7 +335,7 @@ export const BlockRuleList: React.FC = () => {
           <Button
             variant="secondary"
             size="sm"
-            onClick={exportRules}
+            onClick={(): void => { void exportRules(); }}
             disabled={rules.length === 0}
           >
             Export JSON
@@ -420,7 +423,9 @@ export const BlockRuleList: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-surface divide-y divide-border">
-              {rules.map((rule) => (
+              {rules.map(
+                // eslint-disable-next-line max-lines-per-function
+                (rule) => (
                 <tr key={rule.id} className={`hover:bg-bg-secondary ${selectedRuleIds.has(rule.id) ? 'bg-accent/5' : ''}`}>
                   <td className="px-6 py-4">
                     <input
@@ -434,7 +439,7 @@ export const BlockRuleList: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
                       type="button"
-                      onClick={() => toggleRule(rule.id, !rule.enabled)}
+                      onClick={(): void => { void toggleRule(rule.id, !rule.enabled); }}
                       className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded"
                       aria-label={rule.enabled ? 'Disable rule' : 'Enable rule'}
                     >
@@ -518,7 +523,7 @@ export const BlockRuleList: React.FC = () => {
           isLoading={confirmState.isLoading}
           confirmText={confirmState.variant === 'danger' ? 'Yes, Delete All' : 'Delete'}
           cancelText="Cancel"
-          onConfirm={confirmState.onConfirm}
+          onConfirm={(): void => { void confirmState.onConfirm(); }}
           onCancel={() => setConfirmState(null)}
         />
       )}

@@ -168,7 +168,7 @@ export class ScheduleManager {
       }
 
       // Send notification
-      await this.sendScheduleNotification(schedule, true);
+      this.sendScheduleNotification(schedule, true);
 
       log.info('Activated schedule', { scheduleName: schedule.name });
     } catch (error) {
@@ -208,7 +208,7 @@ export class ScheduleManager {
       }
 
       // Send notification
-      await this.sendScheduleNotification(schedule, false);
+      this.sendScheduleNotification(schedule, false);
 
       log.info('Deactivated schedule', { name: schedule.name });
     } catch (error) {
@@ -223,7 +223,7 @@ export class ScheduleManager {
    * @param schedule - Schedule that changed state
    * @param isActivating - true if activating, false if deactivating
    */
-  private async sendScheduleNotification(schedule: Schedule, isActivating: boolean): Promise<void> {
+  private sendScheduleNotification(schedule: Schedule, isActivating: boolean): void {
     try {
       const title = isActivating
         ? `Focus Mode Active: ${schedule.name}`

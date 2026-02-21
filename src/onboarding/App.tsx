@@ -51,30 +51,31 @@ const ONBOARDING_STEPS: Step[] = [
   },
 ];
 
+// eslint-disable-next-line max-lines-per-function
 const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const { theme, setTheme } = useThemeContext();
 
-  const handleNext = () => {
+  const handleNext = (): void => {
     if (currentStep < ONBOARDING_STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  const handlePrevious = () => {
+  const handlePrevious = (): void => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
   };
 
-  const handleGetStarted = () => {
+  const handleGetStarted = (): void => {
     // Mark onboarding as completed
     // Mark onboarding as completed (sync with popup logic)
-    chrome.storage.sync.set({ has_onboarded: true });
+    void chrome.storage.sync.set({ has_onboarded: true });
     // Close the onboarding tab
     chrome.tabs.getCurrent((tab) => {
       if (tab?.id) {
-        chrome.tabs.remove(tab.id);
+        void chrome.tabs.remove(tab.id);
       }
     });
   };
@@ -113,7 +114,7 @@ const App: React.FC = () => {
               {(['modern', 'zen', 'cyber'] as ThemeMode[]).map((mode) => (
                 <button
                   key={mode}
-                  onClick={() => setTheme(mode)}
+                  onClick={(): void => { void setTheme(mode); }}
                   className={`p-4 rounded-xl border-2 transition-all duration-200 ${theme === mode
                     ? 'border-accent bg-accent/10 scale-105'
                     : 'border-border hover:border-accent/50 bg-bg-secondary'
@@ -149,10 +150,10 @@ const App: React.FC = () => {
               <h3 className="font-semibold text-text-primary mb-3">🎯 How to Block Websites:</h3>
               <ul className="space-y-2 text-sm text-text-secondary">
                 <li>1. Click the extension icon</li>
-                <li>2. Click "Settings & Analytics"</li>
-                <li>3. Go to "Block List" tab</li>
+                <li>2. Click &quot;Settings &amp; Analytics&quot;</li>
+                <li>3. Go to &quot;Block List&quot; tab</li>
                 <li>4. <strong>Quick Add:</strong> Browse 100+ suggested sites organized by category</li>
-                <li>5. Or add custom domains like "youtube.com" or "reddit.com"</li>
+                <li>5. Or add custom domains like &quot;youtube.com&quot; or &quot;reddit.com&quot;</li>
                 <li>6. Sites are blocked only during work sessions</li>
               </ul>
             </div>

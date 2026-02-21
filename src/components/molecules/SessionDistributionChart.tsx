@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { Pie } from 'react-chartjs-2';
-import type { TooltipItem } from 'chart.js';
+import type { ChartData, TooltipItem } from 'chart.js';
 import { chartColors, defaultChartOptions } from './chartConfig';
 
 export interface SessionDistributionChartProps {
@@ -36,7 +36,7 @@ export interface SessionDistributionChartProps {
 /**
  * Build chart data for session distribution
  */
-function buildChartData(workSessions: number, shortBreaks: number, longBreaks: number) {
+function buildChartData(workSessions: number, shortBreaks: number, longBreaks: number): ChartData<'pie'> {
   return {
     labels: ['Work Sessions', 'Short Breaks', 'Long Breaks'],
     datasets: [

@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
-import type { TooltipItem } from 'chart.js';
+import type { ChartData, TooltipItem } from 'chart.js';
 import { chartColors, defaultChartOptions, defaultScales } from './chartConfig';
 
 export interface ProductivityByHourChartProps {
@@ -51,7 +51,7 @@ function getBarColor(sessionCount: number, maxSessions: number): string {
 /**
  * Build chart data for productivity by hour
  */
-function buildChartData(hourData: number[], maxSessions: number) {
+function buildChartData(hourData: number[], maxSessions: number): ChartData<'bar'> {
   const labels = Array.from({ length: 24 }, (_, i) => formatHour(i));
   const backgroundColors = hourData.map(count => getBarColor(count, maxSessions));
   const borderColors = hourData.map(count =>

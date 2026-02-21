@@ -24,21 +24,18 @@ export interface UseSettingsReturn {
 async function sendSettingsMessage<T>(
   message: Record<string, unknown>
 ): Promise<BackgroundResponse<T>> {
-  return chrome.runtime.sendMessage(message) as Promise<BackgroundResponse<T>>;
+  return chrome.runtime.sendMessage<Record<string, unknown>, BackgroundResponse<T>>(message);
 }
 
 /**
- * Custom hook to manage user settings
+ * Hook to fetch settings from background
  */
-export function useSettings(): UseSettingsReturn {
-  const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  /**
-   * Fetch settings from background service worker
-   */
-  const fetchSettings = useCallback(async (): Promise<void> => {
+function useFetchSettings(
+  setSettings: React.Dispatch<React.SetStateAction<UserSettings | null>>,
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  setError: React.Dispatch<React.SetStateAction<string | null>>
+): () => Promise<void> {
+  return useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
       setError(null);
@@ -59,12 +56,18 @@ export function useSettings(): UseSettingsReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [setSettings, setIsLoading, setError]);
+}
 
-  /**
-   * Update settings
-   */
-  const updateSettings = useCallback(
+/**
+ * Hook for updating settings
+ */
+function useUpdateSettings(
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+  fetchSettings: () => Promise<void>
+): (updates: Partial<UserSettings>) => Promise<void> {
+  return useCallback(
     async (updates: Partial<UserSettings>): Promise<void> => {
       try {
         setIsLoading(true);
@@ -79,23 +82,31 @@ export function useSettings(): UseSettingsReturn {
           throw new Error(response.error ?? 'Failed to update settings');
         }
 
-        // Refresh settings after update
         await fetchSettings();
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to update settings';
         setError(message);
         log.error('Failed to update settings', err instanceof Error ? err : undefined);
-        throw err; // Re-throw for component error handling
+        throw err;
       } finally {
         setIsLoading(false);
       }
     },
-    [fetchSettings]
+    [fetchSettings, setIsLoading, setError]
   );
+}
 
-  /**
-   * Fetch on mount
-   */
+/**
+ * Custom hook to manage user settings
+ */
+export function useSettings(): UseSettingsReturn {
+  const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSettings = useFetchSettings(setSettings, setIsLoading, setError);
+  const updateSettings = useUpdateSettings(setIsLoading, setError, fetchSettings);
+
   useEffect(() => {
     void fetchSettings();
   }, [fetchSettings]);

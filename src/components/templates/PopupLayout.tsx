@@ -47,6 +47,7 @@ export interface PopupLayoutProps {
  * </PopupLayout>
  * ```
  */
+// eslint-disable-next-line max-lines-per-function
 export const PopupLayout: React.FC<PopupLayoutProps> = ({
   header,
   children,

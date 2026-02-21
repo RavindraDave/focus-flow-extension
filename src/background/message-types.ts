@@ -343,14 +343,14 @@ function validateTimerMessage(type: string, message: unknown): boolean {
 }
 
 /**
- * Validate blocker and blocklist messages
+ * Validate blocker messages (domain-related)
  *
  * @param type - Message type
  * @param message - The raw message
- * @returns true if handled, false if not a blocker/blocklist message
+ * @returns true if handled, false if not a blocker message
  * @private
  */
-function validateBlocklistMessage(type: string, message: unknown): boolean {
+function validateBlockerDomainMessage(type: string, message: unknown): boolean {
   switch (type) {
     case 'BLOCKER_TRACK_ATTEMPT':
       BlockerTrackMessageSchema.parse(message);
@@ -364,6 +364,24 @@ function validateBlocklistMessage(type: string, message: unknown): boolean {
     case 'BLOCKER_GET_TEMP_ACCESS':
       BlockerGetTempAccessMessageSchema.parse(message);
       return true;
+    case 'BLOCKER_SYNC_RULES':
+    case 'BLOCKER_GET_STATS':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Validate blocklist CRUD messages
+ *
+ * @param type - Message type
+ * @param message - The raw message
+ * @returns true if handled, false if not a blocklist message
+ * @private
+ */
+function validateBlocklistCrudMessage(type: string, message: unknown): boolean {
+  switch (type) {
     case 'BLOCKLIST_ADD':
       BlockListAddMessageSchema.parse(message);
       return true;
@@ -373,13 +391,23 @@ function validateBlocklistMessage(type: string, message: unknown): boolean {
     case 'BLOCKLIST_DELETE':
       BlockListDeleteMessageSchema.parse(message);
       return true;
-    case 'BLOCKER_SYNC_RULES':
-    case 'BLOCKER_GET_STATS':
     case 'BLOCKLIST_GET_ALL':
       return true;
     default:
       return false;
   }
+}
+
+/**
+ * Validate blocker and blocklist messages
+ *
+ * @param type - Message type
+ * @param message - The raw message
+ * @returns true if handled, false if not a blocker/blocklist message
+ * @private
+ */
+function validateBlocklistMessage(type: string, message: unknown): boolean {
+  return validateBlockerDomainMessage(type, message) || validateBlocklistCrudMessage(type, message);
 }
 
 /**
@@ -410,6 +438,72 @@ function validateScheduleMessage(type: string, message: unknown): boolean {
 }
 
 /**
+ * Validate nuclear mode messages
+ *
+ * @param type - Message type
+ * @param message - The raw message
+ * @returns true if handled, false if not a nuclear mode message
+ * @private
+ */
+function validateNuclearModeMessage(type: string, message: unknown): boolean {
+  switch (type) {
+    case 'NUCLEAR_MODE_ACTIVATE':
+      NuclearModeActivateMessageSchema.parse(message);
+      return true;
+    case 'NUCLEAR_MODE_DEACTIVATE':
+    case 'NUCLEAR_MODE_GET_STATUS':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Validate session and settings messages
+ *
+ * @param type - Message type
+ * @param message - The raw message
+ * @returns true if handled, false if not a session/settings message
+ * @private
+ */
+function validateSessionSettingsMessage(type: string, message: unknown): boolean {
+  switch (type) {
+    case 'SESSION_GET_HISTORY':
+      SessionGetHistoryMessageSchema.parse(message);
+      return true;
+    case 'SETTINGS_UPDATE':
+      SettingsUpdateMessageSchema.parse(message);
+      return true;
+    case 'SESSION_GET_TODAY':
+    case 'SETTINGS_GET':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Validate analytics and streak messages
+ *
+ * @param type - Message type
+ * @returns true if handled, false if not an analytics/streak message
+ * @private
+ */
+function validateAnalyticsStreakMessage(type: string): boolean {
+  switch (type) {
+    case 'ANALYTICS_GET':
+    case 'ANALYTICS_GET_FOCUS_SCORE':
+    case 'ANALYTICS_GET_WEEKLY_SUMMARY':
+    case 'ANALYTICS_GET_MONTHLY_SUMMARY':
+    case 'STREAK_GET':
+    case 'STREAK_CHECK':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
  * Validate analytics, streak, session, settings, and nuclear mode messages
  *
  * @param type - Message type
@@ -418,30 +512,9 @@ function validateScheduleMessage(type: string, message: unknown): boolean {
  * @private
  */
 function validateAnalyticsMessage(type: string, message: unknown): boolean {
-  switch (type) {
-    case 'NUCLEAR_MODE_ACTIVATE':
-      NuclearModeActivateMessageSchema.parse(message);
-      return true;
-    case 'SESSION_GET_HISTORY':
-      SessionGetHistoryMessageSchema.parse(message);
-      return true;
-    case 'SETTINGS_UPDATE':
-      SettingsUpdateMessageSchema.parse(message);
-      return true;
-    case 'NUCLEAR_MODE_DEACTIVATE':
-    case 'NUCLEAR_MODE_GET_STATUS':
-    case 'ANALYTICS_GET':
-    case 'ANALYTICS_GET_FOCUS_SCORE':
-    case 'ANALYTICS_GET_WEEKLY_SUMMARY':
-    case 'ANALYTICS_GET_MONTHLY_SUMMARY':
-    case 'STREAK_GET':
-    case 'STREAK_CHECK':
-    case 'SESSION_GET_TODAY':
-    case 'SETTINGS_GET':
-      return true;
-    default:
-      return false;
-  }
+  return validateNuclearModeMessage(type, message) ||
+    validateSessionSettingsMessage(type, message) ||
+    validateAnalyticsStreakMessage(type);
 }
 
 /**

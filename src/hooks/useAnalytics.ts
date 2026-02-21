@@ -85,8 +85,8 @@ export function useAnalytics(): UseAnalyticsReturn {
 
       // Fetch both in parallel
       const [analyticsResponse, streakResponse] = await Promise.all([
-        chrome.runtime.sendMessage({ type: 'ANALYTICS_GET' }) as Promise<BackgroundResponse<AnalyticsResponseData>>,
-        chrome.runtime.sendMessage({ type: 'STREAK_GET' }) as Promise<BackgroundResponse<StreakData>>,
+        chrome.runtime.sendMessage<{ type: string }, BackgroundResponse<AnalyticsResponseData>>({ type: 'ANALYTICS_GET' }),
+        chrome.runtime.sendMessage<{ type: string }, BackgroundResponse<StreakData>>({ type: 'STREAK_GET' }),
       ]);
 
       const stats = processAnalyticsResponse(analyticsResponse);

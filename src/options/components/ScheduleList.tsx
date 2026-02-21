@@ -39,7 +39,7 @@ function formatDays(days: string[]): string {
     return 'Weekends';
   }
 
-  return days.map(d => dayNames[d] || d).join(', ');
+  return days.map(d => dayNames[d] ?? d).join(', ');
 }
 
 /**
@@ -59,6 +59,7 @@ function formatTime(time24: string): string {
  * ScheduleList Component
  * Complexity: 8 (state management + conditional rendering + event handlers)
  */
+// eslint-disable-next-line max-lines-per-function
 export const ScheduleList: React.FC = () => {
   const { schedules, isLoading, error, deleteSchedule, toggleSchedule } = useSchedules();
   const { rules: blockRules } = useBlockRules();
@@ -221,7 +222,9 @@ export const ScheduleList: React.FC = () => {
       {
         schedules.length > 0 && (
           <div className="space-y-4">
-            {schedules.map(schedule => (
+            {schedules.map(
+              // eslint-disable-next-line max-lines-per-function
+              schedule => (
               <div
                 key={schedule.id}
                 className="border border-border rounded-lg p-4 hover:border-accent transition-colors"
@@ -232,7 +235,7 @@ export const ScheduleList: React.FC = () => {
                     <div className="flex items-center space-x-3 mb-2">
                       {/* Status Badge */}
                       <button
-                        onClick={() => handleToggle(schedule)}
+                        onClick={(): void => { void handleToggle(schedule); }}
                         className={`
                         px-2 py-1 text-xs font-medium rounded
                         transition-colors cursor-pointer
@@ -293,7 +296,7 @@ export const ScheduleList: React.FC = () => {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => handleDelete(schedule)}
+                      onClick={(): void => { void handleDelete(schedule); }}
                       className="text-error hover:bg-error/10"
                       aria-label={`Delete schedule ${schedule.name}`}
                     >

@@ -91,6 +91,59 @@ function DialogActions({ cancelText, confirmText, isLoading, onCancel, onConfirm
     );
 }
 
+/** Dialog content panel */
+function DialogContent({ title, message, style, cancelText, confirmText, isLoading, onCancel, onConfirm, dialogRef, confirmButtonRef }: {
+    title: string;
+    message: string;
+    style: typeof variantStyles.danger;
+    cancelText: string;
+    confirmText: string;
+    isLoading: boolean;
+    onCancel: () => void;
+    onConfirm: () => void;
+    dialogRef: React.RefObject<HTMLDivElement>;
+    confirmButtonRef: React.RefObject<HTMLButtonElement>;
+}): React.ReactElement {
+    return (
+        <div
+            ref={dialogRef}
+            className="bg-surface border border-border rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+        >
+            <DialogIcon style={style} />
+            <h3 id="dialog-title" className="text-xl font-bold text-text-primary mb-2">{title}</h3>
+            <p id="dialog-description" className="text-text-secondary mb-6 whitespace-pre-line">{message}</p>
+            <DialogActions
+                cancelText={cancelText}
+                confirmText={confirmText}
+                isLoading={isLoading}
+                onCancel={onCancel}
+                onConfirm={onConfirm}
+                confirmButtonRef={confirmButtonRef}
+                style={style}
+            />
+        </div>
+    );
+}
+
+/** Hook for dialog keyboard handling */
+function useDialogKeyboard(isOpen: boolean, onConfirm: () => void, onCancel: () => void): void {
+    useEffect(() => {
+        if (!isOpen) {return;}
+
+        const handleKeyDown = (e: KeyboardEvent): void => {
+            if (e.key === 'Escape') {
+                onCancel();
+            } else if (e.key === 'Enter' && !e.shiftKey) {
+                onConfirm();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onConfirm, onCancel]);
+}
+
 /**
  * ConfirmDialog Component
  * Theme-aware confirmation dialog with accessibility support
@@ -109,20 +162,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     const dialogRef = useRef<HTMLDivElement>(null);
     const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
-    useEffect(() => {
-        if (!isOpen) {return;}
-
-        const handleKeyDown = (e: KeyboardEvent): void => {
-            if (e.key === 'Escape') {
-                onCancel();
-            } else if (e.key === 'Enter' && !e.shiftKey) {
-                onConfirm();
-            }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onConfirm, onCancel]);
+    useDialogKeyboard(isOpen, onConfirm, onCancel);
 
     useEffect(() => {
         if (isOpen && confirmButtonRef.current) {
@@ -143,24 +183,18 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             aria-labelledby="dialog-title"
             aria-describedby="dialog-description"
         >
-            <div
-                ref={dialogRef}
-                className="bg-surface border border-border rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <DialogIcon style={style} />
-                <h3 id="dialog-title" className="text-xl font-bold text-text-primary mb-2">{title}</h3>
-                <p id="dialog-description" className="text-text-secondary mb-6 whitespace-pre-line">{message}</p>
-                <DialogActions
-                    cancelText={cancelText}
-                    confirmText={confirmText}
-                    isLoading={isLoading}
-                    onCancel={onCancel}
-                    onConfirm={onConfirm}
-                    confirmButtonRef={confirmButtonRef}
-                    style={style}
-                />
-            </div>
+            <DialogContent
+                title={title}
+                message={message}
+                style={style}
+                cancelText={cancelText}
+                confirmText={confirmText}
+                isLoading={isLoading}
+                onCancel={onCancel}
+                onConfirm={onConfirm}
+                dialogRef={dialogRef}
+                confirmButtonRef={confirmButtonRef}
+            />
         </div>
     );
 };

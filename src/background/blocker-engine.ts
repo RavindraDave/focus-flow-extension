@@ -304,7 +304,7 @@ export class BlockerEngine {
    *
    * @param domain - Domain that was blocked
    */
-  async handleBlockedAttempt(domain: string): Promise<void> {
+  handleBlockedAttempt(domain: string): void {
     if (!this.isBlocking) {
       return; // Not in blocking mode
     }

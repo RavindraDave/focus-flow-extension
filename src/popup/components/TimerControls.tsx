@@ -22,6 +22,7 @@ export interface TimerControlsProps {
  * TimerControls component
  * Complexity: 8 (multiple conditional rendering paths)
  */
+// eslint-disable-next-line max-lines-per-function
 export const TimerControls: React.FC<TimerControlsProps> = ({
   isActive,
   isPaused,
@@ -36,9 +37,9 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
   const [showTaskInput, setShowTaskInput] = useState(false);
 
   // Get durations from settings or use defaults
-  const workDuration = settings?.workDuration || 25;
-  const shortBreakDuration = settings?.shortBreakDuration || 5;
-  const longBreakDuration = settings?.longBreakDuration || 15;
+  const workDuration = settings?.workDuration ?? 25;
+  const shortBreakDuration = settings?.shortBreakDuration ?? 5;
+  const longBreakDuration = settings?.longBreakDuration ?? 15;
 
   /**
    * Handle start button click

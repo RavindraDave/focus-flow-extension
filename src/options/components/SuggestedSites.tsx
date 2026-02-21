@@ -16,6 +16,7 @@ const log = createLogger('SuggestedSites');
 /**
  * SuggestedSites component
  */
+// eslint-disable-next-line max-lines-per-function
 export const SuggestedSites: React.FC = () => {
   const { rules, addRule, addRules } = useBlockRules();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -23,12 +24,14 @@ export const SuggestedSites: React.FC = () => {
   const [addingCategories, setAddingCategories] = useState<Set<string>>(new Set());
 
   // Clear loading states when rules update (after successful add)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     // If we were adding categories/domains and rules changed, clear the loading states
     if (addingCategories.size > 0 || addingDomains.size > 0) {
       setAddingCategories(new Set());
       setAddingDomains(new Set());
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rules]); // Re-run when rules change
 
   /**
@@ -44,7 +47,7 @@ export const SuggestedSites: React.FC = () => {
   /**
    * Toggle category expansion
    */
-  const toggleCategory = (categoryName: string) => {
+  const toggleCategory = (categoryName: string): void => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
       if (next.has(categoryName)) {
@@ -59,7 +62,7 @@ export const SuggestedSites: React.FC = () => {
   /**
    * Add a single site to block list
    */
-  const handleAddSite = async (site: SuggestedSite) => {
+  const handleAddSite = async (site: SuggestedSite): Promise<void> => {
     if (isDomainBlocked(site.domain) || addingDomains.has(site.domain)) {
       return;
     }
@@ -89,7 +92,7 @@ export const SuggestedSites: React.FC = () => {
   /**
    * Add all sites in a category (optimized batch add)
    */
-  const handleAddCategory = async (category: SiteCategory) => {
+  const handleAddCategory = async (category: SiteCategory): Promise<void> => {
     // Prevent multiple clicks
     if (addingCategories.has(category.name)) {
       return;
@@ -165,7 +168,9 @@ export const SuggestedSites: React.FC = () => {
 
       {/* Categories */}
       <div className="space-y-3">
-        {SUGGESTED_SITES.map((category) => {
+        {SUGGESTED_SITES.map(
+          // eslint-disable-next-line max-lines-per-function
+          (category) => {
           const isExpanded = expandedCategories.has(category.name);
           const blockedCount = getBlockedCount(category);
           const totalCount = category.sites.length;
@@ -206,7 +211,7 @@ export const SuggestedSites: React.FC = () => {
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => handleAddCategory(category)}
+                    onClick={(): void => { void handleAddCategory(category); }}
                     disabled={allBlocked || addingCategories.has(category.name)}
                     className="ml-3"
                   >
@@ -251,7 +256,7 @@ export const SuggestedSites: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleAddSite(site)}
+                              onClick={(): void => { void handleAddSite(site); }}
                               disabled={isAdding}
                               className="whitespace-nowrap text-xs px-2 py-1"
                             >

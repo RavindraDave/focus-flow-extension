@@ -61,6 +61,7 @@ function getSessionLabel(sessionType: SessionType | null): string {
  * TimerDisplay component with circular progress ring
  * Complexity: 5 (multiple conditionals for display states)
  */
+// eslint-disable-next-line max-lines-per-function
 export const TimerDisplay: React.FC<TimerDisplayProps> = ({
   remainingSeconds,
   totalSeconds,

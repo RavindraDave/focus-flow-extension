@@ -15,7 +15,7 @@ const log = createLogger('useTimer');
  * Check if Chrome extension APIs are available
  */
 const isChromeApiAvailable = (): boolean => {
-  return typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.sendMessage;
+  return typeof chrome !== 'undefined' && !!chrome.runtime?.sendMessage;
 };
 
 /**
@@ -24,7 +24,7 @@ const isChromeApiAvailable = (): boolean => {
 async function sendTimerMessage<T>(
   message: Record<string, unknown>
 ): Promise<BackgroundResponse<T>> {
-  return chrome.runtime.sendMessage(message) as Promise<BackgroundResponse<T>>;
+  return chrome.runtime.sendMessage<Record<string, unknown>, BackgroundResponse<T>>(message);
 }
 
 export interface UseTimerReturn {
@@ -48,18 +48,14 @@ export interface UseTimerReturn {
 }
 
 /**
- * Custom hook to manage timer state and controls
- * Fetches status every second when active
+ * Hook for fetching timer status from background
  */
-export function useTimer(): UseTimerReturn {
-  const [status, setStatus] = useState<TimerStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  /**
-   * Fetch timer status from background service worker
-   */
-  const fetchStatus = useCallback(async (): Promise<void> => {
+function useFetchTimerStatus(
+  setStatus: React.Dispatch<React.SetStateAction<TimerStatus | null>>,
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  setError: React.Dispatch<React.SetStateAction<string | null>>
+): () => Promise<void> {
+  return useCallback(async (): Promise<void> => {
     if (!isChromeApiAvailable()) {
       setError('Chrome extension APIs not available');
       setIsLoading(false);
@@ -84,16 +80,16 @@ export function useTimer(): UseTimerReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [setStatus, setIsLoading, setError]);
+}
 
-  /**
-   * Poll timer status every second when active and tab is visible
-   * Uses Page Visibility API to reduce CPU usage when tab is hidden
-   */
+/**
+ * Hook to set up timer polling and visibility-based refresh
+ */
+function useTimerPolling(fetchStatus: () => Promise<void>): void {
   useEffect(() => {
     void fetchStatus();
 
-    // Track document visibility
     const handleVisibilityChange = (): void => {
       if (!document.hidden) {
         void fetchStatus();
@@ -102,7 +98,6 @@ export function useTimer(): UseTimerReturn {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Poll every second only if tab is visible
     const interval = setInterval(() => {
       if (!document.hidden) {
         void fetchStatus();
@@ -114,10 +109,22 @@ export function useTimer(): UseTimerReturn {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchStatus]);
+}
 
-  /**
-   * Start a new timer session
-   */
+/**
+ * Hook for timer control actions (start, pause, resume, stop)
+ */
+// eslint-disable-next-line max-lines-per-function
+function useTimerActions(
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+  fetchStatus: () => Promise<void>
+): {
+  start: (sessionType: SessionType, taskName?: string) => Promise<void>;
+  pause: () => Promise<void>;
+  resume: () => Promise<void>;
+  stop: () => Promise<void>;
+} {
   const start = useCallback(
     async (sessionType: SessionType, taskName?: string): Promise<void> => {
       if (!isChromeApiAvailable()) {
@@ -129,7 +136,6 @@ export function useTimer(): UseTimerReturn {
         setIsLoading(true);
         setError(null);
 
-        // Background worker uses user settings for duration
         const response = await sendTimerMessage<TimerStatus>({
           type: 'TIMER_START',
           sessionType,
@@ -149,12 +155,9 @@ export function useTimer(): UseTimerReturn {
         setIsLoading(false);
       }
     },
-    [fetchStatus]
+    [fetchStatus, setIsLoading, setError]
   );
 
-  /**
-   * Pause the active timer
-   */
   const pause = useCallback(async (): Promise<void> => {
     if (!isChromeApiAvailable()) {
       setError('Chrome extension APIs not available');
@@ -177,11 +180,8 @@ export function useTimer(): UseTimerReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchStatus]);
+  }, [fetchStatus, setIsLoading, setError]);
 
-  /**
-   * Resume a paused timer
-   */
   const resume = useCallback(async (): Promise<void> => {
     if (!isChromeApiAvailable()) {
       setError('Chrome extension APIs not available');
@@ -204,11 +204,8 @@ export function useTimer(): UseTimerReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchStatus]);
+  }, [fetchStatus, setIsLoading, setError]);
 
-  /**
-   * Stop and abandon the active timer
-   */
   const stop = useCallback(async (): Promise<void> => {
     if (!isChromeApiAvailable()) {
       setError('Chrome extension APIs not available');
@@ -231,10 +228,25 @@ export function useTimer(): UseTimerReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchStatus]);
+  }, [fetchStatus, setIsLoading, setError]);
+
+  return { start, pause, resume, stop };
+}
+
+/**
+ * Custom hook to manage timer state and controls
+ * Fetches status every second when active
+ */
+export function useTimer(): UseTimerReturn {
+  const [status, setStatus] = useState<TimerStatus | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStatus = useFetchTimerStatus(setStatus, setIsLoading, setError);
+  useTimerPolling(fetchStatus);
+  const { start, pause, resume, stop } = useTimerActions(setIsLoading, setError, fetchStatus);
 
   return {
-    // State
     isActive: status?.state !== 'idle' && !status?.isPaused,
     isPaused: status?.isPaused ?? false,
     sessionType: status?.currentSession?.type ?? null,
@@ -242,13 +254,11 @@ export function useTimer(): UseTimerReturn {
     totalSeconds: status?.totalSeconds ?? 0,
     taskName: status?.currentSession?.taskName,
 
-    // Actions
     start,
     pause,
     resume,
     stop,
 
-    // Status
     isLoading,
     error,
   };

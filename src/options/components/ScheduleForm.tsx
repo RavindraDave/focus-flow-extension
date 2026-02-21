@@ -40,6 +40,7 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
  * ScheduleForm Component
  * Complexity: 10 (at limit - form validation + state management + async operations)
  */
+// eslint-disable-next-line max-lines-per-function, complexity
 export const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onClose, isOpen }) => {
   const { addSchedule, updateSchedule } = useSchedules();
   const { rules: blockRules } = useBlockRules();
@@ -207,7 +208,7 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onClose, i
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={(e): void => { void handleSubmit(e); }} className="p-6 space-y-6">
           {/* Name */}
           <div>
             <Input

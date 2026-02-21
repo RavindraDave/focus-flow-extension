@@ -34,6 +34,7 @@ type Tab = 'dashboard' | 'timer' | 'blocking' | 'integrations' | 'gamification' 
 /**
  * Main Options App component with 6-tab navigation
  */
+// eslint-disable-next-line max-lines-per-function, complexity
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -43,7 +44,7 @@ const App: React.FC = () => {
   /**
    * Handle tab navigation and close sidebar on mobile
    */
-  const handleTabChange = (tab: Tab) => {
+  const handleTabChange = (tab: Tab): void => {
     log.info('Tab changed', { from: activeTab, to: tab });
     setActiveTab(tab);
     setSidebarOpen(false); // Close sidebar on mobile after selection
@@ -313,6 +314,7 @@ const App: React.FC = () => {
 /**
  * Dashboard Tab Component
  */
+// eslint-disable-next-line max-lines-per-function, complexity
 const DashboardTab: React.FC<{ settings: UserSettings | null; setActiveTab: (tab: Tab) => void }> = ({ setActiveTab }) => {
   const [nuclearMode, setNuclearMode] = useState(false);
   const [strictBlocking, setStrictBlocking] = useState(false);
@@ -323,22 +325,22 @@ const DashboardTab: React.FC<{ settings: UserSettings | null; setActiveTab: (tab
 
   // Load toggle states from chrome.storage on mount
   React.useEffect(() => {
-    async function loadToggles() {
+    async function loadToggles(): Promise<void> {
       try {
         const result = await chrome.storage.sync.get(['nuclear_mode', 'strict_blocking']);
-        setNuclearMode(result.nuclear_mode ?? false);
-        setStrictBlocking(result.strict_blocking ?? false);
+        setNuclearMode((result.nuclear_mode as boolean | undefined) ?? false);
+        setStrictBlocking((result.strict_blocking as boolean | undefined) ?? false);
       } catch (error) {
         log.error('Failed to load toggle states', error instanceof Error ? error : undefined);
       } finally {
         setIsLoading(false);
       }
     }
-    loadToggles();
+    void loadToggles();
   }, []);
 
   // Save Nuclear Mode to storage with optimistic UI
-  const handleNuclearModeToggle = async () => {
+  const handleNuclearModeToggle = async (): Promise<void> => {
     const newValue = !nuclearMode;
     const previousValue = nuclearMode;
 
@@ -355,7 +357,7 @@ const DashboardTab: React.FC<{ settings: UserSettings | null; setActiveTab: (tab
   };
 
   // Save Strict Blocking to storage with optimistic UI
-  const handleStrictBlockingToggle = async () => {
+  const handleStrictBlockingToggle = async (): Promise<void> => {
     const newValue = !strictBlocking;
     const previousValue = strictBlocking;
 
@@ -388,8 +390,8 @@ const DashboardTab: React.FC<{ settings: UserSettings | null; setActiveTab: (tab
   };
 
   const focusScore = calculateFocusScore();
-  const focusTime = todayStats?.focusTime || 0;
-  const currentStreak = streak?.current || 0;
+  const focusTime = todayStats?.focusTime ?? 0;
+  const currentStreak = streak?.current ?? 0;
 
   return (
     <div>
@@ -441,12 +443,12 @@ const DashboardTab: React.FC<{ settings: UserSettings | null; setActiveTab: (tab
 
         {/* Today's Focus */}
         <div className="bg-surface p-6 rounded-xl shadow-md border border-border">
-          <p className="text-sm font-medium text-text-tertiary">Today's Focus</p>
+          <p className="text-sm font-medium text-text-tertiary">Today&apos;s Focus</p>
           <h3 className="text-4xl font-bold text-text-primary mt-2">
             {analyticsLoading ? '...' : formatFocusTime(focusTime)}
           </h3>
           <p className="text-xs text-text-muted mt-2">
-            {todayStats?.pomodorosCompleted || 0} pomodoros completed
+            {todayStats?.pomodorosCompleted ?? 0} pomodoros completed
           </p>
         </div>
 
@@ -512,7 +514,7 @@ const DashboardTab: React.FC<{ settings: UserSettings | null; setActiveTab: (tab
                 </div>
               ) : (
                 <button
-                  onClick={handleNuclearModeToggle}
+                  onClick={(): void => { void handleNuclearModeToggle(); }}
                   disabled={isLoading}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${nuclearMode ? 'bg-accent' : 'bg-bg-secondary'
                     }`}
@@ -538,7 +540,7 @@ const DashboardTab: React.FC<{ settings: UserSettings | null; setActiveTab: (tab
                 </div>
               </div>
               <button
-                onClick={handleStrictBlockingToggle}
+                onClick={(): void => { void handleStrictBlockingToggle(); }}
                 disabled={isLoading}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${strictBlocking ? 'bg-accent' : 'bg-bg-secondary'
                   }`}
@@ -573,44 +575,47 @@ const DashboardTab: React.FC<{ settings: UserSettings | null; setActiveTab: (tab
   );
 };
 
-/**
- * Timer Settings Tab Component
- */
-const TimerTab: React.FC<{
+interface TimerTabProps {
   settings: UserSettings | null;
   isLoading: boolean;
   error: string | null;
   onSave: (settings: Partial<UserSettings>) => Promise<void>;
   theme: string;
   onThemeChange: (theme: ThemeMode) => Promise<void>;
-}> = ({ settings, isLoading, error, onSave, theme, onThemeChange }) => {
+}
+
+/**
+ * Timer Settings Tab Component
+ */
+// eslint-disable-next-line max-lines-per-function, complexity
+const TimerTab: React.FC<TimerTabProps> = ({ settings, isLoading, error, onSave, theme, onThemeChange }) => {
   const [soundEnabled, setSoundEnabled] = React.useState(true);
   const [soundVolume, setSoundVolume] = React.useState(50);
 
   // Load sound settings on mount
   React.useEffect(() => {
-    async function loadSoundSettings() {
+    async function loadSoundSettings(): Promise<void> {
       const result = await chrome.storage.sync.get(['sound_enabled', 'sound_volume']);
-      setSoundEnabled(result.sound_enabled ?? true);
-      setSoundVolume(result.sound_volume !== undefined ? result.sound_volume * 100 : 50);
+      setSoundEnabled((result.sound_enabled as boolean | undefined) ?? true);
+      setSoundVolume(result.sound_volume !== undefined ? (result.sound_volume as number) * 100 : 50);
     }
-    loadSoundSettings();
+    void loadSoundSettings();
   }, []);
 
   // Save sound enabled toggle
-  const handleSoundEnabledChange = async (enabled: boolean) => {
+  const handleSoundEnabledChange = async (enabled: boolean): Promise<void> => {
     setSoundEnabled(enabled);
     await chrome.storage.sync.set({ sound_enabled: enabled });
   };
 
   // Save sound volume
-  const handleVolumeChange = async (volume: number) => {
+  const handleVolumeChange = async (volume: number): Promise<void> => {
     setSoundVolume(volume);
     await chrome.storage.sync.set({ sound_volume: volume / 100 });
   };
 
   // Test current theme sound
-  const handleTestSound = async () => {
+  const handleTestSound = async (): Promise<void> => {
     const { testThemeSound } = await import('../utils/sounds');
     // theme comes from settings which is validated, safe to cast
     await testThemeSound(theme as 'modern' | 'zen' | 'cyber', soundVolume / 100);
@@ -635,7 +640,7 @@ const TimerTab: React.FC<{
         </p>
         <div className="grid grid-cols-3 gap-4">
           <button
-            onClick={() => onThemeChange('modern')}
+            onClick={(): void => { void onThemeChange('modern'); }}
             className={`p-4 rounded-xl border-2 transition-all ${theme === 'modern'
               ? 'border-accent bg-accent/10'
               : 'border-border hover:border-border-secondary'
@@ -646,7 +651,7 @@ const TimerTab: React.FC<{
             <p className="text-xs text-text-tertiary mt-1">Clean & minimal</p>
           </button>
           <button
-            onClick={() => onThemeChange('zen')}
+            onClick={(): void => { void onThemeChange('zen'); }}
             className={`p-4 rounded-xl border-2 transition-all ${theme === 'zen'
               ? 'border-accent bg-accent/10'
               : 'border-border hover:border-border-secondary'
@@ -657,7 +662,7 @@ const TimerTab: React.FC<{
             <p className="text-xs text-text-tertiary mt-1">Organic & calming</p>
           </button>
           <button
-            onClick={() => onThemeChange('cyber')}
+            onClick={(): void => { void onThemeChange('cyber'); }}
             className={`p-4 rounded-xl border-2 transition-all ${theme === 'cyber'
               ? 'border-accent bg-accent/10'
               : 'border-border hover:border-border-secondary'
@@ -686,7 +691,7 @@ const TimerTab: React.FC<{
             </p>
           </div>
           <button
-            onClick={() => handleSoundEnabledChange(!soundEnabled)}
+            onClick={(): void => { void handleSoundEnabledChange(!soundEnabled); }}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${soundEnabled ? 'bg-accent' : 'bg-bg-secondary'
               }`}
             aria-pressed={soundEnabled}
@@ -713,7 +718,7 @@ const TimerTab: React.FC<{
             min="0"
             max="100"
             value={soundVolume}
-            onChange={(e) => handleVolumeChange(Number(e.target.value))}
+            onChange={(e): void => { void handleVolumeChange(Number(e.target.value)); }}
             disabled={!soundEnabled}
             className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed accent-accent
               [&::-webkit-slider-track]:h-2 [&::-webkit-slider-track]:rounded-lg [&::-webkit-slider-track]:border [&::-webkit-slider-track]:border-border [&::-webkit-slider-track]:bg-bg-tertiary
@@ -722,7 +727,7 @@ const TimerTab: React.FC<{
               [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0"
             aria-label="Adjust notification volume"
             style={{
-              // @ts-ignore - CSS custom property for Zen theme
+              // @ts-expect-error - CSS custom property for Zen theme
               '--volume-percent': `${soundVolume}%`,
               background: `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${soundVolume}%, var(--bg-tertiary) ${soundVolume}%, var(--bg-tertiary) 100%)`
             }}
@@ -746,7 +751,7 @@ const TimerTab: React.FC<{
               </p>
             </div>
             <button
-              onClick={handleTestSound}
+              onClick={(): void => { void handleTestSound(); }}
               disabled={!soundEnabled}
               className="bg-accent hover:bg-accent-hover text-text-inverse px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -817,6 +822,7 @@ const BlockingTab: React.FC<{ settings: UserSettings | null }> = ({ settings }) 
 /**
  * Integrations Tab Component
  */
+// eslint-disable-next-line max-lines-per-function
 const IntegrationsTab: React.FC = () => {
   return (
     <div>
@@ -876,7 +882,7 @@ const IntegrationsTab: React.FC = () => {
                 📅 Calendar Sync
               </h3>
               <p className="text-sm text-text-tertiary mb-4">
-                Auto-start timer when "Focus" calendar events begin
+                Auto-start timer when &quot;Focus&quot; calendar events begin
               </p>
             </div>
             <span className="text-xs text-text-muted bg-bg-secondary px-2 py-1 rounded">
@@ -922,6 +928,7 @@ const GamificationTab: React.FC<{ theme: string }> = ({ theme }) => {
 /**
  * Data & Config Tab Component
  */
+// eslint-disable-next-line max-lines-per-function
 const DataConfigTab: React.FC = () => {
   const [isExporting, setIsExporting] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
@@ -930,7 +937,7 @@ const DataConfigTab: React.FC = () => {
   /**
    * Export all configuration to JSON file
    */
-  const handleExportConfig = async () => {
+  const handleExportConfig = async (): Promise<void> => {
     setIsExporting(true);
     try {
       // Get all data from chrome.storage
@@ -943,8 +950,8 @@ const DataConfigTab: React.FC = () => {
         sync: syncData,
         local: {
           // Only export non-sensitive local data
-          analytics: localData.analytics || {},
-          history: localData.history || [],
+          analytics: (localData.analytics as Record<string, unknown> | undefined) ?? {},
+          history: (localData.history as unknown[] | undefined) ?? [],
         },
       };
 
@@ -973,11 +980,12 @@ const DataConfigTab: React.FC = () => {
   /**
    * Import configuration from JSON file
    */
-  const handleImportConfig = () => {
+  const handleImportConfig = (): void => {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // eslint-disable-next-line complexity
+  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = event.target.files?.[0];
     if (!file) { return; }
 
@@ -1039,7 +1047,7 @@ const DataConfigTab: React.FC = () => {
   /**
    * Export focus session history to CSV
    */
-  const handleExportHistory = async () => {
+  const handleExportHistory = async (): Promise<void> => {
     // Define minimal interface for legacy history data that may have various formats
     interface LegacySessionData {
       timestamp?: string | number;
@@ -1052,7 +1060,7 @@ const DataConfigTab: React.FC = () => {
 
     try {
       const { history } = await chrome.storage.local.get('history');
-      const sessions: LegacySessionData[] = history || [];
+      const sessions: LegacySessionData[] = (history as LegacySessionData[] | undefined) ?? [];
 
       if (sessions.length === 0) {
         alert('No history data to export.');
@@ -1062,10 +1070,10 @@ const DataConfigTab: React.FC = () => {
       // Create CSV content
       const headers = ['Date', 'Duration (minutes)', 'Task Name', 'Session Type'];
       const rows = sessions.map((session: LegacySessionData) => [
-        new Date(session.timestamp || session.date || Date.now()).toLocaleString(),
-        String(Math.round((session.duration || 0) / 60)),
-        session.taskName || session.label || 'Untitled',
-        session.type || 'Focus',
+        new Date(session.timestamp ?? session.date ?? Date.now()).toLocaleString(),
+        String(Math.round((session.duration ?? 0) / 60)),
+        session.taskName ?? session.label ?? 'Untitled',
+        session.type ?? 'Focus',
       ]);
 
       const csvContent = [
@@ -1094,7 +1102,7 @@ const DataConfigTab: React.FC = () => {
   /**
    * Reset all stored data with confirmation
    */
-  const handleResetData = async () => {
+  const handleResetData = async (): Promise<void> => {
     if (!confirm('⚠️ WARNING: This will permanently delete ALL your data, including:\n\n• Settings and preferences\n• Blocklist and schedules\n• Focus history and analytics\n• Achievements and streaks\n\nThis action CANNOT be undone.\n\nAre you absolutely sure?')) {
       return;
     }
@@ -1144,7 +1152,7 @@ const DataConfigTab: React.FC = () => {
             Download your settings, blocklist, and theme preferences
           </p>
           <button
-            onClick={handleExportConfig}
+            onClick={(): void => { void handleExportConfig(); }}
             disabled={isExporting}
             className="bg-accent hover:bg-accent-hover text-text-inverse px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -1164,7 +1172,7 @@ const DataConfigTab: React.FC = () => {
             ref={fileInputRef}
             type="file"
             accept=".json"
-            onChange={handleFileSelected}
+            onChange={(e): void => { void handleFileSelected(e); }}
             className="hidden"
           />
           <button
@@ -1185,7 +1193,7 @@ const DataConfigTab: React.FC = () => {
             Download your focus session history as CSV
           </p>
           <button
-            onClick={handleExportHistory}
+            onClick={(): void => { void handleExportHistory(); }}
             className="bg-accent hover:bg-accent-hover text-text-inverse px-4 py-2 rounded-lg text-sm font-medium transition"
           >
             Export History (CSV)
@@ -1199,7 +1207,7 @@ const DataConfigTab: React.FC = () => {
             Permanently delete all data. This action cannot be undone.
           </p>
           <button
-            onClick={handleResetData}
+            onClick={(): void => { void handleResetData(); }}
             className="bg-error hover:bg-error/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
           >
             Reset All Data

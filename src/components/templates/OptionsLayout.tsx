@@ -73,6 +73,7 @@ export interface OptionsLayoutProps {
  * </OptionsLayout>
  * ```
  */
+// eslint-disable-next-line max-lines-per-function
 export const OptionsLayout: React.FC<OptionsLayoutProps> = ({
   navigation,
   children,

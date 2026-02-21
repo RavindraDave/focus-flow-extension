@@ -31,7 +31,7 @@ export interface UseBlockRulesReturn {
 async function sendBlocklistMessage<T>(
   message: Record<string, unknown>
 ): Promise<BackgroundResponse<T>> {
-  return chrome.runtime.sendMessage(message) as Promise<BackgroundResponse<T>>;
+  return chrome.runtime.sendMessage<Record<string, unknown>, BackgroundResponse<T>>(message);
 }
 
 /**
@@ -94,21 +94,17 @@ function useFetchRules(
   }, [setRules, setIsLoading, setError]);
 }
 
+type BlockRuleInput = Omit<BlockRule, 'id' | 'createdAt' | 'updatedAt'>;
+
 /**
- * Custom hook to manage block rules
+ * Hook for single and batch rule addition
  */
-export function useBlockRules(): UseBlockRulesReturn {
-  const [rules, setRules] = useState<BlockRule[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchRules = useFetchRules(setRules, setIsLoading, setError);
-
-  /**
-   * Add new block rule
-   */
+function useAddRules(
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+  fetchRules: () => Promise<void>
+): { addRule: (rule: BlockRuleInput) => Promise<void>; addRules: (rules: BlockRuleInput[]) => Promise<void> } {
   const addRule = useCallback(
-    async (rule: Omit<BlockRule, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+    async (rule: BlockRuleInput): Promise<void> => {
       try {
         setError(null);
         const response = await sendBlocklistMessage<BlockRule>({ type: 'BLOCKLIST_ADD', rule });
@@ -121,14 +117,11 @@ export function useBlockRules(): UseBlockRulesReturn {
         throw err;
       }
     },
-    [fetchRules]
+    [fetchRules, setError]
   );
 
-  /**
-   * Add multiple rules in batch
-   */
   const addRules = useCallback(
-    async (rulesToAdd: Omit<BlockRule, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<void> => {
+    async (rulesToAdd: BlockRuleInput[]): Promise<void> => {
       try {
         setError(null);
         for (const rule of rulesToAdd) {
@@ -143,12 +136,24 @@ export function useBlockRules(): UseBlockRulesReturn {
         throw err;
       }
     },
-    [fetchRules]
+    [fetchRules, setError]
   );
 
-  /**
-   * Update existing block rule
-   */
+  return { addRule, addRules };
+}
+
+/**
+ * Hook for update and delete rule operations
+ */
+// eslint-disable-next-line max-lines-per-function
+function useMutateRules(
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+  fetchRules: () => Promise<void>
+): {
+  updateRule: (id: string, updates: Partial<BlockRule>) => Promise<void>;
+  deleteRule: (id: string) => Promise<void>;
+  deleteRules: (ids: string[]) => Promise<void>;
+} {
   const updateRule = useCallback(
     async (id: string, updates: Partial<BlockRule>): Promise<void> => {
       try {
@@ -163,12 +168,9 @@ export function useBlockRules(): UseBlockRulesReturn {
         throw err;
       }
     },
-    [fetchRules]
+    [fetchRules, setError]
   );
 
-  /**
-   * Delete block rule
-   */
   const deleteRule = useCallback(
     async (id: string): Promise<void> => {
       try {
@@ -183,12 +185,9 @@ export function useBlockRules(): UseBlockRulesReturn {
         throw err;
       }
     },
-    [fetchRules]
+    [fetchRules, setError]
   );
 
-  /**
-   * Delete multiple rules in batch
-   */
   const deleteRules = useCallback(
     async (ids: string[]): Promise<void> => {
       try {
@@ -205,12 +204,25 @@ export function useBlockRules(): UseBlockRulesReturn {
         throw err;
       }
     },
-    [fetchRules]
+    [fetchRules, setError]
   );
 
-  /**
-   * Toggle rule enabled state
-   */
+  return { updateRule, deleteRule, deleteRules };
+}
+
+/**
+ * Hook for import/export and toggle operations
+ */
+function useImportExportRules(
+  rules: BlockRule[],
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+  addRule: (rule: BlockRuleInput) => Promise<void>,
+  updateRule: (id: string, updates: Partial<BlockRule>) => Promise<void>
+): {
+  toggleRule: (id: string, enabled: boolean) => Promise<void>;
+  importRules: (rules: BlockRule[]) => Promise<void>;
+  exportRules: () => Promise<void>;
+} {
   const toggleRule = useCallback(
     async (id: string, enabled: boolean): Promise<void> => {
       await updateRule(id, { enabled });
@@ -218,9 +230,6 @@ export function useBlockRules(): UseBlockRulesReturn {
     [updateRule]
   );
 
-  /**
-   * Import rules from JSON
-   */
   const importRules = useCallback(
     async (importedRules: BlockRule[]): Promise<void> => {
       try {
@@ -240,24 +249,35 @@ export function useBlockRules(): UseBlockRulesReturn {
         throw err;
       }
     },
-    [addRule]
+    [addRule, setError]
   );
 
-  /**
-   * Export rules as JSON file
-   */
-  const exportRules = useCallback(async (): Promise<void> => {
+  const exportRules = useCallback((): Promise<void> => {
     try {
       downloadRulesAsJson(rules);
+      return Promise.resolve();
     } catch (err) {
       handleBlockRulesError(err, 'Failed to export rules', setError);
       throw err;
     }
-  }, [rules]);
+  }, [rules, setError]);
 
-  /**
-   * Fetch on mount
-   */
+  return { toggleRule, importRules, exportRules };
+}
+
+/**
+ * Custom hook to manage block rules
+ */
+export function useBlockRules(): UseBlockRulesReturn {
+  const [rules, setRules] = useState<BlockRule[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRules = useFetchRules(setRules, setIsLoading, setError);
+  const { addRule, addRules } = useAddRules(setError, fetchRules);
+  const { updateRule, deleteRule, deleteRules } = useMutateRules(setError, fetchRules);
+  const { toggleRule, importRules, exportRules } = useImportExportRules(rules, setError, addRule, updateRule);
+
   useEffect(() => {
     void fetchRules();
   }, [fetchRules]);

@@ -44,6 +44,19 @@ export interface TimerStatus {
 }
 
 /**
+ * Persisted timer state for service worker recovery
+ */
+interface PersistedTimerState {
+  state: TimerState;
+  remainingSeconds: number;
+  totalSeconds: number;
+  sessionCount: number;
+  startTime: string | null;
+  previousSessionType: 'work' | 'short-break' | 'long-break' | null;
+  savedAt: number;
+}
+
+/**
  * Manager for Pomodoro timer functionality
  *
  * @example
@@ -76,14 +89,27 @@ export class TimerEngine {
     sessionRepository?: SessionRepository,
     analyticsTracker?: AnalyticsTracker,
     streakTracker?: StreakTracker,
-    settingsRepository?: SettingsRepository,
-    blockerEngine?: BlockerEngine
+    settingsOrOptions?: SettingsRepository | {
+      settingsRepository?: SettingsRepository;
+      blockerEngine?: BlockerEngine;
+    }
   ) {
     this.sessionRepository = sessionRepository ?? new SessionRepository();
     this.analyticsTracker = analyticsTracker ?? new AnalyticsTracker();
     this.streakTracker = streakTracker ?? new StreakTracker();
-    this.settingsRepository = settingsRepository ?? new SettingsRepository();
-    this.blockerEngine = blockerEngine ?? new BlockerEngine();
+
+    if (settingsOrOptions instanceof SettingsRepository) {
+      // Legacy: positional SettingsRepository (blockerEngine not provided here)
+      this.settingsRepository = settingsOrOptions;
+      this.blockerEngine = new BlockerEngine();
+    } else if (settingsOrOptions) {
+      // Options object form
+      this.settingsRepository = settingsOrOptions.settingsRepository ?? new SettingsRepository();
+      this.blockerEngine = settingsOrOptions.blockerEngine ?? new BlockerEngine();
+    } else {
+      this.settingsRepository = new SettingsRepository();
+      this.blockerEngine = new BlockerEngine();
+    }
   }
 
   /**
@@ -278,18 +304,56 @@ export class TimerEngine {
   }
 
   /**
+   * Build a completed session record
+   * @private
+   */
+  private buildCompletedSession(session: PomodoroSession, status: 'completed' | 'abandoned'): PomodoroSession {
+    const endTime = new Date();
+    const elapsed = Math.floor(
+      (endTime.getTime() - session.startTime.getTime()) / 1000
+    );
+
+    // Clamp actualDuration to max allowed value to prevent validation errors
+    const actualDuration = Math.min(elapsed, 7200); // Max 2 hours
+
+    return {
+      ...session,
+      startTime: (session.startTime instanceof Date ? session.startTime.toISOString() : session.startTime) as unknown as Date,
+      status,
+      endTime: endTime.toISOString() as unknown as Date,
+      actualDuration,
+    };
+  }
+
+  /**
+   * Save completed session and track analytics
+   * @private
+   */
+  private async saveAndTrackSession(session: PomodoroSession, completedSession: PomodoroSession): Promise<void> {
+    await this.sessionRepository.addToHistory(completedSession);
+    await this.sessionRepository.clearCurrentSession();
+
+    if (session.type === 'work') {
+      await this.analyticsTracker.trackSessionCompletion(completedSession);
+      this.sessionCount++;
+
+      const settings = await this.settingsRepository.getSettings();
+      const isPremium = !!settings.premiumLicenseKey;
+      await this.streakTracker.checkDailyStreak(isPremium);
+    }
+  }
+
+  /**
    * Complete current session
    *
    * @private
    */
   private async complete(): Promise<void> {
-    // Idempotency guard - prevent duplicate completions
     if (this.isCompleting) {
       log.warn('Complete already in progress, skipping duplicate call');
       return;
     }
 
-    // Guard against completing when already idle
     if (this.state === 'idle') {
       log.warn('Cannot complete: timer already idle');
       return;
@@ -305,45 +369,11 @@ export class TimerEngine {
         return;
       }
 
-      // Store session type BEFORE resetting state (fix for startNextSession)
       this.previousSessionType = session.type;
-
-      const endTime = new Date();
-      const elapsed = Math.floor(
-        (endTime.getTime() - session.startTime.getTime()) / 1000
-      );
-
-      // Clamp actualDuration to max allowed value to prevent validation errors
-      // This handles edge cases where sessions run abnormally long
-      const actualDuration = Math.min(elapsed, 7200); // Max 2 hours
-
-      const completedSession: PomodoroSession = {
-        ...session,
-        startTime: (session.startTime instanceof Date ? session.startTime.toISOString() : session.startTime) as unknown as Date,
-        status: 'completed',
-        endTime: endTime.toISOString() as unknown as Date,
-        actualDuration, // in seconds, clamped to prevent validation errors
-      };
-
-      // Save to history
-      await this.sessionRepository.addToHistory(completedSession);
-      await this.sessionRepository.clearCurrentSession();
-
-      // Track analytics
-      if (session.type === 'work') {
-        await this.analyticsTracker.trackSessionCompletion(completedSession);
-        this.sessionCount++;
-
-        // Check streak (daily check)
-        const settings = await this.settingsRepository.getSettings();
-        const isPremium = !!settings.premiumLicenseKey;
-        await this.streakTracker.checkDailyStreak(isPremium);
-      }
-
-      // Send notification
+      const completedSession = this.buildCompletedSession(session, 'completed');
+      await this.saveAndTrackSession(session, completedSession);
       await this.sendNotification(session.type);
 
-      // Auto-start next session if enabled
       const settings = await this.settingsRepository.getSettings();
       if (settings.autoStartNextSession) {
         await this.startNextSession();
@@ -504,7 +534,7 @@ export class TimerEngine {
           ? 'Great job! Time for a well-deserved break.'
           : 'Break time is over. Ready to focus?';
 
-      await chrome.notifications.create({
+      chrome.notifications.create({
         type: 'basic',
         iconUrl: chrome.runtime.getURL('/icons/icon_v10_128.png'),
         title,
@@ -531,12 +561,12 @@ export class TimerEngine {
       return;
     }
 
-    const timerState = {
+    const timerState: PersistedTimerState = {
       state: this.state,
       remainingSeconds: this.remainingSeconds,
       totalSeconds: this.totalSeconds,
       sessionCount: this.sessionCount,
-      startTime: this.startTime?.toISOString() || null,
+      startTime: this.startTime?.toISOString() ?? null,
       previousSessionType: this.previousSessionType,
       savedAt: Date.now(),
     };
@@ -549,18 +579,84 @@ export class TimerEngine {
   }
 
   /**
+   * Load persisted timer state from storage
+   * @returns The saved state, or null if unavailable or stale
+   * @private
+   */
+  private async loadPersistedState(): Promise<PersistedTimerState | null> {
+    if (!chrome?.storage?.local) {
+      return null;
+    }
+
+    const result = await chrome.storage.local.get(TimerEngine.TIMER_STATE_KEY);
+    const savedState = result[TimerEngine.TIMER_STATE_KEY] as PersistedTimerState | undefined;
+
+    if (!savedState) {
+      return null;
+    }
+
+    // Check if state is stale (saved more than 2 hours ago)
+    const staleThreshold = 2 * 60 * 60 * 1000; // 2 hours
+    if (Date.now() - savedState.savedAt > staleThreshold) {
+      log.info('Timer state too old, discarding');
+      await chrome.storage.local.remove(TimerEngine.TIMER_STATE_KEY);
+      return null;
+    }
+
+    // Only restore if was running (not idle)
+    if (savedState.state === 'idle') {
+      return null;
+    }
+
+    return savedState;
+  }
+
+  /**
+   * Apply persisted state to the timer and resume
+   * @param savedState - The validated persisted state
+   * @returns true if restoration succeeded
+   * @private
+   */
+  private async applyPersistedState(savedState: PersistedTimerState): Promise<boolean> {
+    this.state = savedState.state;
+    this.totalSeconds = savedState.totalSeconds;
+    this.sessionCount = savedState.sessionCount;
+    this.previousSessionType = savedState.previousSessionType;
+
+    if (savedState.startTime) {
+      this.startTime = new Date(savedState.startTime);
+      const elapsedSeconds = Math.floor((Date.now() - this.startTime.getTime()) / 1000);
+      this.remainingSeconds = Math.max(0, this.totalSeconds - elapsedSeconds);
+    } else {
+      this.remainingSeconds = savedState.remainingSeconds;
+    }
+
+    if (this.remainingSeconds <= 0 && this.state !== 'paused') {
+      log.info('Timer expired during suspension, completing session');
+      await this.complete();
+      return true;
+    }
+
+    if (this.state !== 'paused') {
+      await this.createAlarm();
+    }
+
+    await this.updateBadge();
+    log.info('Timer state restored', { state: this.state, remainingSeconds: this.remainingSeconds });
+    return true;
+  }
+
+  /**
    * Restore timer state from storage after service worker restart
    *
    * Should be called during initialization with mutex protection.
    */
   async restoreFromStorage(): Promise<boolean> {
-    // Mutex: prevent concurrent restoration
     if (this.isRestoring) {
       log.warn('Timer restoration already in progress');
       return false;
     }
 
-    // Don't restore if already running
     if (this.state !== 'idle') {
       log.info('Timer already running, skipping restoration');
       return false;
@@ -569,65 +665,11 @@ export class TimerEngine {
     this.isRestoring = true;
 
     try {
-      if (!chrome?.storage?.local) {
-        return false;
-      }
-
-      const result = await chrome.storage.local.get(TimerEngine.TIMER_STATE_KEY);
-      const savedState = result[TimerEngine.TIMER_STATE_KEY];
-
+      const savedState = await this.loadPersistedState();
       if (!savedState) {
         return false;
       }
-
-      // Check if state is stale (saved more than 2 hours ago)
-      const staleThreshold = 2 * 60 * 60 * 1000; // 2 hours
-      if (Date.now() - savedState.savedAt > staleThreshold) {
-        log.info('Timer state too old, discarding');
-        await chrome.storage.local.remove(TimerEngine.TIMER_STATE_KEY);
-        return false;
-      }
-
-      // Only restore if was running (not idle)
-      if (savedState.state === 'idle') {
-        return false;
-      }
-
-      // Restore state
-      this.state = savedState.state;
-      this.totalSeconds = savedState.totalSeconds;
-      this.sessionCount = savedState.sessionCount;
-      this.previousSessionType = savedState.previousSessionType;
-
-      if (savedState.startTime) {
-        this.startTime = new Date(savedState.startTime);
-        // Calculate current remaining time based on elapsed time since start
-        const elapsedSeconds = Math.floor((Date.now() - this.startTime.getTime()) / 1000);
-        this.remainingSeconds = Math.max(0, this.totalSeconds - elapsedSeconds);
-      } else {
-        this.remainingSeconds = savedState.remainingSeconds;
-      }
-
-      // If timer has expired while service worker was suspended
-      if (this.remainingSeconds <= 0 && this.state !== 'paused') {
-        log.info('Timer expired during suspension, completing session');
-        await this.complete();
-        return true;
-      }
-
-      // Restart alarm if not paused
-      if (this.state !== 'paused') {
-        await this.createAlarm();
-      }
-
-      await this.updateBadge();
-
-      log.info('Timer state restored', {
-        state: this.state,
-        remainingSeconds: this.remainingSeconds,
-      });
-
-      return true;
+      return await this.applyPersistedState(savedState);
     } catch (error) {
       log.error('Failed to restore timer state', error instanceof Error ? error : undefined);
       return false;

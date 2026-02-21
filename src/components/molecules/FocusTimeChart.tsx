@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { Line } from 'react-chartjs-2';
-import type { TooltipItem } from 'chart.js';
+import type { ChartData, TooltipItem } from 'chart.js';
 import { chartColors, defaultChartOptions, defaultScales } from './chartConfig';
 
 export interface FocusTimeChartProps {
@@ -50,7 +50,7 @@ function formatMinutesForTooltip(minutes: number): string {
 /**
  * Build chart data configuration
  */
-function buildChartData(labels: string[], dailyFocusTime: number[]) {
+function buildChartData(labels: string[], dailyFocusTime: number[]): ChartData<'line'> {
   return {
     labels,
     datasets: [

@@ -35,6 +35,7 @@ interface DataNode {
   encrypted: boolean;
 }
 
+// eslint-disable-next-line max-lines-per-function
 export const FocusMainframe: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,7 +70,7 @@ export const FocusMainframe: React.FC = () => {
     return sessionXP + focusXP;
   };
 
-  const getCurrentRank = (xp: number) => {
+  const getCurrentRank = (xp: number): { name?: string; minXP?: number; icon?: string; color?: string; index: number } => {
     // Find highest rank that player has achieved
     for (let i = RANKS.length - 1; i >= 0; i--) {
       const rank = RANKS[i];
@@ -81,12 +82,12 @@ export const FocusMainframe: React.FC = () => {
     return { ...firstRank, index: 0 };
   };
 
-  const getNextRank = (currentRankIndex: number) => {
+  const getNextRank = (currentRankIndex: number): { name: string; minXP: number; icon: string; color: string } | null | undefined => {
     if (currentRankIndex >= RANKS.length - 1) {return null;}
     return RANKS[currentRankIndex + 1];
   };
 
-  const getProgressToNextRank = (xp: number, currentRankIndex: number) => {
+  const getProgressToNextRank = (xp: number, currentRankIndex: number): number => {
     const nextRank = getNextRank(currentRankIndex);
     if (!nextRank) {return 100;} // Max rank achieved
 
@@ -128,25 +129,25 @@ export const FocusMainframe: React.FC = () => {
       {
         id: 'streak',
         label: 'CURRENT_STREAK',
-        value: `${analytics.streak?.currentStreak || 0} days`,
-        encrypted: (analytics.streak?.currentStreak || 0) < 3,
+        value: `${analytics.streak?.currentStreak ?? 0} days`,
+        encrypted: (analytics.streak?.currentStreak ?? 0) < 3,
       },
       {
         id: 'achievements',
         label: 'ACHIEVEMENTS_UNLOCKED',
-        value: analytics.achievements?.length || 0,
-        encrypted: (analytics.achievements?.length || 0) === 0,
+        value: analytics.achievements?.length ?? 0,
+        encrypted: (analytics.achievements?.length ?? 0) === 0,
       },
       {
         id: 'rank',
         label: 'CURRENT_RANK',
-        value: rank.name || 'Unknown',
+        value: rank.name ?? 'Unknown',
         encrypted: false,
       },
     ];
   };
 
-  const decryptNode = (nodeId: string) => {
+  const decryptNode = (nodeId: string): void => {
     setDecryptedNodes(prev => new Set([...prev, nodeId]));
   };
 
@@ -180,7 +181,7 @@ export const FocusMainframe: React.FC = () => {
           💻 THE MAINFRAME
         </div>
         <div className="text-xs mt-2 opacity-70">
-          &gt;&gt; USER ACCESS LEVEL: {currentRank.name?.toUpperCase() || 'UNKNOWN'}
+          &gt;&gt; USER ACCESS LEVEL: {currentRank.name?.toUpperCase() ?? 'UNKNOWN'}
         </div>
       </div>
 

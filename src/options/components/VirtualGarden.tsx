@@ -23,10 +23,11 @@ interface TreeProps {
 /**
  * Individual tree component with growth stages
  */
+// eslint-disable-next-line max-lines-per-function
 const Tree: React.FC<TreeProps> = ({ status, date, completedSessions, abandonedSessions }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
-  const getTreeIcon = () => {
+  const getTreeIcon = (): string => {
     if (status === 'empty') {return '🌱';} // Seedling for no activity
     if (status === 'withered') {return '🥀';} // Withered for abandoned
 
@@ -36,7 +37,7 @@ const Tree: React.FC<TreeProps> = ({ status, date, completedSessions, abandonedS
     return '🌿'; // Young tree
   };
 
-  const getTreeSize = () => {
+  const getTreeSize = (): string => {
     if (status === 'empty') {return 'text-2xl';}
     if (status === 'withered') {return 'text-2xl opacity-50';}
 
@@ -46,7 +47,7 @@ const Tree: React.FC<TreeProps> = ({ status, date, completedSessions, abandonedS
     return 'text-2xl';
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date): string => {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -89,14 +90,15 @@ const Tree: React.FC<TreeProps> = ({ status, date, completedSessions, abandonedS
   );
 };
 
+// eslint-disable-next-line max-lines-per-function
 export const VirtualGarden: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = async (): Promise<void> => {
       try {
-        const response = await chrome.runtime.sendMessage({ type: 'ANALYTICS_GET' });
+        const response = await chrome.runtime.sendMessage({ type: 'ANALYTICS_GET' }) as unknown as { success: boolean; data: AnalyticsData };
         if (response.success && response.data) {
           setAnalytics(response.data);
         }
@@ -107,11 +109,11 @@ export const VirtualGarden: React.FC = () => {
       }
     };
 
-    fetchAnalytics();
+    void fetchAnalytics();
   }, []);
 
   // Get last 14 days of data
-  const getLast14Days = () => {
+  const getLast14Days = (): TreeProps[] => {
     const days: TreeProps[] = [];
     const today = new Date();
 
@@ -128,8 +130,8 @@ export const VirtualGarden: React.FC = () => {
         return statDate === dateStr;
       });
 
-      const completedSessions = dayData?.completedSessions || 0;
-      const abandonedSessions = dayData?.abandonedSessions || 0;
+      const completedSessions = dayData?.completedSessions ?? 0;
+      const abandonedSessions = dayData?.abandonedSessions ?? 0;
 
       let status: 'empty' | 'healthy' | 'withered';
       if (completedSessions === 0 && abandonedSessions === 0) {
@@ -151,7 +153,7 @@ export const VirtualGarden: React.FC = () => {
     return days;
   };
 
-  const calculateGardenStats = () => {
+  const calculateGardenStats = (): { healthyTrees: number; witheredTrees: number; emptySpots: number } => {
     const days = getLast14Days();
     const healthyTrees = days.filter(d => d.status === 'healthy').length;
     const witheredTrees = days.filter(d => d.status === 'withered').length;

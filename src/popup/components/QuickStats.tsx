@@ -33,6 +33,7 @@ function formatFocusTime(minutes: number): string {
  * QuickStats component
  * Complexity: 3 (conditional rendering + multiple display elements)
  */
+// eslint-disable-next-line max-lines-per-function, complexity
 export const QuickStats: React.FC<QuickStatsProps> = ({
   focusTime,
   pomodorosCompleted,

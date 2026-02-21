@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAnalytics } from '../../hooks';
+import type { TodayStats, StreakData } from '../../hooks/useAnalytics';
 import { Badge } from '../../components/atoms/Badge';
 import { Spinner } from '../../components/atoms/Spinner';
 import {
@@ -46,11 +47,11 @@ interface SerializedPomodoroSession extends Omit<PomodoroSession, 'startTime' | 
   endTime?: string;
 }
 
+
 const log = createLogger('AnalyticsDashboard');
 
 /**
  * Format minutes into hours and minutes
- * Complexity: 3 (calculation + conditional formatting)
  */
 function formatDuration(minutes: number): string {
   if (minutes === 0) {return '0min';}
@@ -64,9 +65,346 @@ function formatDuration(minutes: number): string {
 }
 
 /**
- * AnalyticsDashboard component
- * Complexity: 7 (multiple data fetches + conditional rendering + data transformation)
+ * Get last 7 days of focus time data from daily stats
  */
+function getLast7DaysFocusTime(dailyStats: DailyStats[]): { labels: string[]; data: number[] } {
+  const labels: string[] = [];
+  const data: number[] = [];
+  const today = new Date();
+
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    date.setHours(0, 0, 0, 0);
+
+    const dayLabel = date.toLocaleDateString('en-US', { weekday: 'short' });
+    labels.push(dayLabel);
+
+    const stat = dailyStats.find(s => {
+      const statDate = new Date(s.date);
+      statDate.setHours(0, 0, 0, 0);
+      return statDate.getTime() === date.getTime();
+    });
+
+    data.push(stat?.focusTimeMinutes ?? 0);
+  }
+
+  return { labels, data };
+}
+
+/**
+ * Get session distribution counts
+ */
+function getSessionDistribution(sessions: PomodoroSession[]): {
+  work: number;
+  shortBreaks: number;
+  longBreaks: number;
+} {
+  const completedSessions = sessions.filter(s => s.status === 'completed');
+  return {
+    work: completedSessions.filter(s => s.type === 'work').length,
+    shortBreaks: completedSessions.filter(s => s.type === 'short-break').length,
+    longBreaks: completedSessions.filter(s => s.type === 'long-break').length,
+  };
+}
+
+/**
+ * Get productivity counts grouped by hour of day
+ */
+function getProductivityByHour(sessions: PomodoroSession[]): number[] {
+  const hourCounts: number[] = Array.from({ length: 24 }, () => 0);
+  const completedSessions = sessions.filter(s => s.status === 'completed' && s.type === 'work');
+
+  completedSessions.forEach(session => {
+    const hour = session.startTime.getHours();
+    hourCounts[hour]++;
+  });
+
+  return hourCounts;
+}
+
+/**
+ * Compute the completion rate badge
+ */
+function getCompletionBadge(
+  completionRate: number,
+  todayStats: TodayStats | null
+): React.ReactNode {
+  if (completionRate >= 0.9) {
+    return (
+      <Badge variant="success" size="sm">
+        Excellent!
+      </Badge>
+    );
+  }
+  if (completionRate >= 0.7) {
+    return (
+      <Badge variant="info" size="sm">
+        Good
+      </Badge>
+    );
+  }
+  if (todayStats && todayStats.pomodorosCompleted > 0) {
+    return (
+      <Badge variant="warning" size="sm">
+        Room to improve
+      </Badge>
+    );
+  }
+  return null;
+}
+
+/**
+ * Fetch chart data from background service worker
+ */
+async function fetchChartData(): Promise<{
+  weekly: ProductivitySummary | null;
+  dailyStats: DailyStats[];
+  sessions: PomodoroSession[];
+  analytics: AnalyticsData | null;
+}> {
+  type WeeklyResponse = { success: boolean; data: ProductivitySummary };
+  type AnalyticsResponse = { success: boolean; data: AnalyticsData & { dailyStats?: SerializedDailyStats[] } };
+  type SessionsResponse = { success: boolean; data: SerializedPomodoroSession[] };
+
+  const [weeklyResponse, analyticsResponse, sessionsResponse] = (await Promise.all([
+    chrome.runtime.sendMessage({ type: 'ANALYTICS_GET_WEEKLY_SUMMARY' }),
+    chrome.runtime.sendMessage({ type: 'ANALYTICS_GET' }),
+    chrome.runtime.sendMessage({ type: 'SESSION_GET_HISTORY', limit: 100 }),
+  ])) as unknown as [WeeklyResponse, AnalyticsResponse, SessionsResponse];
+
+  let weekly: ProductivitySummary | null = null;
+  let daily: DailyStats[] = [];
+  let sessionsList: PomodoroSession[] = [];
+  let analytics: AnalyticsData | null = null;
+
+  if (weeklyResponse.success) {
+    weekly = weeklyResponse.data;
+  }
+
+  if (analyticsResponse.success) {
+    analytics = analyticsResponse.data;
+    const rawStats = analyticsResponse.data.dailyStats ?? [];
+    daily = rawStats.map((stat: SerializedDailyStats) => ({
+      ...stat,
+      date: new Date(stat.date),
+    }));
+  }
+
+  if (sessionsResponse.success) {
+    sessionsList = sessionsResponse.data.map((session: SerializedPomodoroSession) => ({
+      ...session,
+      startTime: new Date(session.startTime),
+      endTime: session.endTime ? new Date(session.endTime) : undefined,
+    }));
+  }
+
+  return { weekly, dailyStats: daily, sessions: sessionsList, analytics };
+}
+
+interface OverviewCardsProps {
+  todayStats: TodayStats | null;
+  streak: StreakData | null;
+  completionRate: number;
+}
+
+/**
+ * Overview cards sub-component
+ */
+const OverviewCards: React.FC<OverviewCardsProps> = ({ todayStats, streak, completionRate }) => (
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="bg-surface border border-border rounded-lg p-6">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-medium text-text-tertiary uppercase tracking-wide">
+          {"Today's Focus Time"}
+        </h3>
+        <span className="text-2xl">⏱️</span>
+      </div>
+      <p className="text-3xl font-bold text-text-primary tabular-nums">
+        {formatDuration(todayStats?.focusTime ?? 0)}
+      </p>
+      <p className="text-xs text-text-tertiary mt-1">
+        {todayStats?.pomodorosCompleted ?? 0} Pomodoros completed
+      </p>
+    </div>
+
+    <div className="bg-surface border border-border rounded-lg p-6">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-medium text-text-tertiary uppercase tracking-wide">
+          Current Streak
+        </h3>
+        <span className="text-2xl">🔥</span>
+      </div>
+      <p className="text-3xl font-bold text-accent tabular-nums">
+        {streak?.current ?? 0}
+      </p>
+      <p className="text-xs text-text-secondary mt-1">
+        Personal best: {streak?.longest ?? 0} days
+      </p>
+    </div>
+
+    <div className="bg-surface border border-border rounded-lg p-6">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-medium text-text-tertiary uppercase tracking-wide">
+          Completion Rate
+        </h3>
+        <span className="text-2xl">📊</span>
+      </div>
+      <p className="text-3xl font-bold text-text-primary tabular-nums">
+        {isNaN(completionRate) ? '0' : Math.round(completionRate * 100)}%
+      </p>
+      <div className="mt-2">
+        {getCompletionBadge(completionRate, todayStats)}
+      </div>
+    </div>
+  </div>
+);
+
+interface WeeklySummaryProps {
+  weeklyData: ProductivitySummary;
+}
+
+/**
+ * Weekly summary sub-component
+ */
+const WeeklySummary: React.FC<WeeklySummaryProps> = ({ weeklyData }) => (
+  <div className="bg-surface border border-border rounded-lg p-6">
+    <h3 className="text-lg font-semibold text-text-primary mb-4">
+      This Week
+    </h3>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div>
+        <p className="text-sm text-text-tertiary mb-1">Total Pomodoros</p>
+        <p className="text-2xl font-bold text-text-primary tabular-nums">
+          {weeklyData.totalPomodoros}
+        </p>
+      </div>
+      <div>
+        <p className="text-sm text-text-tertiary mb-1">Total Focus Time</p>
+        <p className="text-2xl font-bold text-text-primary">
+          {formatDuration(weeklyData.totalFocusTime)}
+        </p>
+      </div>
+      <div>
+        <p className="text-sm text-text-tertiary mb-1">Daily Average</p>
+        <p className="text-2xl font-bold text-text-primary tabular-nums">
+          {weeklyData.averagePerDay ? weeklyData.averagePerDay.toFixed(1) : '0'}
+        </p>
+      </div>
+      <div>
+        <p className="text-sm text-text-tertiary mb-1">Completion Rate</p>
+        <p className="text-2xl font-bold text-text-primary tabular-nums">
+          {weeklyData.completionRate
+            ? Math.round(weeklyData.completionRate * 100)
+            : 0}
+          %
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
+interface ChartsSectionProps {
+  focusTimeData: { labels: string[]; data: number[] };
+  sessionDistribution: { work: number; shortBreaks: number; longBreaks: number };
+  productivityByHour: number[];
+}
+
+/**
+ * Charts section sub-component
+ */
+const ChartsSection: React.FC<ChartsSectionProps> = ({
+  focusTimeData,
+  sessionDistribution,
+  productivityByHour,
+}) => (
+  <div className="space-y-6">
+    <div className="bg-surface border border-border rounded-lg p-6">
+      <h3 className="text-lg font-semibold text-text-primary mb-4">
+        7-Day Focus Time Trend
+      </h3>
+      <FocusTimeChart
+        dailyFocusTime={focusTimeData.data}
+        labels={focusTimeData.labels}
+        height={250}
+      />
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="bg-surface border border-border rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-text-primary mb-4">
+          Session Distribution
+        </h3>
+        <SessionDistributionChart
+          workSessions={sessionDistribution.work}
+          shortBreaks={sessionDistribution.shortBreaks}
+          longBreaks={sessionDistribution.longBreaks}
+          height={250}
+        />
+      </div>
+
+      <div className="bg-surface border border-border rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-text-primary mb-4">
+          Productivity by Hour
+        </h3>
+        <ProductivityByHourChart sessionsPerHour={productivityByHour} height={250} />
+      </div>
+    </div>
+  </div>
+);
+
+interface ExportSectionProps {
+  isExporting: boolean;
+  analyticsData: AnalyticsData | null;
+  sessions: PomodoroSession[];
+  onExportJSON: () => void;
+  onExportCSV: () => void;
+}
+
+/**
+ * Export section sub-component
+ */
+const ExportSection: React.FC<ExportSectionProps> = ({
+  isExporting,
+  analyticsData,
+  sessions,
+  onExportJSON,
+  onExportCSV,
+}) => (
+  <div className="bg-surface border border-border rounded-lg p-6">
+    <h3 className="text-lg font-semibold text-text-primary mb-3">
+      Export Your Data
+    </h3>
+    <p className="text-sm text-text-secondary mb-4">
+      Download your productivity data in JSON or CSV format for analysis in other tools.
+    </p>
+    <div className="flex space-x-3">
+      <button
+        type="button"
+        className="px-4 py-2 text-sm font-medium text-text-primary bg-bg-secondary hover:bg-bg-tertiary disabled:opacity-50 disabled:cursor-not-allowed rounded-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 border border-border"
+        onClick={onExportJSON}
+        disabled={isExporting || !analyticsData}
+        aria-label="Export analytics data as JSON"
+      >
+        {isExporting ? 'Exporting...' : 'Export as JSON'}
+      </button>
+      <button
+        type="button"
+        className="px-4 py-2 text-sm font-medium text-text-primary bg-bg-secondary hover:bg-bg-tertiary disabled:opacity-50 disabled:cursor-not-allowed rounded-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 border border-border"
+        onClick={onExportCSV}
+        disabled={isExporting || sessions.length === 0}
+        aria-label="Export session data as CSV"
+      >
+        {isExporting ? 'Exporting...' : 'Export as CSV'}
+      </button>
+    </div>
+  </div>
+);
+
+/**
+ * AnalyticsDashboard component
+ */
+// eslint-disable-next-line max-lines-per-function
 export const AnalyticsDashboard: React.FC = () => {
   const { todayStats, streak, isLoading, error } = useAnalytics();
   const [weeklyData, setWeeklyData] = useState<ProductivitySummary | null>(null);
@@ -75,128 +413,23 @@ export const AnalyticsDashboard: React.FC = () => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  /**
-   * Fetch analytics data and sessions for charts
-   * Complexity: 5 (async + parallel fetches + error handling)
-   */
   useEffect(() => {
-    const fetchChartData = async () => {
-      try {
-        const [weeklyResponse, analyticsResponse, sessionsResponse] = await Promise.all([
-          chrome.runtime.sendMessage({ type: 'ANALYTICS_GET_WEEKLY_SUMMARY' }),
-          chrome.runtime.sendMessage({ type: 'ANALYTICS_GET' }),
-          chrome.runtime.sendMessage({ type: 'SESSION_GET_HISTORY', limit: 100 }),
-        ]);
-
-        if (weeklyResponse.success && weeklyResponse.data) {
-          setWeeklyData(weeklyResponse.data);
-        }
-
-        if (analyticsResponse.success && analyticsResponse.data) {
-          // Store full analytics data for export
-          setAnalyticsData(analyticsResponse.data);
-
-          // Convert date strings back to Date objects
-          const statsWithDates = (analyticsResponse.data.dailyStats || []).map((stat: SerializedDailyStats) => ({
-            ...stat,
-            date: new Date(stat.date),
-          }));
-          setDailyStats(statsWithDates);
-        }
-
-        if (sessionsResponse.success && sessionsResponse.data) {
-          // Convert date strings back to Date objects
-          const sessionsWithDates = sessionsResponse.data.map((session: SerializedPomodoroSession) => ({
-            ...session,
-            startTime: new Date(session.startTime),
-            endTime: session.endTime ? new Date(session.endTime) : undefined,
-          }));
-          setSessions(sessionsWithDates);
-        }
-      } catch (err) {
-        log.error('Failed to fetch chart data', err instanceof Error ? err : undefined);
-      }
-    };
-
-    fetchChartData();
+    void fetchChartData().then(result => {
+      setWeeklyData(result.weekly);
+      setDailyStats(result.dailyStats);
+      setSessions(result.sessions);
+      setAnalyticsData(result.analytics);
+    }).catch((err: unknown) => {
+      log.error('Failed to fetch chart data', err instanceof Error ? err : undefined);
+    });
   }, []);
 
-  /**
-   * Get last 7 days of focus time data
-   * Complexity: 5 (date manipulation + array operations)
-   */
-  const getLast7DaysFocusTime = (): { labels: string[]; data: number[] } => {
-    const labels: string[] = [];
-    const data: number[] = [];
-    const today = new Date();
+  const focusTimeData = getLast7DaysFocusTime(dailyStats);
+  const sessionDistribution = getSessionDistribution(sessions);
+  const productivityByHour = getProductivityByHour(sessions);
 
-    // Get last 7 days in reverse order (oldest to newest)
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      date.setHours(0, 0, 0, 0);
-
-      // Format label (e.g., "Mon", "Tue")
-      const dayLabel = date.toLocaleDateString('en-US', { weekday: 'short' });
-      labels.push(dayLabel);
-
-      // Find matching stat
-      const stat = dailyStats.find(s => {
-        const statDate = new Date(s.date);
-        statDate.setHours(0, 0, 0, 0);
-        return statDate.getTime() === date.getTime();
-      });
-
-      data.push(stat?.focusTimeMinutes || 0);
-    }
-
-    return { labels, data };
-  };
-
-  /**
-   * Get session distribution data
-   * Complexity: 4 (filtering + counting)
-   */
-  const getSessionDistribution = (): {
-    work: number;
-    shortBreaks: number;
-    longBreaks: number;
-  } => {
-    const completedSessions = sessions.filter(s => s.status === 'completed');
-    return {
-      work: completedSessions.filter(s => s.type === 'work').length,
-      shortBreaks: completedSessions.filter(s => s.type === 'short-break').length,
-      longBreaks: completedSessions.filter(s => s.type === 'long-break').length,
-    };
-  };
-
-  /**
-   * Get productivity by hour data
-   * Complexity: 5 (array operations + grouping)
-   */
-  const getProductivityByHour = (): number[] => {
-    const hourCounts = Array(24).fill(0);
-    const completedSessions = sessions.filter(s => s.status === 'completed' && s.type === 'work');
-
-    completedSessions.forEach(session => {
-      const hour = session.startTime.getHours();
-      hourCounts[hour]++;
-    });
-
-    return hourCounts;
-  };
-
-  const focusTimeData = getLast7DaysFocusTime();
-  const sessionDistribution = getSessionDistribution();
-  const productivityByHour = getProductivityByHour();
-
-  /**
-   * Handle CSV export
-   * Complexity: 4 (async + error handling + state updates)
-   */
-  const handleExportCSV = async (): Promise<void> => {
+  const handleExportCSV = (): void => {
     if (isExporting || sessions.length === 0) {return;}
-
     try {
       setIsExporting(true);
       exportSessionsAsCSV(sessions);
@@ -208,13 +441,8 @@ export const AnalyticsDashboard: React.FC = () => {
     }
   };
 
-  /**
-   * Handle JSON export
-   * Complexity: 4 (async + error handling + state updates)
-   */
-  const handleExportJSON = async (): Promise<void> => {
+  const handleExportJSON = (): void => {
     if (isExporting || !analyticsData) {return;}
-
     try {
       setIsExporting(true);
       exportAnalyticsAsJSON(analyticsData, sessions);
@@ -245,182 +473,25 @@ export const AnalyticsDashboard: React.FC = () => {
 
   const completionRate = todayStats
     ? todayStats.pomodorosCompleted /
-    (todayStats.pomodorosCompleted + (todayStats.pomodorosAbandoned || 0))
+    (todayStats.pomodorosCompleted + (todayStats.pomodorosAbandoned ?? 0))
     : 0;
 
   return (
     <div className="space-y-6">
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Today's Focus Time */}
-        <div className="bg-surface border border-border rounded-lg p-6">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-text-tertiary uppercase tracking-wide">
-              Today's Focus Time
-            </h3>
-            <span className="text-2xl">⏱️</span>
-          </div>
-          <p className="text-3xl font-bold text-text-primary tabular-nums">
-            {formatDuration(todayStats?.focusTime || 0)}
-          </p>
-          <p className="text-xs text-text-tertiary mt-1">
-            {todayStats?.pomodorosCompleted || 0} Pomodoros completed
-          </p>
-        </div>
-
-        {/* Current Streak */}
-        <div className="bg-surface border border-border rounded-lg p-6">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-text-tertiary uppercase tracking-wide">
-              Current Streak
-            </h3>
-            <span className="text-2xl">🔥</span>
-          </div>
-          <p className="text-3xl font-bold text-accent tabular-nums">
-            {streak?.current || 0}
-          </p>
-          <p className="text-xs text-text-secondary mt-1">
-            Personal best: {streak?.longest || 0} days
-          </p>
-        </div>
-
-        {/* Completion Rate */}
-        <div className="bg-surface border border-border rounded-lg p-6">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-text-tertiary uppercase tracking-wide">
-              Completion Rate
-            </h3>
-            <span className="text-2xl">📊</span>
-          </div>
-          <p className="text-3xl font-bold text-text-primary tabular-nums">
-            {isNaN(completionRate) ? '0' : Math.round(completionRate * 100)}%
-          </p>
-          <div className="mt-2">
-            {completionRate >= 0.9 && (
-              <Badge variant="success" size="sm">
-                Excellent!
-              </Badge>
-            )}
-            {completionRate >= 0.7 && completionRate < 0.9 && (
-              <Badge variant="info" size="sm">
-                Good
-              </Badge>
-            )}
-            {completionRate < 0.7 && todayStats && todayStats.pomodorosCompleted > 0 && (
-              <Badge variant="warning" size="sm">
-                Room to improve
-              </Badge>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Weekly Summary */}
-      {weeklyData && (
-        <div className="bg-surface border border-border rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-text-primary mb-4">
-            This Week
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-sm text-text-tertiary mb-1">Total Pomodoros</p>
-              <p className="text-2xl font-bold text-text-primary tabular-nums">
-                {weeklyData.totalPomodoros || 0}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-text-tertiary mb-1">Total Focus Time</p>
-              <p className="text-2xl font-bold text-text-primary">
-                {formatDuration(weeklyData.totalFocusTime || 0)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-text-tertiary mb-1">Daily Average</p>
-              <p className="text-2xl font-bold text-text-primary tabular-nums">
-                {weeklyData.averagePerDay ? weeklyData.averagePerDay.toFixed(1) : '0'}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-text-tertiary mb-1">Completion Rate</p>
-              <p className="text-2xl font-bold text-text-primary tabular-nums">
-                {weeklyData.completionRate
-                  ? Math.round(weeklyData.completionRate * 100)
-                  : 0}
-                %
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Charts Section */}
-      <div className="space-y-6">
-        {/* Focus Time Trend */}
-        <div className="bg-surface border border-border rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-text-primary mb-4">
-            7-Day Focus Time Trend
-          </h3>
-          <FocusTimeChart
-            dailyFocusTime={focusTimeData.data}
-            labels={focusTimeData.labels}
-            height={250}
-          />
-        </div>
-
-        {/* Session Distribution and Productivity by Hour */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Session Distribution */}
-          <div className="bg-surface border border-border rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-text-primary mb-4">
-              Session Distribution
-            </h3>
-            <SessionDistributionChart
-              workSessions={sessionDistribution.work}
-              shortBreaks={sessionDistribution.shortBreaks}
-              longBreaks={sessionDistribution.longBreaks}
-              height={250}
-            />
-          </div>
-
-          {/* Productivity by Hour */}
-          <div className="bg-surface border border-border rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-text-primary mb-4">
-              Productivity by Hour
-            </h3>
-            <ProductivityByHourChart sessionsPerHour={productivityByHour} height={250} />
-          </div>
-        </div>
-      </div>
-
-      {/* Export Data */}
-      <div className="bg-surface border border-border rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-text-primary mb-3">
-          Export Your Data
-        </h3>
-        <p className="text-sm text-text-secondary mb-4">
-          Download your productivity data in JSON or CSV format for analysis in other tools.
-        </p>
-        <div className="flex space-x-3">
-          <button
-            type="button"
-            className="px-4 py-2 text-sm font-medium text-text-primary bg-bg-secondary hover:bg-bg-tertiary disabled:opacity-50 disabled:cursor-not-allowed rounded-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 border border-border"
-            onClick={handleExportJSON}
-            disabled={isExporting || !analyticsData}
-            aria-label="Export analytics data as JSON"
-          >
-            {isExporting ? 'Exporting...' : 'Export as JSON'}
-          </button>
-          <button
-            type="button"
-            className="px-4 py-2 text-sm font-medium text-text-primary bg-bg-secondary hover:bg-bg-tertiary disabled:opacity-50 disabled:cursor-not-allowed rounded-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 border border-border"
-            onClick={handleExportCSV}
-            disabled={isExporting || sessions.length === 0}
-            aria-label="Export session data as CSV"
-          >
-            {isExporting ? 'Exporting...' : 'Export as CSV'}
-          </button>
-        </div>
-      </div>
+      <OverviewCards todayStats={todayStats} streak={streak} completionRate={completionRate} />
+      {weeklyData && <WeeklySummary weeklyData={weeklyData} />}
+      <ChartsSection
+        focusTimeData={focusTimeData}
+        sessionDistribution={sessionDistribution}
+        productivityByHour={productivityByHour}
+      />
+      <ExportSection
+        isExporting={isExporting}
+        analyticsData={analyticsData}
+        sessions={sessions}
+        onExportJSON={handleExportJSON}
+        onExportCSV={handleExportCSV}
+      />
     </div>
   );
 };

@@ -37,15 +37,16 @@ const getIntensity = (minutes: number): number => {
   return 4;
 };
 
+// eslint-disable-next-line max-lines-per-function
 export const ProductivityHeatmap: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<DayCell | null>(null);
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = async (): Promise<void> => {
       try {
-        const response = await chrome.runtime.sendMessage({ type: 'ANALYTICS_GET' });
+        const response = await chrome.runtime.sendMessage({ type: 'ANALYTICS_GET' }) as unknown as { success: boolean; data: AnalyticsData };
         if (response.success && response.data) {
           setAnalytics(response.data);
         }
@@ -56,7 +57,7 @@ export const ProductivityHeatmap: React.FC = () => {
       }
     };
 
-    fetchAnalytics();
+    void fetchAnalytics();
   }, []);
 
   /**
@@ -91,8 +92,8 @@ export const ProductivityHeatmap: React.FC = () => {
         return statDate === dateStr;
       });
 
-      const focusMinutes = dayData?.focusTimeMinutes || 0;
-      const completedSessions = dayData?.completedSessions || 0;
+      const focusMinutes = dayData?.focusTimeMinutes ?? 0;
+      const completedSessions = dayData?.completedSessions ?? 0;
 
       currentWeek.push({
         date,
@@ -116,7 +117,7 @@ export const ProductivityHeatmap: React.FC = () => {
     return weeks;
   };
 
-  const calculateStats = () => {
+  const calculateStats = (): { totalDays: number; avgMinutes: number; maxMinutes: number; activeDays: number } => {
     if (!analytics) {return { totalDays: 0, avgMinutes: 0, maxMinutes: 0, activeDays: 0 };}
 
     const last84Days = analytics.dailyStats?.filter(stat => {
@@ -192,7 +193,7 @@ export const ProductivityHeatmap: React.FC = () => {
         </div>
         <div className="bg-bg-secondary p-4 rounded-lg border border-border-light">
           <div className="text-2xl font-bold text-accent">
-            {analytics?.streak?.currentStreak || 0}
+            {analytics?.streak?.currentStreak ?? 0}
           </div>
           <div className="text-xs text-text-tertiary mt-1">Day Streak</div>
         </div>

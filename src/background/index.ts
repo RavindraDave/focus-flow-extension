@@ -93,8 +93,10 @@ class BackgroundServiceWorker {
       this.sessionRepository,
       this.analyticsTracker,
       this.streakTracker,
-      this.settingsRepository,
-      this.blockerEngine
+      {
+        settingsRepository: this.settingsRepository,
+        blockerEngine: this.blockerEngine,
+      }
     );
     // Initialize schedule manager after timer engine so it can auto-start timer
     this.scheduleManager = new ScheduleManager(
@@ -320,7 +322,8 @@ class BackgroundServiceWorker {
       case 'BLOCKER_GET_STATS':
         return await this.blockerEngine.getStats();
       case 'BLOCKER_TRACK_ATTEMPT':
-        return await this.blockerEngine.handleBlockedAttempt(message.domain);
+        this.blockerEngine.handleBlockedAttempt(message.domain);
+        return;
       case 'BLOCKER_CHECK_ALLOWANCE':
         return await this.blockerEngine.checkAllowance(message.domain);
       case 'BLOCKER_GRANT_ACCESS':
@@ -552,7 +555,7 @@ class BackgroundServiceWorker {
         }
 
         // Run migrations if needed
-        await this.runMigrations(details.previousVersion);
+        this.runMigrations(details.previousVersion);
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {

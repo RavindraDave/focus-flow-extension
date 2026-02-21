@@ -23,6 +23,7 @@ export interface BlockRuleFormProps {
  * BlockRuleForm component
  * Complexity: 8 (form state + validation + submission)
  */
+// eslint-disable-next-line max-lines-per-function, complexity
 export const BlockRuleForm: React.FC<BlockRuleFormProps> = ({
   rule,
   onSave,
@@ -147,7 +148,7 @@ export const BlockRuleForm: React.FC<BlockRuleFormProps> = ({
           }
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={(e): void => { void handleSubmit(e); }} className="space-y-4">
           {/* Name */}
           <Input
             id="rule-name"
@@ -219,7 +220,7 @@ export const BlockRuleForm: React.FC<BlockRuleFormProps> = ({
                   type="number"
                   min={1}
                   max={1440}
-                  value={allowance || ''}
+                  value={allowance ?? ''}
                   onChange={(e) => setAllowance(Number(e.target.value))}
                   error={validationErrors.allowance}
                   disabled={isSaving}

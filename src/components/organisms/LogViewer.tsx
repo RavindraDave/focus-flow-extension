@@ -22,6 +22,7 @@ const LOG_LEVEL_VARIANTS: Record<LogLevel, 'info' | 'success' | 'warning' | 'err
   [LogLevel.ERROR]: 'error',
 };
 
+// eslint-disable-next-line max-lines-per-function
 export function LogViewer(): JSX.Element {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState<LogLevel | 'all'>('all');

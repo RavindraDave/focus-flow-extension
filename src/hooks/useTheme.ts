@@ -30,6 +30,60 @@ function applyTheme(theme: ThemeMode): void {
 }
 
 /**
+ * Hook to load theme from storage on mount
+ */
+function useLoadTheme(
+  setThemeState: React.Dispatch<React.SetStateAction<ThemeMode>>,
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
+): void {
+  useEffect(() => {
+    async function loadTheme(): Promise<void> {
+      try {
+        const result = await chrome.storage.sync.get(THEME_STORAGE_KEY);
+        const savedTheme = (result[THEME_STORAGE_KEY] as ThemeMode) ?? DEFAULT_THEME;
+        setThemeState(savedTheme);
+        applyTheme(savedTheme);
+      } catch (error) {
+        log.error('Failed to load theme preference', error instanceof Error ? error : undefined);
+        applyTheme(DEFAULT_THEME);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void loadTheme();
+  }, [setThemeState, setIsLoading]);
+}
+
+/**
+ * Hook to listen for storage changes and sync theme across extension pages
+ */
+function useThemeSync(
+  theme: ThemeMode,
+  setThemeState: React.Dispatch<React.SetStateAction<ThemeMode>>
+): void {
+  useEffect(() => {
+    function handleStorageChange(
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: string
+    ): void {
+      if (areaName !== 'sync' || !(THEME_STORAGE_KEY in changes)) {
+        return;
+      }
+
+      const newTheme = changes[THEME_STORAGE_KEY].newValue as ThemeMode;
+      if (newTheme && newTheme !== theme) {
+        setThemeState(newTheme);
+        applyTheme(newTheme);
+      }
+    }
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
+  }, [theme, setThemeState]);
+}
+
+/**
  * useTheme Hook
  *
  * Manages visual theme state (Modern Pro, Zen Mode, Cyber Focus) with persistence.
@@ -58,75 +112,23 @@ function applyTheme(theme: ThemeMode): void {
  * ```
  */
 export function useTheme(): {
-  /**
-   * Current active theme
-   */
+  /** Current active theme */
   theme: ThemeMode;
-
-  /**
-   * Whether the theme is being loaded from storage
-   */
+  /** Whether the theme is being loaded from storage */
   isLoading: boolean;
-
-  /**
-   * Update theme preference
-   */
+  /** Update theme preference */
   setTheme: (mode: ThemeMode) => Promise<void>;
 } {
   const [theme, setThemeState] = useState<ThemeMode>(DEFAULT_THEME);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load theme from storage on mount
-  useEffect(() => {
-    async function loadTheme(): Promise<void> {
-      try {
-        const result = await chrome.storage.sync.get(THEME_STORAGE_KEY);
-        const savedTheme = (result[THEME_STORAGE_KEY] as ThemeMode) ?? DEFAULT_THEME;
-        setThemeState(savedTheme);
-        applyTheme(savedTheme);
-      } catch (error) {
-        log.error('Failed to load theme preference', error instanceof Error ? error : undefined);
-        // Fallback to default theme
-        applyTheme(DEFAULT_THEME);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+  useLoadTheme(setThemeState, setIsLoading);
+  useThemeSync(theme, setThemeState);
 
-    void loadTheme();
-  }, []);
-
-  // Listen to storage changes (sync across extension pages)
-  useEffect(() => {
-    function handleStorageChange(
-      changes: { [key: string]: chrome.storage.StorageChange },
-      areaName: string
-    ): void {
-      if (areaName !== 'sync' || !(THEME_STORAGE_KEY in changes)) {
-        return;
-      }
-
-      const newTheme = changes[THEME_STORAGE_KEY].newValue as ThemeMode;
-      if (newTheme && newTheme !== theme) {
-        setThemeState(newTheme);
-        applyTheme(newTheme);
-      }
-    }
-
-    chrome.storage.onChanged.addListener(handleStorageChange);
-    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
-  }, [theme]);
-
-  // Update theme preference
   const setTheme = useCallback(async (mode: ThemeMode): Promise<void> => {
     try {
-      // Save to storage (will sync across devices)
       await chrome.storage.sync.set({ [THEME_STORAGE_KEY]: mode });
-
-      // Update local state
       setThemeState(mode);
-
-      // Apply theme immediately
       applyTheme(mode);
     } catch (error) {
       log.error('Failed to save theme preference', error instanceof Error ? error : undefined);

@@ -16,6 +16,7 @@ interface OnboardingModalProps {
   suggestedTheme: ThemeMode;
 }
 
+// eslint-disable-next-line max-lines-per-function
 const OnboardingModal: React.FC<OnboardingModalProps> = ({
   onComplete,
   suggestedTheme,
@@ -173,7 +174,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
     },
   ];
 
-  const handleNext = () => {
+  const handleNext = (): void => {
     if (step < steps.length - 1) {
       setStep(step + 1);
     } else {
@@ -181,7 +182,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
     }
   };
 
-  const handleBack = () => {
+  const handleBack = (): void => {
     if (step > 0) {
       setStep(step - 1);
     }

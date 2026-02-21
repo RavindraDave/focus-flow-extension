@@ -21,6 +21,7 @@ export interface SettingsFormProps {
  * SettingsForm component
  * Complexity: 7 (form state + validation + submission)
  */
+// eslint-disable-next-line max-lines-per-function, complexity
 export const SettingsForm: React.FC<SettingsFormProps> = ({
   settings,
   onSave,
@@ -129,7 +130,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={(e): void => { void handleSubmit(e); }} className="space-y-6">
       {/* Pomodoro Durations */}
       <section>
         <h3 className="text-lg font-semibold text-text-primary mb-4">Timer Durations</h3>

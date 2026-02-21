@@ -148,8 +148,10 @@ describe('Timer + Blocker Integration', () => {
       sessionRepo,
       analyticsTracker,
       streakTracker,
-      settingsRepo,
-      blocker
+      {
+        settingsRepository: settingsRepo,
+        blockerEngine: blocker,
+      }
     );
 
     vi.clearAllMocks();

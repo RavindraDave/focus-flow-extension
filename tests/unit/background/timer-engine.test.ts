@@ -79,8 +79,10 @@ describe('TimerEngine', () => {
       mockSessionRepository,
       mockAnalyticsTracker,
       mockStreakTracker,
-      mockSettingsRepository,
-      mockBlockerEngine
+      {
+        settingsRepository: mockSettingsRepository,
+        blockerEngine: mockBlockerEngine,
+      }
     );
 
     // Reset Chrome API mocks

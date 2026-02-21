@@ -30,22 +30,19 @@ export interface UseNuclearModeReturn {
 async function sendNuclearMessage<T>(
   message: Record<string, unknown>
 ): Promise<BackgroundResponse<T>> {
-  return chrome.runtime.sendMessage(message) as Promise<BackgroundResponse<T>>;
+  return chrome.runtime.sendMessage<Record<string, unknown>, BackgroundResponse<T>>(message);
 }
 
 /**
- * Custom hook to manage Nuclear Mode
+ * Hook for fetching Nuclear Mode status
  */
-export function useNuclearMode(): UseNuclearModeReturn {
-  const [isActive, setIsActive] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  /**
-   * Fetch Nuclear Mode status from background
-   */
-  const fetchStatus = useCallback(async (): Promise<void> => {
+function useFetchNuclearStatus(
+  setIsActive: React.Dispatch<React.SetStateAction<boolean>>,
+  setRemainingSeconds: React.Dispatch<React.SetStateAction<number>>,
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  setError: React.Dispatch<React.SetStateAction<string | null>>
+): () => Promise<void> {
+  return useCallback(async (): Promise<void> => {
     try {
       setError(null);
 
@@ -67,11 +64,19 @@ export function useNuclearMode(): UseNuclearModeReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [setIsActive, setRemainingSeconds, setIsLoading, setError]);
+}
 
-  /**
-   * Activate Nuclear Mode
-   */
+/**
+ * Hook for Nuclear Mode activate/deactivate actions
+ */
+function useNuclearActions(
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+  fetchStatus: () => Promise<void>
+): {
+  activate: (durationHours: number) => Promise<void>;
+  deactivate: () => Promise<void>;
+} {
   const activate = useCallback(async (durationHours: number): Promise<void> => {
     if (durationHours < 1 || durationHours > 8) {
       throw new Error('Duration must be between 1 and 8 hours');
@@ -95,11 +100,8 @@ export function useNuclearMode(): UseNuclearModeReturn {
       setError(message);
       throw err;
     }
-  }, [fetchStatus]);
+  }, [fetchStatus, setError]);
 
-  /**
-   * Deactivate Nuclear Mode (only works if expired)
-   */
   const deactivate = useCallback(async (): Promise<void> => {
     try {
       setError(null);
@@ -118,15 +120,26 @@ export function useNuclearMode(): UseNuclearModeReturn {
       setError(message);
       throw err;
     }
-  }, [fetchStatus]);
+  }, [fetchStatus, setError]);
 
-  /**
-   * Fetch on mount and setup polling
-   */
+  return { activate, deactivate };
+}
+
+/**
+ * Custom hook to manage Nuclear Mode
+ */
+export function useNuclearMode(): UseNuclearModeReturn {
+  const [isActive, setIsActive] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStatus = useFetchNuclearStatus(setIsActive, setRemainingSeconds, setIsLoading, setError);
+  const { activate, deactivate } = useNuclearActions(setError, fetchStatus);
+
   useEffect(() => {
     void fetchStatus();
 
-    // Poll every 5 seconds when active
     const pollInterval = setInterval(() => {
       if (!document.hidden) {
         void fetchStatus();
@@ -136,9 +149,6 @@ export function useNuclearMode(): UseNuclearModeReturn {
     return () => clearInterval(pollInterval);
   }, [fetchStatus]);
 
-  /**
-   * Countdown timer (update every second when active)
-   */
   useEffect(() => {
     if (isActive && remainingSeconds > 0) {
       const timer = setTimeout(() => {
