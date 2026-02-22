@@ -149,14 +149,14 @@ describe('Options App', () => {
 
       // Use getAllByText since "Timer Settings" appears in both sidebar and content
       const timerButtons = screen.getAllByText('Timer Settings');
-      const timerTab = timerButtons[0].closest('button');
+      const timerTab = timerButtons[0]!.closest('button');
       expect(timerTab).not.toHaveClass('bg-accent');
 
       fireEvent.click(timerTab!);
 
       await waitFor(() => {
         const updatedButtons = screen.getAllByText('Timer Settings');
-        expect(updatedButtons[0].closest('button')).toHaveClass('bg-accent');
+        expect(updatedButtons[0]!.closest('button')).toHaveClass('bg-accent');
       });
     });
   });
@@ -486,7 +486,7 @@ describe('Options App', () => {
       render(<App />);
 
       // "Dashboard" appears in both sidebar tab and content heading, use getAllByText
-      const dashboardTab = screen.getAllByText('Dashboard')[0].closest('button');
+      const dashboardTab = screen.getAllByText('Dashboard')[0]!.closest('button');
       expect(dashboardTab).toHaveAttribute('aria-selected', 'true');
 
       const timerTab = screen.getByText('Timer Settings').closest('button');
