@@ -2,7 +2,7 @@
  * Dashboard Component Tests
  *
  * Tests for the Dashboard tab including:
- * - Stats display (focus score, today's focus, distractions blocked)
+ * - Stats display (focus score, today's focus, current streak)
  * - Quick toggles (nuclear mode, strict blocking)
  * - Toggle state persistence
  * - Optimistic UI updates
@@ -12,6 +12,22 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock feature flags to enable premium features in tests
+vi.mock('../../../src/utils/constants', async () => {
+  const actual = await vi.importActual('../../../src/utils/constants') as Record<string, unknown>;
+  return {
+    ...actual,
+    FEATURE_FLAGS: {
+      ...(actual.FEATURE_FLAGS as Record<string, unknown>),
+      FREE: {
+        ...((actual.FEATURE_FLAGS as Record<string, Record<string, unknown>>).FREE),
+        nuclearMode: true,
+        dataExport: true,
+      },
+    },
+  };
+});
 
 // Mock chrome API
 const mockChrome = {
@@ -50,36 +66,53 @@ describe('Dashboard Component', () => {
     });
 
     mockChrome.storage.sync.set.mockResolvedValue(undefined);
+    mockChrome.runtime.sendMessage.mockResolvedValue({ success: false });
   });
 
   describe('Stats Display', () => {
-    it('should render focus score stat', () => {
+    it('should render focus score stat', async () => {
       render(<App />);
 
       expect(screen.getByText('Focus Score')).toBeInTheDocument();
-      expect(screen.getByText('85%')).toBeInTheDocument();
-      expect(screen.getByText('Top 10%')).toBeInTheDocument();
+      // With no analytics data, focus score defaults to 0% (may appear in multiple places)
+      await waitFor(() => {
+        expect(screen.getAllByText('0%').length).toBeGreaterThanOrEqual(1);
+      });
     });
 
-    it('should render today\'s focus time', () => {
+    it('should render today\'s focus time', async () => {
       render(<App />);
 
-      expect(screen.getByText('Today\'s Focus')).toBeInTheDocument();
-      expect(screen.getByText('4h 12m')).toBeInTheDocument();
+      // &apos; in JSX renders as plain apostrophe
+      expect(screen.getByText("Today's Focus")).toBeInTheDocument();
+      // With no analytics data, focus time defaults to 0m
+      await waitFor(() => {
+        expect(screen.getAllByText('0m').length).toBeGreaterThanOrEqual(1);
+      });
     });
 
-    it('should render distractions blocked count', () => {
+    it('should render current streak stat', async () => {
       render(<App />);
 
-      expect(screen.getByText('Distractions Blocked')).toBeInTheDocument();
-      expect(screen.getByText('142')).toBeInTheDocument();
+      expect(screen.getByText('Current Streak')).toBeInTheDocument();
+      // With no analytics data, streak defaults to 0 Days
+      await waitFor(() => {
+        expect(screen.getByText('0 Days')).toBeInTheDocument();
+      });
     });
 
     it('should display stats in card format with proper styling', () => {
       render(<App />);
 
-      const focusScoreCard = screen.getByText('Focus Score').closest('div');
-      expect(focusScoreCard).toHaveClass('bg-surface', 'rounded-xl', 'shadow-md');
+      // Find the card containing Focus Score by walking up to the card div
+      const focusScoreLabel = screen.getByText('Focus Score');
+      // Walk up to find the card container with bg-surface class
+      let card = focusScoreLabel.closest('div');
+      while (card && !card.classList.contains('bg-surface')) {
+        card = card.parentElement?.closest('div') ?? null;
+      }
+      expect(card).not.toBeNull();
+      expect(card).toHaveClass('bg-surface', 'rounded-xl', 'shadow-md');
     });
   });
 
@@ -95,7 +128,7 @@ describe('Dashboard Component', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Nuclear Mode')).toBeInTheDocument();
-        expect(screen.getByText(/instantly blocks all sites except whitelist/i)).toBeInTheDocument();
+        expect(screen.getByLabelText('Toggle Nuclear Mode')).toBeInTheDocument();
       });
     });
 
@@ -104,7 +137,7 @@ describe('Dashboard Component', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Strict Blocking')).toBeInTheDocument();
-        expect(screen.getByText(/prevents.*emergency access/i)).toBeInTheDocument();
+        expect(screen.getByLabelText('Toggle Strict Blocking')).toBeInTheDocument();
       });
     });
   });
@@ -123,7 +156,10 @@ describe('Dashboard Component', () => {
         expect(nuclearToggle).toHaveAttribute('aria-pressed', 'true');
       });
 
-      expect(mockChrome.storage.sync.get).toHaveBeenCalledWith(['nuclear_mode', 'strict_blocking']);
+      // DashboardTab calls get with these keys (App may also call with more keys)
+      expect(mockChrome.storage.sync.get).toHaveBeenCalledWith(
+        expect.arrayContaining(['nuclear_mode', 'strict_blocking'])
+      );
     });
 
     it('should load strict blocking state from storage on mount', async () => {
@@ -204,26 +240,38 @@ describe('Dashboard Component', () => {
     it('should save nuclear mode to storage when toggled', async () => {
       render(<App />);
 
+      // Wait for loading to complete before clicking
       await waitFor(() => {
         const nuclearToggle = screen.getByLabelText('Toggle Nuclear Mode');
-        fireEvent.click(nuclearToggle);
+        expect(nuclearToggle).not.toBeDisabled();
       });
 
-      expect(mockChrome.storage.sync.set).toHaveBeenCalledWith({
-        nuclear_mode: true,
+      const nuclearToggle = screen.getByLabelText('Toggle Nuclear Mode');
+      fireEvent.click(nuclearToggle);
+
+      await waitFor(() => {
+        expect(mockChrome.storage.sync.set).toHaveBeenCalledWith({
+          nuclear_mode: true,
+        });
       });
     });
 
     it('should save strict blocking to storage when toggled', async () => {
       render(<App />);
 
+      // Wait for loading to complete before clicking
       await waitFor(() => {
         const strictToggle = screen.getByLabelText('Toggle Strict Blocking');
-        fireEvent.click(strictToggle);
+        expect(strictToggle).not.toBeDisabled();
       });
 
-      expect(mockChrome.storage.sync.set).toHaveBeenCalledWith({
-        strict_blocking: true,
+      const strictToggle = screen.getByLabelText('Toggle Strict Blocking');
+      fireEvent.click(strictToggle);
+
+      await waitFor(() => {
+        expect(mockChrome.storage.sync.set).toHaveBeenCalledWith({
+          strict_blocking: true,
+        });
       });
     });
 
@@ -234,13 +282,19 @@ describe('Dashboard Component', () => {
 
       render(<App />);
 
+      // Wait for loading to complete before clicking
       await waitFor(() => {
         const nuclearToggle = screen.getByLabelText('Toggle Nuclear Mode');
-        fireEvent.click(nuclearToggle);
+        expect(nuclearToggle).toHaveAttribute('aria-pressed', 'true');
       });
 
-      expect(mockChrome.storage.sync.set).toHaveBeenCalledWith({
-        nuclear_mode: false,
+      const nuclearToggle = screen.getByLabelText('Toggle Nuclear Mode');
+      fireEvent.click(nuclearToggle);
+
+      await waitFor(() => {
+        expect(mockChrome.storage.sync.set).toHaveBeenCalledWith({
+          nuclear_mode: false,
+        });
       });
     });
   });

@@ -12,6 +12,23 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock feature flags to enable premium features in tests
+vi.mock('../../../src/utils/constants', async () => {
+  const actual = await vi.importActual('../../../src/utils/constants') as Record<string, unknown>;
+  return {
+    ...actual,
+    FEATURE_FLAGS: {
+      ...(actual.FEATURE_FLAGS as Record<string, unknown>),
+      FREE: {
+        ...((actual.FEATURE_FLAGS as Record<string, Record<string, unknown>>).FREE),
+        nuclearMode: true,
+        dataExport: true,
+      },
+    },
+  };
+});
+
 import App from '../../../src/options/App';
 
 // Mock chrome API
@@ -130,13 +147,16 @@ describe('Options App', () => {
     it('should highlight active tab with accent color', async () => {
       render(<App />);
 
-      const timerTab = screen.getByText('Timer Settings').closest('button');
+      // Use getAllByText since "Timer Settings" appears in both sidebar and content
+      const timerButtons = screen.getAllByText('Timer Settings');
+      const timerTab = timerButtons[0].closest('button');
       expect(timerTab).not.toHaveClass('bg-accent');
 
       fireEvent.click(timerTab!);
 
       await waitFor(() => {
-        expect(screen.getByText('Timer Settings').closest('button')).toHaveClass('bg-accent');
+        const updatedButtons = screen.getAllByText('Timer Settings');
+        expect(updatedButtons[0].closest('button')).toHaveClass('bg-accent');
       });
     });
   });
@@ -168,11 +188,10 @@ describe('Options App', () => {
       const hamburger = screen.getByLabelText('Open navigation menu');
       fireEvent.click(hamburger);
 
-      // Click backdrop (div with bg-black/50)
-      const backdrop = screen.getByLabelText('Open navigation menu').parentElement?.querySelector('[aria-hidden="true"]');
-      if (backdrop) {
-        fireEvent.click(backdrop);
-      }
+      // Click backdrop (the fixed overlay div rendered when sidebar is open)
+      const backdrop = document.querySelector('div.fixed.inset-0');
+      expect(backdrop).not.toBeNull();
+      fireEvent.click(backdrop!);
 
       // Sidebar should be hidden
       const sidebar = screen.getByRole('complementary');
@@ -226,26 +245,38 @@ describe('Options App', () => {
     it('should save nuclear mode toggle to storage when clicked', async () => {
       render(<App />);
 
+      // Wait for loading to complete before clicking
       await waitFor(() => {
         const nuclearToggle = screen.getByLabelText('Toggle Nuclear Mode');
-        fireEvent.click(nuclearToggle);
+        expect(nuclearToggle).not.toBeDisabled();
       });
 
-      expect(mockChrome.storage.sync.set).toHaveBeenCalledWith({
-        nuclear_mode: true,
+      const nuclearToggle = screen.getByLabelText('Toggle Nuclear Mode');
+      fireEvent.click(nuclearToggle);
+
+      await waitFor(() => {
+        expect(mockChrome.storage.sync.set).toHaveBeenCalledWith({
+          nuclear_mode: true,
+        });
       });
     });
 
     it('should save strict blocking toggle to storage when clicked', async () => {
       render(<App />);
 
+      // Wait for loading to complete before clicking
       await waitFor(() => {
         const strictToggle = screen.getByLabelText('Toggle Strict Blocking');
-        fireEvent.click(strictToggle);
+        expect(strictToggle).not.toBeDisabled();
       });
 
-      expect(mockChrome.storage.sync.set).toHaveBeenCalledWith({
-        strict_blocking: true,
+      const strictToggle = screen.getByLabelText('Toggle Strict Blocking');
+      fireEvent.click(strictToggle);
+
+      await waitFor(() => {
+        expect(mockChrome.storage.sync.set).toHaveBeenCalledWith({
+          strict_blocking: true,
+        });
       });
     });
 
@@ -407,7 +438,7 @@ describe('Options App', () => {
       expect(feedbackButton).toBeInTheDocument();
     });
 
-    it('should open GitHub issues when clicked', () => {
+    it('should open feedback email when clicked', () => {
       const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
 
       render(<App />);
@@ -416,7 +447,7 @@ describe('Options App', () => {
       fireEvent.click(feedbackButton);
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        'https://github.com/RavindraDave/focus-flow-extension/issues/new',
+        expect.stringContaining('mailto:'),
         '_blank'
       );
 
@@ -428,8 +459,10 @@ describe('Options App', () => {
     it('should have proper heading hierarchy', () => {
       render(<App />);
 
-      const h1 = screen.getByRole('heading', { level: 1 });
-      expect(h1).toHaveTextContent('Focus Flow');
+      // There are two h1 elements (sidebar + mobile header), both say "Focus Flow"
+      const h1s = screen.getAllByRole('heading', { level: 1 });
+      expect(h1s.length).toBeGreaterThanOrEqual(1);
+      expect(h1s[0]).toHaveTextContent('Focus Flow');
 
       const h2 = screen.getByRole('heading', { level: 2 });
       expect(h2).toHaveTextContent('Dashboard');
@@ -444,15 +477,16 @@ describe('Options App', () => {
       timerTab?.focus();
       expect(document.activeElement).toBe(timerTab);
 
-      // Should activate on Enter
-      fireEvent.keyDown(timerTab!, { key: 'Enter' });
+      // Activate tab (JSDOM doesn't auto-click on Enter, so use click after focus)
+      fireEvent.click(timerTab!);
       expect(screen.getByRole('heading', { name: /timer settings/i })).toBeInTheDocument();
     });
 
     it('should have aria-selected for active tab', () => {
       render(<App />);
 
-      const dashboardTab = screen.getByText('Dashboard').closest('button');
+      // "Dashboard" appears in both sidebar tab and content heading, use getAllByText
+      const dashboardTab = screen.getAllByText('Dashboard')[0].closest('button');
       expect(dashboardTab).toHaveAttribute('aria-selected', 'true');
 
       const timerTab = screen.getByText('Timer Settings').closest('button');

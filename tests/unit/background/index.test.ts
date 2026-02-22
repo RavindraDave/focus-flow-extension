@@ -320,12 +320,16 @@ describe('BackgroundServiceWorker', () => {
       const worker = new BackgroundServiceWorker();
       await worker.initialize();
 
-      // Force an error - notification failure should be caught gracefully
-      mockChrome.notifications.create.mockRejectedValueOnce(new Error('Notification failed'));
+      // Force an error in an awaited call - tabs.create is awaited inside handleInstall
+      // so its rejection is properly caught by the try-catch block
+      mockChrome.tabs.create.mockRejectedValueOnce(new Error('Tab creation failed'));
 
       const details = { reason: 'install' };
       // Should not propagate the error (caught internally)
       expect(() => installListener(details)).not.toThrow();
+
+      // Wait for the async handler to complete
+      await new Promise(resolve => setTimeout(resolve, 50));
     });
   });
 
