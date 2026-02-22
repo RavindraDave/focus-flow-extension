@@ -62,14 +62,14 @@ describe('Input', () => {
     it('should have error state styles when error is present', () => {
       render(<Input error="Error message" />);
       const input = screen.getByRole('textbox');
-      expect(input).toHaveClass('border-error-500');
+      expect(input).toHaveClass('border-error');
       expect(input).toHaveAttribute('aria-invalid', 'true');
     });
 
     it('should have normal state styles when no error', () => {
       render(<Input />);
       const input = screen.getByRole('textbox');
-      expect(input).toHaveClass('border-neutral-300');
+      expect(input).toHaveClass('border-border');
       expect(input).toHaveAttribute('aria-invalid', 'false');
     });
 
@@ -77,7 +77,7 @@ describe('Input', () => {
       render(<Input disabled />);
       const input = screen.getByRole('textbox');
       expect(input).toBeDisabled();
-      expect(input).toHaveClass('disabled:bg-neutral-100');
+      expect(input).toHaveClass('disabled:bg-bg-tertiary');
     });
 
     it('should be readonly', () => {
@@ -205,16 +205,16 @@ describe('Input', () => {
       expect(input).toHaveClass('focus:ring-2');
     });
 
-    it('should have focus indicator with primary color when no error', () => {
+    it('should have focus indicator with accent color when no error', () => {
       render(<Input />);
       const input = screen.getByRole('textbox');
-      expect(input).toHaveClass('focus:ring-primary-500');
+      expect(input).toHaveClass('focus:ring-accent');
     });
 
     it('should have focus indicator with error color when error exists', () => {
       render(<Input error="Error" />);
       const input = screen.getByRole('textbox');
-      expect(input).toHaveClass('focus:ring-error-500');
+      expect(input).toHaveClass('focus:ring-error');
     });
   });
 

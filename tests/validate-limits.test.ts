@@ -26,9 +26,20 @@ vi.mock('../src/services/storage-service', () => {
         }
     }
 
+    const StorageErrorCode = {
+        VALIDATION_FAILED: 'VALIDATION_FAILED',
+        QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
+        KEY_INVALID: 'KEY_INVALID',
+        NOT_FOUND: 'NOT_FOUND',
+        CORRUPTED_DATA: 'CORRUPTED_DATA',
+        RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+        UNKNOWN: 'UNKNOWN',
+    };
+
     return {
         StorageService: MockStorageService,
         storageService: new MockStorageService(),
+        StorageErrorCode,
         StorageError: class extends Error {
             constructor(message: string, public code: string) {
                 super(message);

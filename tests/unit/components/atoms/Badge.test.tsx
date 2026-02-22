@@ -13,29 +13,29 @@ describe('Badge', () => {
     it('should render info variant by default', () => {
       render(<Badge>Info</Badge>);
       const badge = screen.getByText('Info');
-      expect(badge).toHaveClass('bg-info-50');
-      expect(badge).toHaveClass('text-info-600');
+      expect(badge).toHaveClass('bg-info/10');
+      expect(badge).toHaveClass('text-info');
     });
 
     it('should render success variant', () => {
       render(<Badge variant="success">Success</Badge>);
       const badge = screen.getByText('Success');
-      expect(badge).toHaveClass('bg-success-100');
-      expect(badge).toHaveClass('text-success-700');
+      expect(badge).toHaveClass('bg-success/10');
+      expect(badge).toHaveClass('text-success');
     });
 
     it('should render warning variant', () => {
       render(<Badge variant="warning">Warning</Badge>);
       const badge = screen.getByText('Warning');
-      expect(badge).toHaveClass('bg-warning-100');
-      expect(badge).toHaveClass('text-warning-700');
+      expect(badge).toHaveClass('bg-warning/10');
+      expect(badge).toHaveClass('text-warning');
     });
 
     it('should render error variant', () => {
       render(<Badge variant="error">Error</Badge>);
       const badge = screen.getByText('Error');
-      expect(badge).toHaveClass('bg-error-50');
-      expect(badge).toHaveClass('text-error-600');
+      expect(badge).toHaveClass('bg-error/10');
+      expect(badge).toHaveClass('text-error');
     });
 
     it('should render medium size by default', () => {
@@ -155,29 +155,29 @@ describe('Badge', () => {
       render(<Badge variant="success">Success</Badge>);
       const badge = screen.getByText('Success');
       // Testing that contrast classes are applied
-      expect(badge).toHaveClass('bg-success-100');
-      expect(badge).toHaveClass('text-success-700');
+      expect(badge).toHaveClass('bg-success/10');
+      expect(badge).toHaveClass('text-success');
     });
 
     it('should have sufficient color contrast for warning variant', () => {
       render(<Badge variant="warning">Warning</Badge>);
       const badge = screen.getByText('Warning');
-      expect(badge).toHaveClass('bg-warning-100');
-      expect(badge).toHaveClass('text-warning-700');
+      expect(badge).toHaveClass('bg-warning/10');
+      expect(badge).toHaveClass('text-warning');
     });
 
     it('should have sufficient color contrast for error variant', () => {
       render(<Badge variant="error">Error</Badge>);
       const badge = screen.getByText('Error');
-      expect(badge).toHaveClass('bg-error-50');
-      expect(badge).toHaveClass('text-error-600');
+      expect(badge).toHaveClass('bg-error/10');
+      expect(badge).toHaveClass('text-error');
     });
 
     it('should have sufficient color contrast for info variant', () => {
       render(<Badge variant="info">Info</Badge>);
       const badge = screen.getByText('Info');
-      expect(badge).toHaveClass('bg-info-50');
-      expect(badge).toHaveClass('text-info-600');
+      expect(badge).toHaveClass('bg-info/10');
+      expect(badge).toHaveClass('text-info');
     });
   });
 

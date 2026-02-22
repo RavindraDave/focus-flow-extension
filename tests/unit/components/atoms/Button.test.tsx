@@ -14,19 +14,19 @@ describe('Button', () => {
     it('should render primary variant by default', () => {
       render(<Button>Primary</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('bg-primary-500');
+      expect(button).toHaveClass('bg-accent');
     });
 
     it('should render secondary variant', () => {
       render(<Button variant="secondary">Secondary</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('bg-neutral-100');
+      expect(button).toHaveClass('bg-bg-secondary');
     });
 
     it('should render destructive variant', () => {
       render(<Button variant="destructive">Delete</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('bg-error-500');
+      expect(button).toHaveClass('bg-error');
     });
 
     it('should render ghost variant', () => {

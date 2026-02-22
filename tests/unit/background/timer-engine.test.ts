@@ -131,7 +131,10 @@ describe('TimerEngine', () => {
 
       expect(mockChrome.alarms.create).toHaveBeenCalledWith(
         'pomodoro-timer',
-        { periodInMinutes: 1 / 60 } // Every second
+        {
+          delayInMinutes: 1 / 60, // First tick immediately
+          periodInMinutes: 1,     // Subsequent ticks every minute
+        }
       );
     });
   });
@@ -221,12 +224,15 @@ describe('TimerEngine', () => {
 
   describe('tick', () => {
     it('should decrement remaining seconds', async () => {
+      vi.useFakeTimers();
       await engine.start('work', 25);
 
       const beforeTick = await engine.getStatus();
+      vi.advanceTimersByTime(1000); // Advance 1 second
       await engine.tick();
       const afterTick = await engine.getStatus();
 
+      vi.useRealTimers();
       expect(afterTick.remainingSeconds).toBe(beforeTick.remainingSeconds - 1);
     });
 

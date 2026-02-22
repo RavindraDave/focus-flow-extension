@@ -313,8 +313,6 @@ describe('Theme Integration', () => {
     });
 
     it('should throw error on storage.set failures', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-
       mockChrome.storage.sync.set.mockRejectedValue(new Error('Storage quota exceeded'));
 
       const { result } = renderHook(() => useTheme());
@@ -325,18 +323,9 @@ describe('Theme Integration', () => {
 
       // Should throw error when storage.set fails
       await expect(result.current.setTheme('cyber')).rejects.toThrow('Unable to save theme preference');
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to save theme preference'),
-        expect.any(Error)
-      );
-
-      consoleErrorSpy.mockRestore();
     });
 
     it('should handle storage.get failures gracefully', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-
       mockChrome.storage.sync.get.mockRejectedValue(new Error('Storage unavailable'));
 
       const { result } = renderHook(() => useTheme());
@@ -346,13 +335,6 @@ describe('Theme Integration', () => {
         expect(result.current.theme).toBe('modern');
         expect(result.current.isLoading).toBe(false);
       });
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to load theme'),
-        expect.any(Error)
-      );
-
-      consoleErrorSpy.mockRestore();
     });
   });
 

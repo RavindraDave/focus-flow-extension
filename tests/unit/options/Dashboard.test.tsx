@@ -20,6 +20,14 @@ const mockChrome = {
       get: vi.fn(),
       set: vi.fn(),
     },
+    onChanged: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
+  },
+  runtime: {
+    sendMessage: vi.fn().mockResolvedValue({ success: false }),
+    getURL: vi.fn((path: string) => `chrome-extension://fake-id/${path}`),
   },
 };
 

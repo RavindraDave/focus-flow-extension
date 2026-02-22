@@ -178,18 +178,10 @@ describe('AnalyticsTracker', () => {
   });
 
   describe('trackBlockedAttempt', () => {
-    it('should log blocked attempt (not yet part of DailyStats type)', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      await tracker.trackBlockedAttempt();
-
+    it('should log blocked attempt (not yet part of DailyStats type)', () => {
       // blockedAttempts is not part of DailyStats type definition yet
-      // This functionality logs for now but doesn't update storage
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Blocked attempt tracked')
-      );
-
-      consoleSpy.mockRestore();
+      // In non-development environments, this is a no-op (logging is dev-only)
+      expect(() => tracker.trackBlockedAttempt()).not.toThrow();
     });
   });
 

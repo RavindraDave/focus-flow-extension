@@ -267,7 +267,7 @@ describe('PopupLayout', () => {
         </PopupLayout>
       );
       const layout = container.firstChild as HTMLElement;
-      expect(layout).toHaveClass('min-h-screen');
+      expect(layout).toHaveClass('h-[600px]');
     });
   });
 

@@ -21,19 +21,21 @@ const mockChrome = {
       get: vi.fn(),
       set: vi.fn(),
       clear: vi.fn(),
-      onChanged: {
-        addListener: vi.fn(),
-      },
     },
     local: {
       get: vi.fn(),
       set: vi.fn(),
       clear: vi.fn(),
     },
+    onChanged: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
   },
   runtime: {
     openOptionsPage: vi.fn(),
     getURL: vi.fn((path) => `chrome-extension://fake-id/${path}`),
+    sendMessage: vi.fn().mockResolvedValue({ success: false }),
   },
 };
 
@@ -65,7 +67,8 @@ describe('Options App', () => {
     it('should render all 6 tabs in sidebar', () => {
       render(<App />);
 
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
+      // Dashboard text may appear in both sidebar tab and content heading
+      expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('Timer Settings')).toBeInTheDocument();
       expect(screen.getByText('Blocking Rules')).toBeInTheDocument();
       expect(screen.getByText('Integrations')).toBeInTheDocument();
@@ -124,7 +127,7 @@ describe('Options App', () => {
       expect(screen.getByRole('heading', { name: /data & configuration/i })).toBeInTheDocument();
     });
 
-    it('should highlight active tab with accent color', () => {
+    it('should highlight active tab with accent color', async () => {
       render(<App />);
 
       const timerTab = screen.getByText('Timer Settings').closest('button');
@@ -132,7 +135,9 @@ describe('Options App', () => {
 
       fireEvent.click(timerTab!);
 
-      expect(timerTab).toHaveClass('bg-accent');
+      await waitFor(() => {
+        expect(screen.getByText('Timer Settings').closest('button')).toHaveClass('bg-accent');
+      });
     });
   });
 
