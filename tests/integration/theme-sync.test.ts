@@ -29,11 +29,13 @@ const mockChrome = {
   },
 };
 
-// @ts-ignore
+// @ts-expect-error - partial chrome mock for testing
 global.chrome = mockChrome;
 
+type StorageChangeListener = (changes: Record<string, unknown>, areaName: string) => void;
+
 // Storage change listeners
-let storageChangeListeners: Array<(changes: any, areaName: string) => void> = [];
+let storageChangeListeners: StorageChangeListener[] = [];
 
 describe('Theme Integration', () => {
   beforeEach(() => {
@@ -48,7 +50,7 @@ describe('Theme Integration', () => {
     mockChrome.storage.sync.set.mockResolvedValue(undefined);
 
     // Mock storage change listener
-    mockChrome.storage.onChanged.addListener.mockImplementation((listener: any) => {
+    mockChrome.storage.onChanged.addListener.mockImplementation((listener: StorageChangeListener) => {
       storageChangeListeners.push(listener);
       return undefined;
     });
@@ -498,7 +500,7 @@ describe('Theme Integration', () => {
   describe('Memory Management', () => {
     it('should cleanup storage listener on unmount', async () => {
       const removeListenerSpy = vi.fn();
-      (mockChrome.storage.onChanged.addListener as any).mockImplementation((listener: any) => {
+      mockChrome.storage.onChanged.addListener.mockImplementation((listener: StorageChangeListener) => {
         storageChangeListeners.push(listener);
         return removeListenerSpy;
       });

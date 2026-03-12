@@ -230,7 +230,7 @@ describe('BackgroundServiceWorker', () => {
       await worker.initialize();
 
       const alarm = { name: 'pomodoro-timer' };
-      await alarmListener(alarm);
+      alarmListener(alarm);
 
       // Timer tick should be called (mock will verify)
       expect(true).toBe(true);
@@ -252,7 +252,7 @@ describe('BackgroundServiceWorker', () => {
       await worker.initialize();
 
       const alarm = { name: 'allowance-reset' };
-      await alarmListener(alarm);
+      alarmListener(alarm);
 
       // Allowance reset should be called (mock will verify)
       expect(true).toBe(true);
@@ -277,8 +277,8 @@ describe('BackgroundServiceWorker', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Force an error by passing invalid alarm
-      const alarm = { name: null as any };
-      await alarmListener(alarm);
+      const alarm = { name: null as unknown as string };
+      alarmListener(alarm);
 
       consoleErrorSpy.mockRestore();
     });

@@ -38,7 +38,7 @@ const mockChrome = {
   },
 };
 
-// @ts-ignore
+// @ts-expect-error - partial chrome mock for testing
 global.chrome = mockChrome;
 
 // Mock window methods
@@ -159,7 +159,7 @@ describe('Data Export/Import', () => {
       // Check that the blob contains version and exportedAt
       const blobCall = mockBlob.mock.calls[0];
       const jsonContent = blobCall[0][0];
-      const exportData = JSON.parse(jsonContent);
+      const exportData = JSON.parse(jsonContent as string);
 
       expect(exportData).toHaveProperty('version');
       expect(exportData).toHaveProperty('exportedAt');

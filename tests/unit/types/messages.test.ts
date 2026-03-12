@@ -23,15 +23,16 @@ import {
 const mockChrome = {
   runtime: {
     sendMessage: vi.fn(),
-    lastError: undefined as any,
+    lastError: undefined as { message: string } | undefined,
   },
 };
 
-global.chrome = mockChrome as any;
+// @ts-expect-error - partial chrome mock for testing
+global.chrome = mockChrome;
 
 describe('Message Types', () => {
   beforeEach(() => {
-    mockChrome.runtime.lastError = undefined;
+    mockChrome.runtime.lastError = undefined as { message: string } | undefined;
     vi.clearAllMocks();
   });
 
@@ -236,7 +237,7 @@ describe('Message Types', () => {
         data: { state: 'idle' },
       };
 
-      mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
+      mockChrome.runtime.sendMessage.mockImplementation((_message: BackgroundMessage, callback: (resp: BackgroundResponse<{ state: string }>) => void) => {
         callback(mockResponse);
       });
 
@@ -255,7 +256,7 @@ describe('Message Types', () => {
         error: 'Timer not running',
       };
 
-      mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
+      mockChrome.runtime.sendMessage.mockImplementation((_message: BackgroundMessage, callback: (resp: BackgroundResponse) => void) => {
         callback(mockResponse);
       });
 
@@ -271,7 +272,7 @@ describe('Message Types', () => {
     it('should reject on chrome.runtime.lastError', async () => {
       mockChrome.runtime.lastError = { message: 'Extension context invalidated' };
 
-      mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
+      mockChrome.runtime.sendMessage.mockImplementation((_message: BackgroundMessage, callback: (resp: null) => void) => {
         callback(null);
       });
 

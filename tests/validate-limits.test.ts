@@ -18,8 +18,8 @@ const mockStorage = new Map();
 
 vi.mock('../src/services/storage-service', () => {
     class MockStorageService {
-        async get(key: string) {
-            return mockStorage.get(key);
+        async get(key: string): Promise<unknown> {
+            return mockStorage.get(key) as unknown;
         }
         async set(key: string, value: any) {
             mockStorage.set(key, value);

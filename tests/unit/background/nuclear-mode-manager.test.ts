@@ -375,19 +375,19 @@ describe('NuclearModeManager', () => {
 
   describe('detectTimeManipulation', () => {
     it('should return false for normal time progression', async () => {
-      const result1 = await manager.detectTimeManipulation();
+      const result1 = manager.detectTimeManipulation();
       expect(result1).toBe(false);
 
       // Simulate 1 second passing
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      const result2 = await manager.detectTimeManipulation();
+      const result2 = manager.detectTimeManipulation();
       expect(result2).toBe(false);
     });
 
-    it('should detect backward time jump', async () => {
+    it('should detect backward time jump', () => {
       // First call to establish baseline
-      await manager.detectTimeManipulation();
+      manager.detectTimeManipulation();
 
       // Mock Date.now to return a time in the past
       const originalDateNow = Date.now;
@@ -396,7 +396,7 @@ describe('NuclearModeManager', () => {
       // Simulate time going backward by 10 minutes
       vi.spyOn(Date, 'now').mockReturnValue(baseTime - 10 * 60 * 1000);
 
-      const result = await manager.detectTimeManipulation();
+      const result = manager.detectTimeManipulation();
 
       expect(result).toBe(true);
 
@@ -404,8 +404,8 @@ describe('NuclearModeManager', () => {
       vi.spyOn(Date, 'now').mockRestore();
     });
 
-    it('should not flag small backward jumps (<5 minutes)', async () => {
-      await manager.detectTimeManipulation();
+    it('should not flag small backward jumps (<5 minutes)', () => {
+      manager.detectTimeManipulation();
 
       const originalDateNow = Date.now;
       const baseTime = originalDateNow();
@@ -413,7 +413,7 @@ describe('NuclearModeManager', () => {
       // Simulate time going backward by 2 minutes (below threshold)
       vi.spyOn(Date, 'now').mockReturnValue(baseTime - 2 * 60 * 1000);
 
-      const result = await manager.detectTimeManipulation();
+      const result = manager.detectTimeManipulation();
 
       expect(result).toBe(false);
 

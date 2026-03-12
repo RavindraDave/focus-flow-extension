@@ -34,7 +34,7 @@ describe('Blocked Page Theme System', () => {
   let dom: JSDOM;
   let document: Document;
   let window: Window & typeof globalThis;
-  let storageChangeListeners: Array<(changes: any, areaName: string) => void> = [];
+  let storageChangeListeners: Array<(changes: Record<string, unknown>, areaName: string) => void> = [];
 
   // Read the theme init script once
   const themeInitScript = fs.readFileSync(
@@ -52,7 +52,7 @@ describe('Blocked Page Theme System', () => {
     });
 
     // Mock storage change listener
-    mockChrome.storage.onChanged.addListener.mockImplementation((listener: any) => {
+    mockChrome.storage.onChanged.addListener.mockImplementation((listener: (changes: Record<string, unknown>, areaName: string) => void) => {
       storageChangeListeners.push(listener);
     });
 
@@ -62,7 +62,8 @@ describe('Blocked Page Theme System', () => {
 
     // Create virtual console to suppress CSS/JS loading errors
     const virtualConsole = new VirtualConsole();
-    (virtualConsole as any).sendTo(console, { omitJSDOMErrors: true });
+    // @ts-expect-error - JSDOM sendTo options type mismatch
+    virtualConsole.sendTo(console, { omitJSDOMErrors: true });
 
     // Create JSDOM instance (external scripts won't load from chrome-extension:// URLs,
     // so we execute the theme init script manually below)

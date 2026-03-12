@@ -2,6 +2,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BlockerEngine } from '../src/background/blocker-engine';
 import { BlockRule } from '../src/types/index';
+import type { BlockRuleRepository } from '../src/services/block-rule-repository';
+import type { SettingsRepository } from '../src/services/settings-repository';
+import type { AnalyticsTracker } from '../src/background/analytics-tracker';
 
 // Mock repositories
 const mockBlockRuleRepository = {
@@ -32,8 +35,9 @@ const mockChrome = {
     runtime: {
         getURL: vi.fn((path: string) => `chrome-extension://test${path}`),
     },
-} as any;
+};
 
+// @ts-expect-error - partial chrome mock for testing
 global.chrome = mockChrome;
 
 describe('BlockerEngine Rule Generation Repro', () => {
@@ -42,9 +46,9 @@ describe('BlockerEngine Rule Generation Repro', () => {
     beforeEach(() => {
         // Correct constructor usage: repo, settings, analytics
         engine = new BlockerEngine(
-            mockBlockRuleRepository as any,
-            mockSettingsRepository as any,
-            mockAnalyticsTracker as any
+            mockBlockRuleRepository as unknown as BlockRuleRepository,
+            mockSettingsRepository as unknown as SettingsRepository,
+            mockAnalyticsTracker as unknown as AnalyticsTracker
         );
         mockChrome.declarativeNetRequest.getDynamicRules.mockResolvedValue([]);
         mockChrome.declarativeNetRequest.updateDynamicRules.mockResolvedValue(undefined);

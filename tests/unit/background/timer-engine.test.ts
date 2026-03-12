@@ -316,11 +316,11 @@ describe('TimerEngine', () => {
   });
 
   describe('resetSessionCount', () => {
-    it('should reset session count to zero', () => {
+    it('should reset session count to zero', async () => {
       engine.resetSessionCount();
 
-      const status = engine.getStatus();
-      expect(status).resolves.toMatchObject({ sessionCount: 0 });
+      const status = await engine.getStatus();
+      expect(status).toMatchObject({ sessionCount: 0 });
     });
   });
 });

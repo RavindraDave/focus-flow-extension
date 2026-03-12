@@ -15,7 +15,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock feature flags to enable premium features in tests
 vi.mock('../../../src/utils/constants', async () => {
-  const actual = await vi.importActual('../../../src/utils/constants') as Record<string, unknown>;
+  const actual: Record<string, unknown> = await vi.importActual('../../../src/utils/constants');
   return {
     ...actual,
     FEATURE_FLAGS: {
@@ -56,7 +56,7 @@ const mockChrome = {
   },
 };
 
-// @ts-ignore
+// @ts-expect-error - partial chrome mock for testing
 global.chrome = mockChrome;
 
 describe('Options App', () => {

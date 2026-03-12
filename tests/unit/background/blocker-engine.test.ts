@@ -379,14 +379,14 @@ describe('BlockerEngine', () => {
       mockBlockRuleRepository.getActiveRules.mockResolvedValue(rules);
 
       await engine.enableBlocking();
-      await engine.handleBlockedAttempt('youtube.com');
+      engine.handleBlockedAttempt('youtube.com');
 
       expect(mockAnalyticsTracker.trackBlockedAttempt).toHaveBeenCalled();
     });
 
     it('should not track when blocking is disabled', async () => {
       await engine.disableBlocking();
-      await engine.handleBlockedAttempt('youtube.com');
+      engine.handleBlockedAttempt('youtube.com');
 
       expect(mockAnalyticsTracker.trackBlockedAttempt).not.toHaveBeenCalled();
     });

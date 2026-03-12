@@ -542,7 +542,7 @@ class BackgroundServiceWorker {
           url: chrome.runtime.getURL('onboarding.html'),
         });
 
-        // Show welcome notification
+        // Show welcome notification (fire-and-forget, no return value)
         chrome.notifications.create({
           type: 'basic',
           iconUrl: chrome.runtime.getURL('/icons/icon_v10_128.png'),
